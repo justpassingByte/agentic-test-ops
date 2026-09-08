@@ -17,7 +17,9 @@
 ## 📑 Mục Lục
 1. [Giới Thiệu & Triết Lý Đề Tài](#-1-giới-thiệu--triết-lý-cốt-lõi)
 2. [Hệ Thống Này Dùng Khi Nào? Có Phải Chỉ Là Test E2E? (5 Use Cases)](#-2-hệ-thống-này-dùng-khi-nào-có-phải-chỉ-là-test-e2e)
-3. [Sổ Tay Sử Dụng Hàng Ngày (Daily Workflow Guide)](#-3-sổ-tay-sử-dụng-hàng-ngày-daily-workflow-guide)
+3. [Sổ Tay Vận Hành: Kịch Bản Chính & Phụ Trợ](#-3-sổ-tay-vận-hành-kịch-bản-chính--phụ-trợ)
+  - [3.1. Kịch Bản Chính: Autonomous Overnight SRE Sweep (Quét Lỗi Xuyên Đêm 100% Tự Động)](#-31-kịch-bản-chính-autonomous-overnight-sre-sweep-quét-lỗi-xuyên-đêm-100-tự-động)
+  - [3.2. Các Kịch Bản Tương Tác Ban Ngày (Interactive Day-Time Workflows)](#-32-các-kịch-bản-tương-tác-ban-ngày-interactive-day-time-workflows)
 4. [Kiến Trúc Hệ Thống 6 Tầng Toàn Trình](#-4-kiến-trúc-hệ-thống-6-tầng-toàn-trình)
 5. [Quy Trình Phân Tích Sự Cố (Full-Stack RCA Loop)](#-5-quy-trình-phân-tích-sự-cố-full-stack-rca-loop)
 6. [Hệ Thống Tri Thức Kép (AI Memory + Canvas Note Engineer)](#-6-hệ-thống-tri-thức-kép-ai-memory--canvas-note-engineer)
@@ -158,100 +160,45 @@ flowchart TD
 
 ---
 
-## ☕ 3. Sổ Tay Sử Dụng Hàng Ngày (Daily Workflow Guide)
+## ☕ 3. Sổ Tay Vận Hành: Kịch Bản Chính & Phụ Trợ
 
-Mỗi ngày làm việc của bạn với sự hỗ trợ của Agent sẽ diễn ra theo quy trình khép kín tự nhiên sau:
+Hệ thống được thiết kế xoay quanh triết lý **Agent-First**: Trọng tâm là **Kịch Bản Chính Chạy Qua Đêm (Autonomous Overnight SRE Sweep)** giúp giải phóng 100% thời gian cho lập trình viên, kết hợp cùng **Các Kịch Bản Tương Tác Ban Ngày** khi cần kiểm thử cục bộ.
 
 ```mermaid
 flowchart TD
-    START(["🌅 Bắt đầu ca làm việc"]) --> S1["1️⃣ Dọn dẹp & Khởi động Môi trường\n(Kiểm tra cổng, kill port chết, bật --inspect)"]
-    S1 --> S2["2️⃣ Khám phá UI & Kiểm thử Luồng mới\n(Agent điều khiển Browser click, nhập dữ liệu)"]
-    S2 --> DEC{"Có lỗi xảy ra?\n(UI Crash / HTTP 500)"}
+    NIGHT(["🌙 23:00 - Dev kích hoạt /debug overnight và đi ngủ"]) --> AUTO["🤖 Agent tự động vận hành xuyên đêm (Unattended Loop)"]
+    AUTO --> ENV["1️⃣ Quản trị môi trường: Quét dọn port kẹt & Khởi động Server với Inspect"]
+    ENV --> SWEEP["2️⃣ Duyệt qua toàn bộ 6 Flow nghiệp vụ (Auth, Catalog, Cart, Voucher, Payout, Dispute)"]
+    SWEEP --> FUZZ["3️⃣ Fuzzing dữ liệu biên & Playwright Browser Simulation"]
+    FUZZ --> CHECK{"Phát hiện lỗi?\n(Crash / HTTP 500)"}
     
-    DEC -->|"Không có lỗi ✅"| S5["5️⃣ Chạy Test Hồi Quy Tự Động\n(Bảo đảm hệ thống vững chắc)"]
-    DEC -->|"Có lỗi phát sinh ❌"| S3["3️⃣ Tự Động Điều Tra Nguyên Nhân (RCA)\n(Agent kết hợp Browser log & Source Code)"]
+    CHECK -->|"Pass 200 OK ✅"| PASS["Ghi nhận Green & Đo lường Latency"]
+    CHECK -->|"Văng lỗi ❌"| CDP["4️⃣ Kết nối CDP WebSocket (ws://127.0.0.1:9229)\nĐóng băng tiến trình & Soi trực tiếp biến trên RAM (Heap)"]
     
-    S3 --> S4["4️⃣ Xuất Báo Cáo RAG & Vẽ Canvas\n(Nạp đồ thị trực quan cho Human Tester)"]
-    S4 --> FIX["👨‍💻 Dev sửa code theo định vị của Agent\n(Nhấn F5 VS Code để debug trực tiếp nếu cần)"]
-    FIX --> S5
-    S5 --> COMMIT(["🚀 Tạo Pull Request & Tích hợp CI/CD"])
+    CDP --> RCA["5️⃣ Bóc tách Callstack & Xác định nguyên nhân gốc rễ (RCA)"]
+    RCA --> REG["6️⃣ Tự động tạo bài kiểm thử phòng ngừa hồi quy (Regression Test)"]
+    PASS --> NEXT["Chuyển sang Flow tiếp theo"]
+    REG --> NEXT
+    NEXT --> REPORT["7️⃣ 05:30 - Xuất Báo Cáo Kép (RAG .md + Multi-Cluster .canvas.json)"]
+    REPORT --> MORNING(["☀️ 07:00 - Dev thức dậy: Mở Canvas Note Engineer kiểm tra toàn bộ hệ thống!"])
 
-    style S1 fill:#e8f4fd,stroke:#17a2b8
-    style S2 fill:#e2f0d9,stroke:#28a745
-    style S3 fill:#fce8e6,stroke:#dc3545
-    style S4 fill:#fff3cd,stroke:#ffc107
-    style S5 fill:#d1ecf1,stroke:#0c5460
+    style NIGHT fill:#1f2937,stroke:#9ca3af,color:#fff
+    style AUTO fill:#e8f4fd,stroke:#17a2b8
+    style ENV fill:#e2f0d9,stroke:#28a745
+    style SWEEP fill:#e2f0d9,stroke:#28a745
+    style FUZZ fill:#fff3cd,stroke:#ffc107
+    style CDP fill:#fce8e6,stroke:#dc3545
+    style RCA fill:#fce8e6,stroke:#dc3545
+    style REG fill:#d1ecf1,stroke:#0c5460
+    style REPORT fill:#ede9fe,stroke:#8b5cf6
+    style MORNING fill:#fef3c7,stroke:#f59e0b
 ```
 
 ---
 
-### 🔹 Kịch bản 1: Đầu ngày — Dọn dẹp cổng & Bật Server Debug
-Khi mở máy, các tiến trình hôm qua có thể vẫn đang treo cổng `4201`, `9229`:
-- **Bạn gõ vào Chat**:
-  > *"Kiểm tra xem có cổng nào đang bị chiếm không, giải phóng các cổng inspect và bật api server ở chế độ debug."*
-- **Agent sẽ tự động gọi**:
-  1. `debug_status({ ports: [4200, 4201, 9229] })`
-  2. `debug_kill_ports({ ports: [9229] })`
-  3. `debug_start_server({ command: 'pnpm dev:api', inspectPort: 9229, app: 'api' })`
-- **Kết quả**: Server sẵn sàng với `--inspect=0.0.0.0:9229`, sạch sẽ, không lỗi đụng cổng.
+### 🌟 3.1. KỊCH BẢN CHÍNH: Autonomous Overnight SRE Sweep (Quét Lỗi Xuyên Đêm 100% Tự Động)
 
----
-
-### 🔹 Kịch bản 2: Khi code xong màn hình — Kiểm thử E2E không cần click tay
-Bạn vừa làm xong chức năng *"Áp dụng voucher giảm giá ở giỏ hàng"*:
-- **Bạn gõ vào Chat**:
-  > *"/debug 'Mở trang http://localhost:4200/cart, click nút Áp dụng mã SALE100 và kiểm tra xem tổng tiền có cập nhật không'"*
-- **Agent sẽ tự động**:
-  1. Mở Playwright Chromium (có thể mở cửa sổ thật nếu bạn muốn ngắm nhìn nó tự bấm).
-  2. Tìm nút bấm, gõ chữ `SALE100`, click Apply.
-  3. Nếu thành công: Báo cáo kết quả thời gian phản hồi, trạng thái DOM.
-  4. Nếu thất bại (Ví dụ: Nút đơ, hiện màn hình trắng, hoặc API trả về 500): Tự chụp ảnh lưu `screenshots/debug_error_xxx.png` và chuyển sang Kịch bản 3.
-
----
-
-### 🔹 Kịch bản 3: Khi phát hiện Bug — Tự động tìm tận gốc dòng code lỗi
-Thay vì bạn phải `console.log` khắp nơi hoặc mò mẫm qua 10 file:
-- **Bạn gõ vào Chat**:
-  > *"Điều tra tại sao bấm áp mã lại bị lỗi 500 và chỉ cho tôi dòng code bị sai."*
-- **Agent sẽ tự động**:
-  1. Đọc lại Network Error từ Playwright: `POST /api/v1/orders/voucher -> 500`.
-  2. Chạy test cô lập bằng `debug_run_test`.
-  3. Trích xuất stack trace qua kết nối Node Inspect:
-     ```text
-     TypeError: Cannot read properties of null (reading 'discount')
-         at applyVoucher (orders.service.ts:142:25)
-         at processOrder (orders.service.ts:89:12)
-     ```
-  4. Kết luận nguyên nhân gốc: *"Do đơn hàng có trạng thái thỏa thuận giá nên đối tượng `sellerRank` trả về null, hàm `applyVoucher` chưa có null-check `?.`"*.
-
----
-
-### 🔹 Kịch bản 4: Lập trình viên muốn tự tay Debug bằng VS Code (F5)
-Nếu đó là một logic thuật toán phức tạp và bạn muốn tự tay nhảy qua từng dòng lệnh:
-1. Bạn không cần khởi động lại server.
-2. Mở file `orders.service.ts`, đặt một Breakpoint màu đỏ tại dòng 142.
-3. Nhấn **F5** trên bàn phím (Profile *"Attach to Node Inspect"* đã cấu hình sẵn trong `vscode/launch.json`).
-4. Nhờ cổng `9229` đã được Agent mở sẵn, VS Code gắn ngay vào phiên chạy hiện tại. Bạn có thể soi từng biến trong tab Variables!
-
----
-
-### 🔹 Kịch bản 5: Báo cáo trực quan lên Canvas & Lưu tri thức RAG
-Sau khi điều tra xong lỗi:
-- **Agent tự động gọi**: `debug_export_rag_report`
-- **Hệ thống tạo ra 2 file**:
-  1. `knowledge/BUG-2026-001-order-escrow-race.md`: Lưu lại cho AI đọc hiểu ngữ cảnh nghiệp vụ.
-  2. `knowledge/BUG-2026-001-order-escrow-race.canvas.json`: Bản đồ số trực quan.
-- **Xem trên Canvas**: Bạn mở ứng dụng **[canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)**, kéo file JSON vào:
-  - Bản đồ số mở ra trong **5ms** (nhờ bộ Local AST Parser không tốn token AI).
-  - Khối lỗi màu đỏ (Frontend Crash), khối nguyên nhân màu vàng (Null sellerRank), khối mã nguồn vi phạm (`orders.service.ts:142`).
-  - Thầy cô chấm đồ án hoặc Team Lead nhìn vào là duyệt ngay vì bằng chứng minh bạch 100%!
-
-
----
-
-### 🌙 3.1. Chế Độ Tự Động Quét Lỗi Qua Đêm (Autonomous Overnight SRE Sweep)
-
-Đây là tính năng đột phá nhất phục vụ đồ án tốt nghiệp và môi trường kiểm thử thực chiến: **Bạn chỉ cần ra một lệnh duy nhất trước khi đi ngủ, Agent sẽ tự động chạy xuyên đêm qua toàn bộ các luồng nghiệp vụ (Multi-Flow), tự bắt lỗi trên RAM bằng CDP, và sáng hôm sau xuất một báo cáo trực quan tổng hợp toàn bộ hệ thống lên Canvas!**
+Đây là năng lực cốt lõi định hình nên giá trị của đề tài: **Bạn chỉ cần ra một lệnh duy nhất trước khi rời bàn làm việc hoặc trước khi đi ngủ, Agent sẽ tự động trinh sát xuyên đêm qua toàn bộ các luồng nghiệp vụ (Multi-Flow), tự gắn CDP bắt lỗi trên RAM, và sáng hôm sau nạp sẵn toàn bộ sơ đồ lỗi đa cụm lên Canvas!**
 
 ```mermaid
 sequenceDiagram
@@ -259,17 +206,18 @@ sequenceDiagram
     actor Dev as 👨‍💻 Developer (Đi ngủ 🌙)
     participant Agent as 🤖 Autonomous AI Agent
     participant Browser as 🎭 Playwright E2E Runner
-    participant CDP as 🔬 CDP Debugger Client (Node Inspect)
+    participant CDP as 🔬 CDP Debugger Client (ws://127.0.0.1:9229)
     participant Canvas as 🎨 Canvas Note Engineer Report
 
     Dev->>Agent: /debug overnight --flows "auth,products,cart,checkout,payout,dispute"
-    loop Lặp qua từng Flow nghiệp vụ (Xuyên đêm 00:00 - 05:30)
+    Note over Dev,Agent: Bạn tắt đèn đi ngủ, Agent tự động chạy xuyên đêm (00:00 - 05:30)
+    loop Lặp qua từng Flow nghiệp vụ
         Agent->>Browser: Kích hoạt luồng E2E với dữ liệu biên (Fuzzing / Edge cases)
-        alt Luồng thành công (200 OK)
-            Browser-->>Agent: Test passed, đo đạc latency & ghi nhận Green ✅
+        alt Flow thành công (200 OK)
+            Browser-->>Agent: Test passed, đo latency & ghi nhận Green ✅
         else Phát hiện HTTP 500 hoặc Crash giao diện
             Browser-->>Agent: Bắt được HTTP 500 & Console Error
-            Agent->>CDP: Kết nối ws://127.0.0.1:9229 -> Đóng băng tiến trình Node
+            Agent->>CDP: Kết nối ws://127.0.0.1:9229 -> Đóng băng tiến trình Node trên RAM
             CDP-->>Agent: Trả về Callstack & Giá trị thực tế của biến trên RAM (Heap)
             Agent->>Agent: Phân tích nguyên nhân gốc rễ (RCA) & sinh regression test
         end
@@ -305,6 +253,63 @@ Khi bạn thức dậy vào 7:00 sáng, hệ thống đã tự động xuất s�
      - ❌ **Cụm Flow Quyết Toán Phí (Payout Engine Flow)**: Badge Đỏ Rose (`test_case_failed`) nối vào lỗi tính toán BigInt tại `payout.engine.ts:88`.
      - ✅ **Cụm Flow Khiếu Nại & Ký Quỹ (Dispute Flow)**: Badge Xanh Emerald (`test_case_passed`).
 
+---
+
+### ⚡ 3.2. CÁC KỊCH BẢN TƯƠNG TÁC BAN NGÀY (Interactive Day-Time Workflows)
+
+Trong giờ làm việc ban ngày, lập trình viên sử dụng các kịch bản tương tác nhanh phục vụ trực tiếp cho quá trình code tính năng và gỡ lỗi cục bộ:
+
+#### 🔹 Kịch bản 1: Đầu ngày — Dọn dẹp cổng kẹt & Khởi động Server Debug
+Khi mở máy, các tiến trình từ hôm trước có thể đang treo cổng `4201`, `9229`:
+- **Bạn gõ vào Chat**:
+  > *"Kiểm tra xem có cổng nào đang bị chiếm không, giải phóng các cổng inspect và bật api server ở chế độ debug."*
+- **Agent sẽ tự động gọi**:
+  1. `debug_status({ ports: [4200, 4201, 9229] })`
+  2. `debug_kill_ports({ ports: [9229] })`
+  3. `debug_start_server({ command: 'pnpm dev:api', inspectPort: 9229, app: 'api' })`
+- **Kết quả**: Server sẵn sàng với `--inspect=0.0.0.0:9229`, sạch sẽ, triệt tiêu hoàn toàn lỗi `EADDRINUSE`.
+
+#### 🔹 Kịch bản 2: Khi vừa code xong màn hình — Kiểm thử E2E tức thời không cần click tay
+Bạn vừa hoàn thành chức năng *"Áp dụng voucher giảm giá ở giỏ hàng"*:
+- **Bạn gõ vào Chat**:
+  > *"/debug 'Mở trang http://localhost:4200/cart, click nút Áp dụng mã SALE100 và kiểm tra xem tổng tiền có cập nhật không'"*
+- **Agent sẽ tự động**:
+  1. Mở Playwright Chromium (có thể xem trực tiếp giao diện tự động thao tác).
+  2. Tìm selector, điền mã `SALE100`, click nút Submit.
+  3. Nếu thành công: Đo lường thời gian phản hồi, trạng thái DOM.
+  4. Nếu thất bại: Tự động chụp ảnh màn hình lưu vào `screenshots/` và chuyển sang bước điều tra chuyên sâu.
+
+#### 🔹 Kịch bản 3: Khi phát hiện Bug — Tự động tìm tận gốc dòng code lỗi bằng CDP
+Thay vì phải chèn `console.log` khắp nơi hoặc mò mẫm qua hàng chục file:
+- **Bạn gõ vào Chat**:
+  > *"Điều tra tại sao bấm áp mã lại bị lỗi 500 và chỉ cho tôi giá trị biến trên RAM."*
+- **Agent sẽ tự động**:
+  1. Đọc lại Network Error từ Playwright: `POST /api/v1/orders/voucher -> 500`.
+  2. Kết nối trực tiếp vào WebSocket Debugger (`ws://127.0.0.1:9229`) qua công cụ `debug_inspect_cdp`.
+  3. Đóng băng tiến trình Node khi văng Uncaught Exception và đọc biến trên RAM heap:
+     ```json
+     {
+       "sellerRank": null,
+       "order.isNegotiated": true,
+       "voucherAmount": "50000n"
+     }
+     ```
+  4. Định vị chính xác dòng code: `orders.service.ts:142` (Hàm `applyVoucher`) và đề xuất bản vá.
+
+#### 🔹 Kịch bản 4: Lập trình viên muốn tự tay Debug bằng VS Code (F5)
+Nếu đó là một thuật toán đặc thù và bạn muốn tự tay nhảy qua từng dòng lệnh (Human-in-the-Loop):
+1. Bạn không cần khởi động lại server.
+2. Mở file mã nguồn, đặt Breakpoint màu đỏ tại dòng mong muốn.
+3. Nhấn **F5** trên bàn phím (Profile *"Attach to Node Inspect"* cấu hình sẵn trong `vscode/launch.json`).
+4. VS Code lập tức gắn vào cổng `9229` đã được Agent mở sẵn để bạn tự tay thanh tra biến!
+
+#### 🔹 Kịch bản 5: Xuất Báo Cáo RAG & Vẽ Canvas Cho 1 Luồng Đơn Lẻ
+Sau khi điều tra xong 1 lỗi đơn lẻ:
+- **Agent tự động gọi**: `debug_export_rag_report`
+- **Hệ thống tạo ra cặp file tri thức**:
+  1. `knowledge/TS-ORDER-001-e2e-checkout-voucher-validation.md`
+  2. `knowledge/TS-ORDER-001-e2e-checkout-voucher-validation.canvas.json` (3 Sub-Clusters)
+- Kéo vào **Canvas Note Engineer**: Đồ thị mở ra tức thì trong 5ms để bảo vệ đồ án hoặc báo cáo Tech Lead!
 ---
 
 ## 🌟 4. Kiến Trúc Hệ Thống 6 Tầng Toàn Trình
