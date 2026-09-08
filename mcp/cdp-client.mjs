@@ -40,6 +40,8 @@ export async function runCdpInspection({
       timer = setTimeout(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
           try {
+            // Guarantee Node runtime is unpaused before disconnecting
+            ws.send(JSON.stringify({ id: 9998, method: 'Debugger.resume' }));
             ws.send(JSON.stringify({ id: 9999, method: 'Debugger.disable' }));
             ws.close();
           } catch {}

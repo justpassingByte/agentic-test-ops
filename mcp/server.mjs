@@ -11,6 +11,17 @@ import { runCdpInspection } from './cdp-client.mjs';
 
 const execAsync = promisify(exec);
 const isWindows = os.platform() === 'win32';
+/**
+ * Safely truncate large command outputs to prevent LLM context-window exhaustion and token burning
+ */
+function truncateOutput(str, maxChars = 4000) {
+  if (!str) return '';
+  const trimmed = str.trim();
+  if (trimmed.length <= maxChars) return trimmed;
+  const half = Math.floor(maxChars / 2);
+  return `${trimmed.slice(0, half)}\n... [truncated ${trimmed.length - maxChars} characters to protect LLM context window] ...\n${trimmed.slice(-half)}`;
+}
+
 
 // Running background processes spawned by this controller
 const activeServers = new Map();
@@ -447,21 +458,25 @@ async function handleToolCall(name, args) {
       const timeout = args.timeoutMs || 45000;
       const cwd = args.cwd || process.cwd();
       try {
-        const { stdout, stderr } = await execAsync(args.command, { cwd, timeout });
+        const { stdout, stderr } = await execAsync(args.command, {
+          cwd,
+          timeout,
+          maxBuffer: 10 * 1024 * 1024 // 10MB buffer prevents ERR_CHILD_PROCESS_STDIO_MAXBUFFER
+        });
         return {
           exitCode: 0,
           status: 'PASSED',
-          stdout: stdout.trim(),
-          stderr: stderr.trim()
+          stdout: truncateOutput(stdout),
+          stderr: truncateOutput(stderr)
         };
       } catch (err) {
         return {
           exitCode: err.code || 1,
           status: 'FAILED',
           errorMessage: err.message,
-          stdout: err.stdout?.trim() || '',
-          stderr: err.stderr?.trim() || '',
-          stack: err.stack || ''
+          stdout: truncateOutput(err.stdout),
+          stderr: truncateOutput(err.stderr),
+          stack: truncateOutput(err.stack, 2000)
         };
       }
     }
