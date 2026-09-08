@@ -85,7 +85,7 @@ flowchart TD
 >
 > 1. 🧠 **Tự động lập kế hoạch & tự thao tác**: Tự phân tích yêu cầu nghiệp vụ, mở trình duyệt, tự bấm nút, tự điền form và thử nghiệm các kịch bản biên (Edge cases) mà không cần con người viết sẵn từng dòng script `page.click()`.
 > 2. 🔍 **Xuyên thủng rào cản UI ➔ Backend**: Khi một ca test bị fail (màn hình đơ, HTTP 500), Agent không dừng lại ở việc quăng log lỗi giao diện, mà **tự động lần ngược callstack vào tận dòng code Backend vi phạm** (`orders.service.ts:142`).
-> 3. ⚔️ **Tự quản trị môi trường thực thi**: Tự động phát hiện xung đột, quét và tiêu diệt triệt để các tiến trình zombie chiếm dụng cổng (`listen EADDRINUSE`), tự khởi động phiên debug Node Inspect (`CDP`).
+> 3. **Tự quản trị môi trường thực thi**: Tự động phát hiện xung đột, quét và tiêu diệt triệt để các tiến trình zombie chiếm dụng cổng (`listen EADDRINUSE`), tự khởi động phiên debug Node Inspect (`CDP`).
 > 4. 📚 **Lưu trữ tri thức & Miễn dịch hồi quy**: Tự động xuất chuỗi nguyên nhân lỗi ra đồ thị trực quan trên **Canvas Note Engineer** và **tự động sinh file Regression Test suite** để bảo vệ hệ thống vĩnh viễn trong CI/CD.
 
 ---
@@ -529,15 +529,15 @@ Tất cả công cụ giao tiếp qua chuẩn **Model Context Protocol (JSON-RPC
 
 | Tên Tool | Tham số đầu vào | Chức năng kỹ thuật |
 |---|---|---|
-| 🔬 **`debug_inspect_cdp`** | `inspectPort`, `pauseOnExceptions`, `expressions[]`, `timeoutMs` | **Client gỡ lỗi tự động qua CDP**: Kết nối trực tiếp vào `ws://127.0.0.1:9229`, tự động đóng băng tiến trình khi văng Uncaught Exception, trích xuất Callstack và **soi trực tiếp giá trị biến trên bộ nhớ RAM** mà không cần con người bấm F5! |
-| 🌙 **`debug_export_overnight_report`** | `sweepId`, `date`, `flows[]` | **Báo cáo kiểm thử quét qua đêm**: Tổng hợp kết quả kiểm thử của toàn bộ các flow nghiệp vụ, trích xuất lỗi RAM từ CDP, xuất cặp file `OVERNIGHT-SWEEP-<date>.md` và `OVERNIGHT-SWEEP-<date>.canvas.json` đa cụm. |
-| 📊 **`debug_export_rag_report`** | `testId`, `title`, `route`, `symptoms`, `sourceLocation` | Tự động xuất cặp file tri thức TestOps đơn luồng: `.md` cho RAG và `.canvas.json` 3 Sub-Clusters nạp tức thì vào **canvas-note-engineer**. |
-| 🎭 **`debug_browser_run`** | `url`, `actions[]`, `headless`, `timeoutMs` | Khởi chạy Playwright Chromium, tự động hóa thao tác người dùng, lắng nghe lỗi Console, bắt HTTP 4xx/5xx và chụp ảnh màn hình lỗi. |
-| 📡 **`debug_status`** | `ports[]` *(Mặc định quét 9 cổng)* | Quét trạng thái cổng ứng dụng (3000, 4200, 4201, 8080) và cổng inspect (9229, 9230...), trả về PID tiến trình đang giữ port. |
-| ⚔️ **`debug_kill_ports`** | `ports[]` *(Mặc định `[9229, 9230, 9231]`)* | Force-kill các tiến trình đang chiếm dụng cổng, dập tắt dứt điểm lỗi `EADDRINUSE`. |
-| 🚀 **`debug_start_server`** | `command`, `inspectPort`, `app`, `cwd` | Khởi chạy dev server ở chế độ `--inspect=0.0.0.0:<port>` chạy ngầm, tự động dọn sạch port trước khi bật. |
-| 🛑 **`debug_stop_server`** | `app`, `pid` | Dừng tiến trình dev server một cách an toàn và giải phóng tài nguyên. |
-| 🧪 **`debug_run_test`** | `command`, `cwd`, `timeoutMs` | Chạy test đơn lẻ trong môi trường cô lập, bóc tách Callstack và mã thoát lỗi khi thất bại. |
+| **`debug_inspect_cdp`** | `inspectPort`, `pauseOnExceptions`, `expressions[]`, `timeoutMs` | **Client gỡ lỗi tự động qua CDP**: Kết nối trực tiếp vào `ws://127.0.0.1:9229`, tự động đóng băng tiến trình khi văng Uncaught Exception, trích xuất Callstack và **soi trực tiếp giá trị biến trên bộ nhớ RAM** mà không cần con người bấm F5! |
+| **`debug_export_overnight_report`** | `sweepId`, `date`, `flows[]` | **Báo cáo kiểm thử quét qua đêm**: Tổng hợp kết quả kiểm thử của toàn bộ các flow nghiệp vụ, trích xuất lỗi RAM từ CDP, xuất cặp file `OVERNIGHT-SWEEP-<date>.md` và `OVERNIGHT-SWEEP-<date>.canvas.json` đa cụm. |
+| **`debug_export_rag_report`** | `testId`, `title`, `route`, `symptoms`, `sourceLocation` | Tự động xuất cặp file tri thức TestOps đơn luồng: `.md` cho RAG và `.canvas.json` 3 Sub-Clusters nạp tức thì vào **canvas-note-engineer**. |
+| **`debug_browser_run`** | `url`, `actions[]`, `headless`, `timeoutMs` | Khởi chạy Playwright Chromium, tự động hóa thao tác người dùng, lắng nghe lỗi Console, bắt HTTP 4xx/5xx và chụp ảnh màn hình lỗi. |
+| **`debug_status`** | `ports[]` *(Mặc định quét 9 cổng)* | Quét trạng thái cổng ứng dụng (3000, 4200, 4201, 8080) và cổng inspect (9229, 9230...), trả về PID tiến trình đang giữ port. |
+| **`debug_kill_ports`** | `ports[]` *(Mặc định `[9229, 9230, 9231]`)* | Force-kill các tiến trình đang chiếm dụng cổng, dập tắt dứt điểm lỗi `EADDRINUSE`. |
+| **`debug_start_server`** | `command`, `inspectPort`, `app`, `cwd` | Khởi chạy dev server ở chế độ `--inspect=0.0.0.0:<port>` chạy ngầm, tự động dọn sạch port trước khi bật. |
+| **`debug_stop_server`** | `app`, `pid` | Dừng tiến trình dev server một cách an toàn và giải phóng tài nguyên. |
+| **`debug_run_test`** | `command`, `cwd`, `timeoutMs` | Chạy test đơn lẻ trong môi trường cô lập, bóc tách Callstack và mã thoát lỗi khi thất bại. |
 
 ## 🚀 9. Hướng Dẫn Cài Đặt & Thực Nghiệm Nhanh
 
