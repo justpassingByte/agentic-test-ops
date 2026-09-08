@@ -478,22 +478,27 @@ Hệ thống thiết lập cơ chế **Dual-Sided Knowledge Loop (Vòng Lặp Tr
 
 ---
 
-### Trải Nghiệm Giao Diện Canvas Note Engineer Trông Như Thế Nào?
+### Trải Nghiệm Giao Diện Canvas Note Engineer: Cụm Kiểm Thử TestOps Chuyên Biệt
 
-Khi bạn nạp file `.canvas.json` vào **[justpassingByte/canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)**, bạn không phải nhìn vào những dòng JSON hay bảng log nhàm chán. Toàn bộ chuỗi sự cố bung ra thành một **bản đồ số tương tác (Interactive Visual Board)**:
+Ứng dụng **[justpassingByte/canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)** đã được nâng cấp chính thức với **Loại Cụm Chuyên Dụng Cho Kiểm Thử & Chẩn Đoán Phần Mềm (Dedicated TestOps Cluster)**:
 
-1. **Không gian đồ thị vô cực (Infinite Pan & Zoom Canvas)**:
-   - Tương tự như Figma hoặc Miro: Bạn có thể dùng chuột lướt toàn cảnh hệ thống, cuộn chuột để zoom cận cảnh từng dòng code hoặc thu nhỏ để xem bức tranh tổng thể các dịch vụ.
-2. **Các khối thẻ phân loại theo màu sắc nghiệp vụ (Color-Coded Semantic Cards)**:
-   - 🔴 **Thẻ Đỏ (UI Crash / Error Symptom)**: Hiển thị ngay ảnh chụp màn hình lúc giao diện bị đơ, thông báo Uncaught Exception và request HTTP 500 kèm headers.
-   - 🟠 **Thẻ Cam (API Gateway / Endpoint Failure)**: Thể hiện URL `POST /api/v1/orders/voucher`, thời gian phản hồi và payload gửi lên.
-   - 🟡 **Thẻ Vàng (Root Cause Analysis)**: Đóng khung chính xác tên file `orders.service.ts`, vị trí dòng 142, đoạn code vi phạm và giải thích nguyên nhân logic (null pointer).
-   - 🟢 **Thẻ Xanh Lá (Fix & Regression Test)**: Gợi ý đoạn code sửa chuẩn và liên kết đến file test `bug-2026-001.spec.ts` vừa sinh ra.
-3. **Mũi tên liên kết nhân quả (Directed Causal Edges)**:
-   - Các đường nối có mũi tên động chỉ rõ chiều tác động: `Người dùng Click ➔ Gọi API ➔ Crash Backend ➔ Dòng Code Lỗi ➔ Bản Vá`.
-4. **Tương tác trực tiếp cho Lập trình viên**:
-   - Nhấp đúp vào bất kỳ thẻ nào để mở rộng chi tiết stack trace.
-   - Bấm nút *"AI Expand"* để yêu cầu AI phân tích sâu hơn xem lỗi này có khả năng lây lan sang các module khác hay không.
+1. **Bộ 5 Thẻ Pod Kiểm Thử Chuyên Biệt (5 Specialized TestOps Visual Pods)**:
+   - **`test_case_passed` (Checkmark Xanh Emerald)**: Dành cho các ca kiểm thử thành công, hiển thị thời gian phản hồi (latency), mã trạng thái HTTP 200 OK.
+   - **`test_case_failed` (Alert Bát Giác Đỏ Rose)**: Dành cho ca kiểm thử thất bại, bắt quả tang HTTP 500 hoặc ngoại lệ làm vỡ màn hình.
+   - **`playwright_trace` (Trình Duyệt & Con Trỏ Xanh Cyan)**: Dành cho các tương tác DOM tự động của Playwright, selector nút bấm, input form và ảnh chụp màn hình bằng chứng.
+   - **`root_cause_defect` (Bọ Cánh Cứng Beetle Đỏ/Vàng Amber)**: Dành cho nguyên nhân gốc rễ, trỏ đích danh file:dòng lỗi Backend (`orders.service.ts:142`), hàm vi phạm và **soi trực tiếp giá trị biến trên bộ nhớ RAM (Heap)** bắt được từ CDP (`sellerRank = null`).
+   - **`regression_shield` (Khiên Bảo Mật Tím Violet)**: Dành cho bộ kiểm thử phòng ngừa hồi quy tự động khóa cứng invariant trong CI/CD.
+
+2. **Cấu Trúc Đa Phân Cụm (Multi-Sub-Cluster Topology)**:
+   - **Báo Cáo Đơn Luồng (Single-Flow)**: Tự động gom nhóm thành 3 Sub-Clusters:
+     - `sub_test_scenarios`: Ma trận kịch bản kiểm thử (Happy Path, Edge Cases).
+     - `sub_browser_trace`: Dấu vết tương tác trình duyệt Playwright & API Interception.
+     - `sub_defect_defense`: Phân tích nguyên nhân gốc rễ & Khiên phòng vệ hồi quy.
+   - **Báo Cáo Quét Xuyên Đêm (Overnight Multi-Flow)**: Tự động gom nhóm thành 7 Sub-Clusters (Cụm Tổng quan KPI + 6 Cụm riêng biệt cho từng Flow: Auth, Catalog, Cart, Voucher, Payout, Dispute).
+
+3. **Cơ Chế Nạp Siêu Tốc Bằng AST Cục Bộ (Local AST Ingestion: 5ms, 0 Token AI)**:
+   - Khi kéo file `.canvas.json` vào giao diện Canvas, hệ thống sử dụng bộ phân tích cú pháp AST cục bộ để dựng toàn bộ đồ thị chỉ trong **5 mili-giây**, không tiêu tốn bất kỳ token LLM nào.
+   - Hỗ trợ cuộn phóng to/thu nhỏ vô cực (Infinite Canvas), di chuyển các cụm thẻ mượt mà và kiểm tra trực quan ngay trước hội đồng bảo vệ đồ án!
 
 ---
 
