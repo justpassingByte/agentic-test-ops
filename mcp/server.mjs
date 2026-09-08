@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 import { createInterface } from 'node:readline';
 import { exec, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -14,6 +14,20 @@ const isWindows = os.platform() === 'win32';
 
 // Running background processes spawned by this controller
 const activeServers = new Map();
+
+// Reusable browser instance & isolated worker contexts for parallel flow execution
+let cachedBrowser = null;
+const activeContexts = new Map();
+
+async function getSharedBrowser(chromium, headless = true) {
+  if (!cachedBrowser || !cachedBrowser.isConnected()) {
+    cachedBrowser = await chromium.launch({
+      headless,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+  }
+  return cachedBrowser;
+}
 
 // Path to screenshots directory
 const screenshotsDir = path.resolve(import.meta.dirname, '..', 'screenshots');
@@ -457,6 +471,7 @@ async function handleToolCall(name, args) {
       const headless = args.headless !== false; // default true
       const timeout = args.timeoutMs || 30000;
       const actions = args.actions || [];
+      const contextId = args.contextId || null;
 
       const consoleErrors = [];
       const pageErrors = [];
@@ -465,15 +480,24 @@ async function handleToolCall(name, args) {
       let finalUrl = args.url;
       let actionCount = 0;
 
-      const browser = await chromium.launch({
-        headless,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
+      const browser = await getSharedBrowser(chromium, headless);
+      let context;
+      let shouldCloseContext = false;
 
-      try {
-        const context = await browser.newContext({
+      if (contextId && activeContexts.has(contextId)) {
+        context = activeContexts.get(contextId);
+      } else {
+        context = await browser.newContext({
           viewport: { width: 1280, height: 800 }
         });
+        if (contextId) {
+          activeContexts.set(contextId, context);
+        } else {
+          shouldCloseContext = true;
+        }
+      }
+
+      try {
         const page = await context.newPage();
 
         // Listen for console logs
@@ -592,7 +616,12 @@ async function handleToolCall(name, args) {
           summary: `Browser execution crashed: ${runErr.message}`
         };
       } finally {
-        await browser.close();
+        if (page && !page.isClosed()) {
+          try { await page.close(); } catch {}
+        }
+        if (shouldCloseContext && context) {
+          try { await context.close(); } catch {}
+        }
       }
     }
 
