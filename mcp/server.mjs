@@ -6,7 +6,8 @@ import process from 'node:process';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
-import { exportRagReport } from './rag-exporter.mjs';
+import { exportRagReport, exportOvernightSweepReport } from './rag-exporter.mjs';
+import { runCdpInspection } from './cdp-client.mjs';
 
 const execAsync = promisify(exec);
 const isWindows = os.platform() === 'win32';
@@ -85,6 +86,48 @@ async function killPid(pid) {
  * Tool definitions
  */
 const TOOLS = [
+  {
+    "name": "debug_inspect_cdp",
+    "description": "Autonomous Chrome DevTools Protocol (CDP) Client. Connects directly to a running Node.js --inspect session, catches uncaught exceptions, captures live callstack frames, and evaluates heap memory variables in RAM without human F5 intervention.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "inspectPort": { "type": "number", "description": "Node inspect port (default: 9229)" },
+        "timeoutMs": { "type": "number", "description": "Inspection timeout in ms (default: 15000)" },
+        "pauseOnExceptions": { "type": "string", "enum": ["uncaught", "all", "none"], "description": "Pause mode (default: 'uncaught')" },
+        "expressions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Variables/expressions to evaluate live in RAM on the paused frame (e.g. ['sellerRank', 'order.isNegotiated'])"
+        },
+        "breakpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": { "type": "string" },
+              "line": { "type": "number" }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "debug_export_overnight_report",
+    "description": "Export Consolidated Overnight Autonomous SRE Sweep Report across multiple flows into Dual-Mode format: (1) Consolidated Markdown RAG Report (.md) with in-memory RAM heap dump and (2) Multi-Cluster Canvas JSON (.canvas.json) for Canvas Note Engineer.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "sweepId": { "type": "string", "description": "Custom Sweep ID (e.g. SWEEP-20260909)" },
+        "date": { "type": "string", "description": "Sweep date (YYYY-MM-DD)" },
+        "flows": {
+          "type": "array",
+          "description": "Array of evaluated flows with test results, CDP in-memory heap evaluations, and defect locations."
+        }
+      }
+    }
+  },
   {
     "name": "debug_export_rag_report",
     "description": "Export verified bug findings into Dual-Mode format: (1) Human Markdown Report (.md) and (2) Canvas JSON Payload (.canvas.json) fully compliant with Canvas Note Engineer.",
@@ -259,6 +302,8 @@ const TOOLS = [
  */
 async function handleToolCall(name, args) {
   switch (name) {
+    case 'debug_inspect_cdp': return runCdpInspection(args);
+    case 'debug_export_overnight_report': return exportOvernightSweepReport(args, import.meta.dirname);
     case 'debug_export_rag_report': return exportRagReport(args, import.meta.dirname);
     case 'debug_status': {
       const portsToScan = args.ports?.length ? args.ports : [3000, 4200, 4201, 4203, 5173, 8080, 9229, 9230, 9231];

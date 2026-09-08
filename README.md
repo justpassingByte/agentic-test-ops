@@ -247,6 +247,65 @@ Sau khi điều tra xong lỗi:
   - Khối lỗi màu đỏ (Frontend Crash), khối nguyên nhân màu vàng (Null sellerRank), khối mã nguồn vi phạm (`orders.service.ts:142`).
   - Thầy cô chấm đồ án hoặc Team Lead nhìn vào là duyệt ngay vì bằng chứng minh bạch 100%!
 
+
+---
+
+### 🌙 3.1. Chế Độ Tự Động Quét Lỗi Qua Đêm (Autonomous Overnight SRE Sweep)
+
+Đây là tính năng đột phá nhất phục vụ đồ án tốt nghiệp và môi trường kiểm thử thực chiến: **Bạn chỉ cần ra một lệnh duy nhất trước khi đi ngủ, Agent sẽ tự động chạy xuyên đêm qua toàn bộ các luồng nghiệp vụ (Multi-Flow), tự bắt lỗi trên RAM bằng CDP, và sáng hôm sau xuất một báo cáo trực quan tổng hợp toàn bộ hệ thống lên Canvas!**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as 👨‍💻 Developer (Đi ngủ 🌙)
+    participant Agent as 🤖 Autonomous AI Agent
+    participant Browser as 🎭 Playwright E2E Runner
+    participant CDP as 🔬 CDP Debugger Client (Node Inspect)
+    participant Canvas as 🎨 Canvas Note Engineer Report
+
+    Dev->>Agent: /debug overnight --flows "auth,products,cart,checkout,payout,dispute"
+    loop Lặp qua từng Flow nghiệp vụ (Xuyên đêm 00:00 - 05:30)
+        Agent->>Browser: Kích hoạt luồng E2E với dữ liệu biên (Fuzzing / Edge cases)
+        alt Luồng thành công (200 OK)
+            Browser-->>Agent: Test passed, đo đạc latency & ghi nhận Green ✅
+        else Phát hiện HTTP 500 hoặc Crash giao diện
+            Browser-->>Agent: Bắt được HTTP 500 & Console Error
+            Agent->>CDP: Kết nối ws://127.0.0.1:9229 -> Đóng băng tiến trình Node
+            CDP-->>Agent: Trả về Callstack & Giá trị thực tế của biến trên RAM (Heap)
+            Agent->>Agent: Phân tích nguyên nhân gốc rễ (RCA) & sinh regression test
+        end
+    end
+    Agent->>Canvas: Tự động xuất OVERNIGHT-SWEEP-<date>.md & .canvas.json
+    Canvas-->>Dev: Sáng thức dậy ☀️: Đồ thị tổng hợp toàn bộ lỗi của mọi flow đã sẵn sàng!
+```
+
+#### 🚀 Cách kích hoạt kiểm thử qua đêm:
+```bash
+# Chạy quét qua đêm toàn bộ các flow nghiệp vụ trọng yếu
+/debug overnight --flows "auth,products,cart,checkout,vouchers,payout,disputes"
+```
+Hoặc ra lệnh bằng ngôn ngữ tự nhiên trong cửa sổ Chat:
+> *"Hãy chạy kiểm thử tự động toàn bộ các flow nghiệp vụ qua đêm. Tự động kết nối CDP để bắt biến trên RAM khi có lỗi và sáng mai xuất báo cáo tổng hợp tất cả các flow lên Canvas Note Engineer."*
+
+#### ☀️ Thành quả nhận được vào sáng hôm sau:
+Khi bạn thức dậy vào 7:00 sáng, hệ thống đã tự động xuất sẵn cặp file tri thức:
+1. **File Báo Cáo Tổng Hợp RAG (`knowledge/OVERNIGHT-SWEEP-<date>.md`)**:
+   - **Bảng ma trận tổng hợp (Multi-Flow Health Matrix)**: Thống kê 6 flow nghiệp vụ, tỷ lệ Pass/Fail (ví dụ: `4/6 Flows Passed - 66.7%`), thời gian phản hồi trung bình (latency).
+   - **Hồ sơ chi tiết từng luồng bị lỗi (Defect Dossier)**:
+     - **Flow Đặt Hàng & Áp Mã (Voucher Flow)**: Lỗi 500 tại `orders.service.ts:142`, giá trị biến bắt từ RAM: `sellerRank = null`, `order.isNegotiated = true`.
+     - **Flow Quyết Toán Doanh Thu (Payout Engine Flow)**: Lỗi 500 tại `payout.engine.ts:88`, giá trị biến bắt từ RAM: `rawRate = NaN`, vi phạm PPM BigInt.
+     - Kèm giải pháp khắc phục và đường dẫn bộ test hồi quy tương ứng.
+2. **Bản Đồ Canvas Đa Cụm (`knowledge/OVERNIGHT-SWEEP-<date>.canvas.json`)**:
+   - Tự động đồng bộ sang `plugin-canvas-engineer/rag/`.
+   - Khi mở Canvas Note Engineer, bạn sẽ thấy đồ thị vô cực phân chia thành các Sub-Cluster rõ ràng:
+     - 📊 **Cụm Tổng Quan (SRE Executive Overview & KPIs)**: Tỷ lệ sống sót, tổng số ca kiểm thử (50/52 passed).
+     - ✅ **Cụm Flow Đăng Nhập & Bảo Mật (Auth Flow)**: Badge Xanh Emerald (`test_case_passed`).
+     - ✅ **Cụm Flow Danh Mục Sản Phẩm (Catalog Flow)**: Badge Xanh Emerald (`test_case_passed`).
+     - ✅ **Cụm Flow Giỏ Hàng (Cart Flow)**: Badge Xanh Emerald (`test_case_passed`).
+     - ❌ **Cụm Flow Áp Mã Voucher (Voucher Flow)**: Badge Đỏ Rose (`test_case_failed`), Badge Beetle Bug (`root_cause_defect`) nối thẳng vào `orders.service.ts:142`, Badge Cyan (`playwright_trace`) và Badge Tím (`regression_shield`).
+     - ❌ **Cụm Flow Quyết Toán Phí (Payout Engine Flow)**: Badge Đỏ Rose (`test_case_failed`) nối vào lỗi tính toán BigInt tại `payout.engine.ts:88`.
+     - ✅ **Cụm Flow Khiếu Nại & Ký Quỹ (Dispute Flow)**: Badge Xanh Emerald (`test_case_passed`).
+
 ---
 
 ## 🌟 4. Kiến Trúc Hệ Thống 6 Tầng Toàn Trình
@@ -465,21 +524,21 @@ debug-plugin/
 
 ---
 
-## 🛠️ 8. Danh Mục 7 Công Cụ Trong MCP Server
+## 🛠️ 8. Danh Mục 9 Công Cụ Trong MCP Server
 
 Tất cả công cụ giao tiếp qua chuẩn **Model Context Protocol (JSON-RPC 2.0 stdio)**:
 
 | Tên Tool | Tham số đầu vào | Chức năng kỹ thuật |
 |---|---|---|
+| 🔬 **`debug_inspect_cdp`** | `inspectPort`, `pauseOnExceptions`, `expressions[]`, `timeoutMs` | **Client gỡ lỗi tự động qua CDP**: Kết nối trực tiếp vào `ws://127.0.0.1:9229`, tự động đóng băng tiến trình khi văng Uncaught Exception, trích xuất Callstack và **soi trực tiếp giá trị biến trên bộ nhớ RAM** mà không cần con người bấm F5! |
+| 🌙 **`debug_export_overnight_report`** | `sweepId`, `date`, `flows[]` | **Báo cáo kiểm thử quét qua đêm**: Tổng hợp kết quả kiểm thử của toàn bộ các flow nghiệp vụ, trích xuất lỗi RAM từ CDP, xuất cặp file `OVERNIGHT-SWEEP-<date>.md` và `OVERNIGHT-SWEEP-<date>.canvas.json` đa cụm. |
+| 📊 **`debug_export_rag_report`** | `testId`, `title`, `route`, `symptoms`, `sourceLocation` | Tự động xuất cặp file tri thức TestOps đơn luồng: `.md` cho RAG và `.canvas.json` 3 Sub-Clusters nạp tức thì vào **canvas-note-engineer**. |
 | 🎭 **`debug_browser_run`** | `url`, `actions[]`, `headless`, `timeoutMs` | Khởi chạy Playwright Chromium, tự động hóa thao tác người dùng, lắng nghe lỗi Console, bắt HTTP 4xx/5xx và chụp ảnh màn hình lỗi. |
 | 📡 **`debug_status`** | `ports[]` *(Mặc định quét 9 cổng)* | Quét trạng thái cổng ứng dụng (3000, 4200, 4201, 8080) và cổng inspect (9229, 9230...), trả về PID tiến trình đang giữ port. |
 | ⚔️ **`debug_kill_ports`** | `ports[]` *(Mặc định `[9229, 9230, 9231]`)* | Force-kill các tiến trình đang chiếm dụng cổng, dập tắt dứt điểm lỗi `EADDRINUSE`. |
 | 🚀 **`debug_start_server`** | `command`, `inspectPort`, `app`, `cwd` | Khởi chạy dev server ở chế độ `--inspect=0.0.0.0:<port>` chạy ngầm, tự động dọn sạch port trước khi bật. |
 | 🛑 **`debug_stop_server`** | `app`, `pid` | Dừng tiến trình dev server một cách an toàn và giải phóng tài nguyên. |
 | 🧪 **`debug_run_test`** | `command`, `cwd`, `timeoutMs` | Chạy test đơn lẻ trong môi trường cô lập, bóc tách Callstack và mã thoát lỗi khi thất bại. |
-| 📊 **`debug_export_rag_report`** | `bugId`, `flow`, `rootCause`, `nodes[]`, `edges[]` | Tự động xuất cặp file tri thức: `.md` cho RAG và `.canvas.json` nạp tức thì vào **canvas-note-engineer**. |
-
----
 
 ## 🚀 9. Hướng Dẫn Cài Đặt & Thực Nghiệm Nhanh
 
