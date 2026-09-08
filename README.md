@@ -1,4 +1,4 @@
-# 🤖 Autonomous Web Testing & Diagnostic Agent
+# Autonomous Web Testing & Diagnostic Agent
 ### Hệ Thống Tự Động Hóa Kiểm Thử Web Application Toàn Trình Kết Hợp Browser Trace, Source Code Trace & Vòng Lặp Tri Thức Kép (AI Memory + Canvas Visual Map)
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
@@ -14,23 +14,24 @@
 
 ---
 
-## 📑 Mục Lục
-1. [Giới Thiệu & Triết Lý Đề Tài](#-1-giới-thiệu--triết-lý-cốt-lõi)
-2. [Hệ Thống Này Dùng Khi Nào? Có Phải Chỉ Là Test E2E? (5 Use Cases)](#-2-hệ-thống-này-dùng-khi-nào-có-phải-chỉ-là-test-e2e)
-3. [Sổ Tay Vận Hành: Kịch Bản Chính & Phụ Trợ](#-3-sổ-tay-vận-hành-kịch-bản-chính--phụ-trợ)
-  - [3.1. Kịch Bản Chính: Autonomous Overnight SRE Sweep (Quét Lỗi Xuyên Đêm 100% Tự Động)](#-31-kịch-bản-chính-autonomous-overnight-sre-sweep-quét-lỗi-xuyên-đêm-100-tự-động)
-  - [3.2. Các Kịch Bản Tương Tác Ban Ngày (Interactive Day-Time Workflows)](#-32-các-kịch-bản-tương-tác-ban-ngày-interactive-day-time-workflows)
-4. [Kiến Trúc Hệ Thống 6 Tầng Toàn Trình](#-4-kiến-trúc-hệ-thống-6-tầng-toàn-trình)
-5. [Quy Trình Phân Tích Sự Cố (Full-Stack RCA Loop)](#-5-quy-trình-phân-tích-sự-cố-full-stack-rca-loop)
-6. [Hệ Thống Tri Thức Kép (AI Memory + Canvas Note Engineer)](#-6-hệ-thống-tri-thức-kép-ai-memory--canvas-note-engineer)
-7. [Cấu Trúc Thư Mục Plugin](#-7-cấu-trúc-thư-mục-plugin-độc-lập)
-8. [Bộ 9 Công Cụ MCP Server (`mcp/server.mjs`)](#-8-danh-mục-9-công-cụ-trong-mcp-server)
-9. [Hướng Dẫn Cài Đặt & Chạy Thực Nghiệm (1-Click)](#-9-hướng-dẫn-cài-đặt--thực-nghiệm-nhanh)
-10. [Khung Đề Cương Nghiên Cứu & Báo Cáo Đồ Án (7 Chương)](#-10-khung-đề-cương-thuyết-minh-đồ-án-tốt-nghiệp)
+## Mục Lục
+1. [Giới Thiệu & Triết Lý Đề Tài](#1-giới-thiệu--triết-lý-cốt-lõi)
+2. [Giá Trị Cốt Lõi & Bảng Đối Chiếu Công Cụ](#2-giá-trị-cốt-lõi--bảng-đối-chiếu-công-cụ)
+3. [Sổ Tay Vận Hành: Kịch Bản Chính & Các Chế Độ Tương Tác](#3-sổ-tay-vận-hành-kịch-bản-chính--các-chế-độ-tương-tác)
+  - [3.1. Kịch Bản Chính: Autonomous Overnight SRE Sweep](#31-kịch-bản-chính-autonomous-overnight-sre-sweep-quét-lỗi-xuyên-đêm-100-tự-động)
+  - [3.2. Các Chế Độ Tương Tác Ban Ngày (Interactive Workflows)](#32-các-chế-độ-tương-tác-ban-ngày-interactive-workflows)
+4. [Kiến Trúc Hệ Thống 6 Tầng Toàn Trình](#4-kiến-trúc-hệ-thống-6-tầng-toàn-trình)
+  - [4.1. Cơ Chế Phối Hợp Giữa Frontend Playwright & Backend CDP Debugger](#41-cơ-chế-phối-hợp-giữa-frontend-playwright--backend-cdp-debugger)
+5. [Quy Trình Phân Tích Sự Cố (Full-Stack RCA Loop)](#5-quy-trình-phân-tích-sự-cố-full-stack-rca-loop)
+6. [Hệ Thống Tri Thức Kép (AI Memory + Canvas Note Engineer)](#6-hệ-thống-tri-thức-kép-ai-memory--canvas-note-engineer)
+7. [Cấu Trúc Thư Mục Plugin Độc Lập](#7-cấu-trúc-thư-mục-plugin-độc-lập)
+8. [Bộ 9 Công Cụ MCP Server (mcp/server.mjs)](#8-danh-mục-9-công-cụ-trong-mcp-server)
+9. [Hướng Dẫn Cài Đặt & Chạy Thực Nghiệm](#9-hướng-dẫn-cài-đặt--thực-nghiệm-nhanh)
+10. [Khung Đề Cương Nghiên Cứu & Báo Cáo Đồ Án (7 Chương)](#10-khung-đề-cương-thuyết-minh-đồ-án-tốt-nghiệp)
 
 ---
 
-## 🧭 1. Giới Thiệu & Triết Lý Cốt Lõi
+## 1. Giới Thiệu & Triết Lý Cốt Lõi
 
 Hầu hết các giải pháp áp dụng Generative AI trong kiểm thử hiện nay chỉ dừng lại ở mức nông: *"Sinh test case từ user story"* hoặc *"Đọc log và phỏng đoán lỗi"*. Cách tiếp cận này thường xuyên gặp phải hiện tượng **AI Hallucination (ảo giác)** và **thiếu ngữ cảnh thực thi (Execution Context)**.
 
@@ -78,109 +79,49 @@ flowchart TD
 
 ---
 
-## 🎯 2. Hệ Thống Này Dùng Khi Nào? Có Phải Chỉ Là Test E2E?
+## 2. Giá Trị Cốt Lõi & Bảng Đối Chiếu Công Cụ
 
-> [!IMPORTANT]
-> ### 🛡️ Làm Rõ Bản Chất Cốt Lõi
-> Đây **KHÔNG PHẢI** là một công cụ chạy Test E2E đơn thuần như Cypress hay Playwright viết script tay.  
-> Đây là **Hệ Thống Trợ Lý Kiểm Thử & Điều Tra Sự Cố Toàn Trình (Full-Stack SRE Testing Agent)** vận hành theo 4 trụ cột tự chủ:
->
-> 1. 🧠 **Tự động lập kế hoạch & tự thao tác**: Tự phân tích yêu cầu nghiệp vụ, mở trình duyệt, tự bấm nút, tự điền form và thử nghiệm các kịch bản biên (Edge cases) mà không cần con người viết sẵn từng dòng script `page.click()`.
-> 2. 🔍 **Xuyên thủng rào cản UI ➔ Backend**: Khi một ca test bị fail (màn hình đơ, HTTP 500), Agent không dừng lại ở việc quăng log lỗi giao diện, mà **tự động lần ngược callstack vào tận dòng code Backend vi phạm** (`orders.service.ts:142`).
-> 3. **Tự quản trị môi trường thực thi**: Tự động phát hiện xung đột, quét và tiêu diệt triệt để các tiến trình zombie chiếm dụng cổng (`listen EADDRINUSE`), tự khởi động phiên debug Node Inspect (`CDP`).
-> 4. 📚 **Lưu trữ tri thức & Miễn dịch hồi quy**: Tự động xuất chuỗi nguyên nhân lỗi ra đồ thị trực quan trên **Canvas Note Engineer** và **tự động sinh file Regression Test suite** để bảo vệ hệ thống vĩnh viễn trong CI/CD.
+Trong phát triển phần mềm hiện đại, kiểm thử ứng dụng web thường gặp phải 4 rào cản lớn:
+1. **Chi phí viết test thủ công quá cao**: Kỹ sư phải code từng dòng script Playwright/Cypress cho hàng trăm giao diện.
+2. **Đứt gãy giữa Giao diện và Mã nguồn**: Khi API trả về HTTP 500 hoặc giao diện bị đơ, công cụ E2E chỉ chụp được ảnh màn hình hoặc log console, không thể chỉ ra dòng code backend bị lỗi logic.
+3. **Gián đoạn môi trường do kẹt cổng**: Việc khởi động và dừng server liên tục dẫn đến lỗi `listen EADDRINUSE`, ngắt quãng mạch làm việc của lập trình viên.
+4. **Tri thức sự cố bị lãng quên**: Các lỗi sau khi sửa không được chuẩn hóa thành tài liệu tri thức (RAG) và không tự động chuyển hóa thành test phòng ngừa hồi quy (Regression Test).
 
----
+Hệ thống **Agentic TestOps** giải quyết triệt để các rào cản này bằng cách kết hợp AI Agent với giao thức CDP và hệ thống bản đồ số Canvas:
 
-### 💼 5 Use Cases Thực Chiến — Khi Nào Bạn Sẽ Dùng Hệ Thống Này?
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                              5 USE CASES THỰC CHIẾN                          │
-├──────────────────────────────────────────────────────────────────────────────┤
-│ 1. Lỗi "Bí Ẩn": Nút bấm đơ, giao diện trắng, API văng 500 không rõ lý do     │
-│ 2. Trinh Sát Cấp Tốc: Sanity / Smoke Test trước khi Merge PR hoặc Demo đồ án │
-│ 3. Trị "Bệnh Kinh Niên": Cổng bị chiếm dụng (EADDRINUSE 4201, 9229)          │
-│ 4. Bắt Lỗi Race Condition & Đồng Thời: 2 người cùng mua sản phẩm cuối cùng    │
-│ 5. Báo Cáo Trực Quan Cho Hội Đồng & Tech Lead: Đồ thị hóa nguyên nhân Canvas │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-#### 📌 Use Case 1: Điều Tra Lỗi "Nút Đơ & Màn Hình Trắng" (The Silent Freeze & Hidden HTTP 500)
-- **Bối cảnh**: Bạn vừa viết xong màn hình thanh toán. Khi bấm nút *"Áp dụng voucher"* hoặc *"Xác nhận đặt hàng"*, vòng tròn loading quay tròn rồi biến mất, màn hình đứng yên, không có thông báo gì hiển thị.
-- **Nỗi đau cách làm cũ**: Bạn phải mở F12 Network xem request nào bị đỏ, copy cURL sang Postman thử lại, mở terminal backend tìm giữa rừng log hàng ngàn dòng, chèn `console.log` khắp nơi rồi restart server 3-4 lần. Tốn từ **30 đến 45 phút**.
-- **Khi có Agent**: Bạn chỉ cần ra lệnh:
-  > *"/debug 'Kiểm tra nút áp voucher tại trang giỏ hàng với mã GIAM50'"*
-  Agent mở Chromium, tự click, phát hiện request `POST /orders/voucher` trả về mã lỗi 500, chụp ảnh màn hình, soi thẳng vào Node Inspect và báo ngay:
-  > *"Lỗi tại file `orders.service.ts` dòng 142: Biến `sellerRank` bị `null` khi đơn hàng có trạng thái đàm phán giá, dẫn đến Uncaught TypeError."*  
-  ⏱️ **Thời gian xử lý: Chưa đầy 30 giây.**
-
-#### 📌 Use Case 2: Trinh Sát Thần Tốc Trước Giờ Merge PR / Giờ Demo Đồ Án (Pre-Release Sanity Fire-Drill)
-- **Bối cảnh**: Còn 15 phút nữa là đến giờ báo cáo tiến độ với Giảng viên hoặc chuẩn bị tạo Pull Request lên nhánh `main`. Bạn vừa refactor lại một hàm tính thuế/phí ở Backend và rất lo lắng không biết có làm "vỡ" giao diện đặt hàng hay giỏ hàng của Frontend hay không.
-- **Nỗi đau cách làm cũ**: Không đủ thời gian để ngồi click tay bấm lại từ đầu 20-30 bước (Đăng nhập ➔ Tìm hàng ➔ Thêm giỏ ➔ Điền địa chỉ ➔ Chọn thanh toán). Bỏ qua thì run sợ bug xuất hiện đúng lúc demo trước hội đồng.
-- **Khi có Agent**: Bạn ra lệnh:
-  > *"Chạy một đợt sanity test luồng mua hàng hoàn chỉnh từ đăng nhập đến checkout ở chế độ headless."*
-  Agent âm thầm kích hoạt Playwright chạy với tốc độ cực đại, tự động kiểm tra tính toàn vẹn của 100% các nút bấm và phản hồi HTTP, trả về kết quả *"All Green"* hoặc chỉ ra chính xác màn hình nào bị lỗi giao diện.
-
-#### 📌 Use Case 3: Giải Cứu "Cổng Kẹt" Sau Khi Tắt Server Đột Ngột (Zombie Port Exorcism)
-- **Bối cảnh**: Bạn vừa nhấn `Ctrl + C` để dừng server Node.js hoặc chuyển branch git. Khi gõ `pnpm dev` để bật lại, màn hình báo đỏ lòm:  
-  `Error: listen EADDRINUSE: address already in use :::4201, :::9229`.
-- **Nỗi đau cách làm cũ**: Mở PowerShell, gõ `netstat -ano | findstr :4201`, đọc từng dòng tìm PID (ví dụ `14220`), rồi gõ tiếp `taskkill /PID 14220 /F`. Nếu kẹt 3 cổng thì phải gõ 6 lệnh thủ công, rất ức chế và làm ngắt quãng mạch suy nghĩ lập trình.
-- **Khi có Agent**: Chỉ cần gõ:
-  > *"/debug status" hoặc "Dọn dẹp cổng"*
-  Agent tự động quét danh sách cổng chuẩn (`3000, 4200, 4201, 8080, 9229, 9230`), phát hiện ngay tiến trình con bị treo ngầm và force-kill tức thì trong **1 giây**.
-
-#### 📌 Use Case 4: Phát Hiện Lỗi Bất Đồng Bộ & Tranh Chấp Dữ Liệu (Concurrency & Race Condition)
-- **Bối cảnh**: Hai khách hàng cùng truy cập vào 1 sản phẩm khuyến mãi chỉ còn đúng 1 sản phẩm trong kho và cùng nhấn nút *"Mua ngay"* tại cùng một giây. Hoặc một khách hàng nôn nóng click đúp liên tục vào nút *"Thanh toán"*.
-- **Nỗi đau cách làm cũ**: Bằng tay người thường không thể click nhanh chuẩn xác từng mili-giây để tái hiện lỗi race condition. Lỗi này thường bị bỏ lọt khi kiểm thử thủ công và chỉ phát nổ khi dự án chạy thật ngoài đời (Production).
-- **Khi có Agent**: Bạn yêu cầu Agent thiết lập 2 phiên Browser Playwright song song, đồng thời bắn 2 thao tác checkout cùng một thời điểm microsecond. Agent phát hiện hiện tượng số lượng tồn kho bị âm (-1) hoặc khách hàng bị trừ tiền 2 lần, từ đó cảnh báo lập trình viên cần bổ sung **Pessimistic Advisory Lock** hoặc **Database Transaction Isolation**.
-
-#### 📌 Use Case 5: Xuất Báo Cáo Tri Thức Cho Hội Đồng Chấm Đồ Án / Tech Lead (Visual Post-Mortem)
-- **Bối cảnh**: Khi bảo vệ đồ án tốt nghiệp hoặc họp hậu kiểm sự cố (Post-Mortem), nếu bạn chỉ chiếu màn hình dòng chữ console log đen trắng dài dằng dặc thì giảng viên và sếp sẽ rất khó theo dõi và đánh giá thấp năng lực của bạn.
-- **Nỗi đau cách làm cũ**: Phải tự mở Draw.io, Figma hay PowerPoint ngồi vẽ tay từng ô vuông, mũi tên mất cả buổi tối.
-- **Khi có Agent**: Sau khi kết thúc điều tra, Agent gọi `debug_export_rag_report`. File `.canvas.json` được tạo ra tức thì. Bạn chỉ cần kéo file vào **[canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)**:
-  - Một bản đồ số trực quan mở ra trong **5ms** trên giao diện vô cực.
-  - Khối thẻ Đỏ: Triệu chứng lỗi UI kèm ảnh chụp màn hình.
-  - Khối thẻ Cam: Endpoint và mã lỗi HTTP 500.
-  - Khối thẻ Vàng: File và dòng code Backend bị sai logic (`orders.service.ts:142`).
-  - Khối thẻ Xanh: Đoạn code vá và test hồi quy tự động.
-  - Hội đồng chấm thi nhìn vào là bị thuyết phục hoàn toàn bởi tính minh bạch và tính thực chứng cao!
-
----
-
-### 📊 Bảng Đối Chiếu: Agentic Test Ops vs Công Cụ Truyền Thống
+### Bảng Đối Chiếu: Agentic Test Ops vs Công Cụ Truyền Thống
 
 | Tiêu Chí So Sánh | Cypress / Playwright viết tay | Postman / Swagger UI | Agentic Test Ops (Plugin này) |
 |---|---|---|---|
 | **Người tạo kịch bản** | Lập trình viên phải code từng dòng | Lập trình viên tự gõ từng payload | **AI tự lập kế hoạch và tự thực thi** |
-| **Khi kiểm thử thất bại** | Báo đỏ terminal, chụp 1 ảnh UI | Báo status 500 không rõ dòng code | **Lần ngược callstack vào tận file Backend vi phạm** |
+| **Khi kiểm thử thất bại** | Báo đỏ terminal, chụp 1 ảnh UI | Báo status 500 không rõ dòng code | **Lần ngược callstack vào tận file Backend vi phạm qua CDP** |
 | **Xử lý đụng độ Port** | Bị crash `EADDRINUSE`, phải sửa tay | Không hỗ trợ | **Tự động quét cổng và diệt tiến trình zombie** |
 | **Bảo lưu tri thức** | Báo cáo HTML trôi qua rồi mất | Lưu bộ sưu tập request | **Lưu tài liệu RAG và nạp đồ thị trực quan Canvas** |
 | **Phòng ngừa tái phát** | Phải tự viết thêm test hồi quy | Không tự động | **Tự động sinh file Regression Test suite** |
 
 ---
 
-## ☕ 3. Sổ Tay Vận Hành: Kịch Bản Chính & Phụ Trợ
+## 3. Sổ Tay Vận Hành: Kịch Bản Chính & Các Chế Độ Tương Tác
 
-Hệ thống được thiết kế xoay quanh triết lý **Agent-First**: Trọng tâm là **Kịch Bản Chính Chạy Qua Đêm (Autonomous Overnight SRE Sweep)** giúp giải phóng 100% thời gian cho lập trình viên, kết hợp cùng **Các Kịch Bản Tương Tác Ban Ngày** khi cần kiểm thử cục bộ.
+Hệ thống được thiết kế theo mô hình **Agent-First**: Trọng tâm là **Kịch Bản Chính Quét Lỗi Qua Đêm (Autonomous Overnight SRE Sweep)** giúp giải phóng 100% thời gian cho lập trình viên, đi kèm các **Chế Độ Tương Tác Ban Ngày** phục vụ code tính năng và gỡ lỗi cục bộ.
 
 ```mermaid
 flowchart TD
-    NIGHT(["🌙 23:00 - Dev kích hoạt /debug overnight và đi ngủ"]) --> AUTO["🤖 Agent tự động vận hành xuyên đêm (Unattended Loop)"]
-    AUTO --> ENV["1️⃣ Quản trị môi trường: Quét dọn port kẹt & Khởi động Server với Inspect"]
-    ENV --> SWEEP["2️⃣ Duyệt qua toàn bộ 6 Flow nghiệp vụ (Auth, Catalog, Cart, Voucher, Payout, Dispute)"]
-    SWEEP --> FUZZ["3️⃣ Fuzzing dữ liệu biên & Playwright Browser Simulation"]
+    NIGHT(["23:00 - Dev kích hoạt /debug overnight và đi ngủ"]) --> AUTO["Agent tự động vận hành xuyên đêm (Unattended Loop)"]
+    AUTO --> ENV["1. Quản trị môi trường: Quét dọn port kẹt & Khởi động Server với Inspect"]
+    ENV --> SWEEP["2. Duyệt qua toàn bộ 6 Flow nghiệp vụ (Auth, Catalog, Cart, Voucher, Payout, Dispute)"]
+    SWEEP --> FUZZ["3. Fuzzing dữ liệu biên & Playwright Browser Simulation"]
     FUZZ --> CHECK{"Phát hiện lỗi?\n(Crash / HTTP 500)"}
     
-    CHECK -->|"Pass 200 OK ✅"| PASS["Ghi nhận Green & Đo lường Latency"]
-    CHECK -->|"Văng lỗi ❌"| CDP["4️⃣ Kết nối CDP WebSocket (ws://127.0.0.1:9229)\nĐóng băng tiến trình & Soi trực tiếp biến trên RAM (Heap)"]
+    CHECK -->|"Pass 200 OK"| PASS["Ghi nhận Green & Đo lường Latency"]
+    CHECK -->|"Văng lỗi"| CDP["4. Kết nối CDP WebSocket (ws://127.0.0.1:9229)\nĐóng băng tiến trình & Soi trực tiếp biến trên RAM (Heap)"]
     
-    CDP --> RCA["5️⃣ Bóc tách Callstack & Xác định nguyên nhân gốc rễ (RCA)"]
-    RCA --> REG["6️⃣ Tự động tạo bài kiểm thử phòng ngừa hồi quy (Regression Test)"]
+    CDP --> RCA["5. Bóc tách Callstack & Xác định nguyên nhân gốc rễ (RCA)"]
+    RCA --> REG["6. Tự động tạo bài kiểm thử phòng ngừa hồi quy (Regression Test)"]
     PASS --> NEXT["Chuyển sang Flow tiếp theo"]
     REG --> NEXT
-    NEXT --> REPORT["7️⃣ 05:30 - Xuất Báo Cáo Kép (RAG .md + Multi-Cluster .canvas.json)"]
-    REPORT --> MORNING(["☀️ 07:00 - Dev thức dậy: Mở Canvas Note Engineer kiểm tra toàn bộ hệ thống!"])
+    NEXT --> REPORT["7. 05:30 - Xuất Báo Cáo Kép (RAG .md + Multi-Cluster .canvas.json)"]
+    REPORT --> MORNING(["07:00 - Dev thức dậy: Mở Canvas Note Engineer kiểm tra toàn bộ hệ thống"])
 
     style NIGHT fill:#1f2937,stroke:#9ca3af,color:#fff
     style AUTO fill:#e8f4fd,stroke:#17a2b8
@@ -196,25 +137,25 @@ flowchart TD
 
 ---
 
-### 🌟 3.1. KỊCH BẢN CHÍNH: Autonomous Overnight SRE Sweep (Quét Lỗi Xuyên Đêm 100% Tự Động)
+### 3.1. Kịch Bản Chính: Autonomous Overnight SRE Sweep (Quét Lỗi Xuyên Đêm 100% Tự Động)
 
-Đây là năng lực cốt lõi định hình nên giá trị của đề tài: **Bạn chỉ cần ra một lệnh duy nhất trước khi rời bàn làm việc hoặc trước khi đi ngủ, Agent sẽ tự động trinh sát xuyên đêm qua toàn bộ các luồng nghiệp vụ (Multi-Flow), tự gắn CDP bắt lỗi trên RAM, và sáng hôm sau nạp sẵn toàn bộ sơ đồ lỗi đa cụm lên Canvas!**
+Đây là năng lực cốt lõi định hình nên giá trị của đề tài: **Bạn chỉ cần ra một lệnh duy nhất trước khi rời bàn làm việc hoặc trước khi đi ngủ, Agent sẽ tự động trinh sát xuyên đêm qua toàn bộ các luồng nghiệp vụ (Multi-Flow), tự gắn CDP bắt lỗi trên RAM, và sáng hôm sau nạp sẵn toàn bộ sơ đồ lỗi đa cụm lên Canvas.**
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Dev as 👨‍💻 Developer (Đi ngủ 🌙)
-    participant Agent as 🤖 Autonomous AI Agent
-    participant Browser as 🎭 Playwright E2E Runner
-    participant CDP as 🔬 CDP Debugger Client (ws://127.0.0.1:9229)
-    participant Canvas as 🎨 Canvas Note Engineer Report
+    actor Dev as Developer (Đi ngủ)
+    participant Agent as AI Agent Controller
+    participant Browser as Playwright Runner
+    participant CDP as CDP Debugger Client (ws://127.0.0.1:9229)
+    participant Canvas as Canvas Note Engineer
 
     Dev->>Agent: /debug overnight --flows "auth,products,cart,checkout,payout,dispute"
     Note over Dev,Agent: Bạn tắt đèn đi ngủ, Agent tự động chạy xuyên đêm (00:00 - 05:30)
     loop Lặp qua từng Flow nghiệp vụ
         Agent->>Browser: Kích hoạt luồng E2E với dữ liệu biên (Fuzzing / Edge cases)
         alt Flow thành công (200 OK)
-            Browser-->>Agent: Test passed, đo latency & ghi nhận Green ✅
+            Browser-->>Agent: Test passed, đo latency & ghi nhận Green
         else Phát hiện HTTP 500 hoặc Crash giao diện
             Browser-->>Agent: Bắt được HTTP 500 & Console Error
             Agent->>CDP: Kết nối ws://127.0.0.1:9229 -> Đóng băng tiến trình Node trên RAM
@@ -223,10 +164,10 @@ sequenceDiagram
         end
     end
     Agent->>Canvas: Tự động xuất OVERNIGHT-SWEEP-<date>.md & .canvas.json
-    Canvas-->>Dev: Sáng thức dậy ☀️: Đồ thị tổng hợp toàn bộ lỗi của mọi flow đã sẵn sàng!
+    Canvas-->>Dev: Sáng thức dậy: Đồ thị tổng hợp toàn bộ lỗi của mọi flow đã sẵn sàng
 ```
 
-#### 🚀 Cách kích hoạt kiểm thử qua đêm:
+#### Cách kích hoạt kiểm thử qua đêm:
 ```bash
 # Chạy quét qua đêm toàn bộ các flow nghiệp vụ trọng yếu
 /debug overnight --flows "auth,products,cart,checkout,vouchers,payout,disputes"
@@ -234,7 +175,7 @@ sequenceDiagram
 Hoặc ra lệnh bằng ngôn ngữ tự nhiên trong cửa sổ Chat:
 > *"Hãy chạy kiểm thử tự động toàn bộ các flow nghiệp vụ qua đêm. Tự động kết nối CDP để bắt biến trên RAM khi có lỗi và sáng mai xuất báo cáo tổng hợp tất cả các flow lên Canvas Note Engineer."*
 
-#### ☀️ Thành quả nhận được vào sáng hôm sau:
+#### Thành quả nhận được vào sáng hôm sau:
 Khi bạn thức dậy vào 7:00 sáng, hệ thống đã tự động xuất sẵn cặp file tri thức:
 1. **File Báo Cáo Tổng Hợp RAG (`knowledge/OVERNIGHT-SWEEP-<date>.md`)**:
    - **Bảng ma trận tổng hợp (Multi-Flow Health Matrix)**: Thống kê 6 flow nghiệp vụ, tỷ lệ Pass/Fail (ví dụ: `4/6 Flows Passed - 66.7%`), thời gian phản hồi trung bình (latency).
@@ -245,45 +186,45 @@ Khi bạn thức dậy vào 7:00 sáng, hệ thống đã tự động xuất s�
 2. **Bản Đồ Canvas Đa Cụm (`knowledge/OVERNIGHT-SWEEP-<date>.canvas.json`)**:
    - Tự động đồng bộ sang `plugin-canvas-engineer/rag/`.
    - Khi mở Canvas Note Engineer, bạn sẽ thấy đồ thị vô cực phân chia thành các Sub-Cluster rõ ràng:
-     - 📊 **Cụm Tổng Quan (SRE Executive Overview & KPIs)**: Tỷ lệ sống sót, tổng số ca kiểm thử (50/52 passed).
-     - ✅ **Cụm Flow Đăng Nhập & Bảo Mật (Auth Flow)**: Badge Xanh Emerald (`test_case_passed`).
-     - ✅ **Cụm Flow Danh Mục Sản Phẩm (Catalog Flow)**: Badge Xanh Emerald (`test_case_passed`).
-     - ✅ **Cụm Flow Giỏ Hàng (Cart Flow)**: Badge Xanh Emerald (`test_case_passed`).
-     - ❌ **Cụm Flow Áp Mã Voucher (Voucher Flow)**: Badge Đỏ Rose (`test_case_failed`), Badge Beetle Bug (`root_cause_defect`) nối thẳng vào `orders.service.ts:142`, Badge Cyan (`playwright_trace`) và Badge Tím (`regression_shield`).
-     - ❌ **Cụm Flow Quyết Toán Phí (Payout Engine Flow)**: Badge Đỏ Rose (`test_case_failed`) nối vào lỗi tính toán BigInt tại `payout.engine.ts:88`.
-     - ✅ **Cụm Flow Khiếu Nại & Ký Quỹ (Dispute Flow)**: Badge Xanh Emerald (`test_case_passed`).
+     - **Cụm Tổng Quan (SRE Executive Overview & KPIs)**: Tỷ lệ sống sót, tổng số ca kiểm thử (50/52 passed).
+     - **Cụm Flow Đăng Nhập & Bảo Mật (Auth Flow)**: Badge Xanh Emerald (`test_case_passed`).
+     - **Cụm Flow Danh Mục Sản Phẩm (Catalog Flow)**: Badge Xanh Emerald (`test_case_passed`).
+     - **Cụm Flow Giỏ Hàng (Cart Flow)**: Badge Xanh Emerald (`test_case_passed`).
+     - **Cụm Flow Áp Mã Voucher (Voucher Flow)**: Badge Đỏ Rose (`test_case_failed`), Badge Beetle Bug (`root_cause_defect`) nối thẳng vào `orders.service.ts:142`, Badge Cyan (`playwright_trace`) và Badge Tím (`regression_shield`).
+     - **Cụm Flow Quyết Toán Phí (Payout Engine Flow)**: Badge Đỏ Rose (`test_case_failed`) nối vào lỗi tính toán BigInt tại `payout.engine.ts:88`.
+     - **Cụm Flow Khiếu Nại & Ký Quỹ (Dispute Flow)**: Badge Xanh Emerald (`test_case_passed`).
 
 ---
 
-### ⚡ 3.2. CÁC KỊCH BẢN TƯƠNG TÁC BAN NGÀY (Interactive Day-Time Workflows)
+### 3.2. Các Chế Độ Tương Tác Ban Ngày (Interactive Workflows)
 
-Trong giờ làm việc ban ngày, lập trình viên sử dụng các kịch bản tương tác nhanh phục vụ trực tiếp cho quá trình code tính năng và gỡ lỗi cục bộ:
+Trong giờ làm việc ban ngày, lập trình viên sử dụng các chế độ tương tác phục vụ trực tiếp cho quá trình code tính năng và gỡ lỗi cục bộ:
 
-#### 🔹 Kịch bản 1: Đầu ngày — Dọn dẹp cổng kẹt & Khởi động Server Debug
+#### Chế độ 1: Dọn dẹp cổng kẹt & Khởi động Server Debug
 Khi mở máy, các tiến trình từ hôm trước có thể đang treo cổng `4201`, `9229`:
 - **Bạn gõ vào Chat**:
   > *"Kiểm tra xem có cổng nào đang bị chiếm không, giải phóng các cổng inspect và bật api server ở chế độ debug."*
-- **Agent sẽ tự động gọi**:
+- **Agent tự động gọi**:
   1. `debug_status({ ports: [4200, 4201, 9229] })`
   2. `debug_kill_ports({ ports: [9229] })`
   3. `debug_start_server({ command: 'pnpm dev:api', inspectPort: 9229, app: 'api' })`
 - **Kết quả**: Server sẵn sàng với `--inspect=0.0.0.0:9229`, sạch sẽ, triệt tiêu hoàn toàn lỗi `EADDRINUSE`.
 
-#### 🔹 Kịch bản 2: Khi vừa code xong màn hình — Kiểm thử E2E tức thời không cần click tay
+#### Chế độ 2: Kiểm thử E2E tức thời khi vừa code xong tính năng
 Bạn vừa hoàn thành chức năng *"Áp dụng voucher giảm giá ở giỏ hàng"*:
 - **Bạn gõ vào Chat**:
   > *"/debug 'Mở trang http://localhost:4200/cart, click nút Áp dụng mã SALE100 và kiểm tra xem tổng tiền có cập nhật không'"*
-- **Agent sẽ tự động**:
+- **Agent tự động**:
   1. Mở Playwright Chromium (có thể xem trực tiếp giao diện tự động thao tác).
   2. Tìm selector, điền mã `SALE100`, click nút Submit.
   3. Nếu thành công: Đo lường thời gian phản hồi, trạng thái DOM.
   4. Nếu thất bại: Tự động chụp ảnh màn hình lưu vào `screenshots/` và chuyển sang bước điều tra chuyên sâu.
 
-#### 🔹 Kịch bản 3: Khi phát hiện Bug — Tự động tìm tận gốc dòng code lỗi bằng CDP
-Thay vì phải chèn `console.log` khắp nơi hoặc mò mẫm qua hàng chục file:
+#### Chế độ 3: Điều tra chuyên sâu & Soi biến RAM cho 1 Bug đơn lẻ
+Khi phát hiện một lỗi cụ thể:
 - **Bạn gõ vào Chat**:
   > *"Điều tra tại sao bấm áp mã lại bị lỗi 500 và chỉ cho tôi giá trị biến trên RAM."*
-- **Agent sẽ tự động**:
+- **Agent tự động**:
   1. Đọc lại Network Error từ Playwright: `POST /api/v1/orders/voucher -> 500`.
   2. Kết nối trực tiếp vào WebSocket Debugger (`ws://127.0.0.1:9229`) qua công cụ `debug_inspect_cdp`.
   3. Đóng băng tiến trình Node khi văng Uncaught Exception và đọc biến trên RAM heap:
@@ -296,23 +237,26 @@ Thay vì phải chèn `console.log` khắp nơi hoặc mò mẫm qua hàng chụ
      ```
   4. Định vị chính xác dòng code: `orders.service.ts:142` (Hàm `applyVoucher`) và đề xuất bản vá.
 
-#### 🔹 Kịch bản 4: Lập trình viên muốn tự tay Debug bằng VS Code (F5)
-Nếu đó là một thuật toán đặc thù và bạn muốn tự tay nhảy qua từng dòng lệnh (Human-in-the-Loop):
+#### Chế độ 4: Lập trình viên tự tay Debug F5 trên VS Code (Human-in-the-Loop)
+Nếu đó là một thuật toán đặc thù và bạn muốn tự tay nhảy qua từng dòng lệnh:
 1. Bạn không cần khởi động lại server.
 2. Mở file mã nguồn, đặt Breakpoint màu đỏ tại dòng mong muốn.
 3. Nhấn **F5** trên bàn phím (Profile *"Attach to Node Inspect"* cấu hình sẵn trong `vscode/launch.json`).
-4. VS Code lập tức gắn vào cổng `9229` đã được Agent mở sẵn để bạn tự tay thanh tra biến!
+4. VS Code lập tức gắn vào cổng `9229` đã được Agent mở sẵn để bạn tự tay thanh tra biến.
 
-#### 🔹 Kịch bản 5: Xuất Báo Cáo RAG & Vẽ Canvas Cho 1 Luồng Đơn Lẻ
+#### Chế độ 5: Xuất Báo Cáo RAG & Vẽ Canvas Cho 1 Luồng Đơn Lẻ
 Sau khi điều tra xong 1 lỗi đơn lẻ:
 - **Agent tự động gọi**: `debug_export_rag_report`
 - **Hệ thống tạo ra cặp file tri thức**:
   1. `knowledge/TS-ORDER-001-e2e-checkout-voucher-validation.md`
   2. `knowledge/TS-ORDER-001-e2e-checkout-voucher-validation.canvas.json` (3 Sub-Clusters)
-- Kéo vào **Canvas Note Engineer**: Đồ thị mở ra tức thì trong 5ms để bảo vệ đồ án hoặc báo cáo Tech Lead!
+- Kéo vào **Canvas Note Engineer**: Đồ thị mở ra tức thì trong 5ms để bảo vệ đồ án hoặc báo cáo Tech Lead.
+
 ---
 
-## 🌟 4. Kiến Trúc Hệ Thống 6 Tầng Toàn Trình
+---
+
+## 4. Kiến Trúc Hệ Thống 6 Tầng Toàn Trình
 
 Hệ thống được tổ chức thành 6 tầng công nghệ tách biệt, đảm bảo khả năng mở rộng và tính độc lập tuyệt đối:
 
@@ -332,41 +276,132 @@ Hệ thống được tổ chức thành 6 tầng công nghệ tách biệt, đ�
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 🔹 Tầng 1: Browser Automation & Trace (Playwright Engine)
+### Tầng 1: Browser Automation & Trace (Playwright Engine)
 - Tự động điều khiển trình duyệt qua giao thức Playwright Chromium.
 - Lắng nghe sự kiện tầng giao diện: `page.on('console')`, `page.on('pageerror')`.
 - Giám sát luồng mạng tầng HTTP: bắt toàn bộ yêu cầu trả về mã lỗi `4xx` hoặc `5xx`.
 - Tự động chụp ảnh màn hình lưu vào `screenshots/` làm bằng chứng nghiệm thu.
 
-### 🔹 Tầng 2: Source Code Trace & Debug Session (VS Code Inspect Engine)
+### Tầng 2: Source Code Trace & Debug Session (Node Inspect & CDP Engine)
 - Khởi động tiến trình backend với tham số `NODE_OPTIONS=--inspect=0.0.0.0:<port>`.
 - Giao tiếp trực tiếp với Node.js runtime thông qua **Chrome DevTools Protocol (CDP)**.
 - Quét cổng, phát hiện tiến trình zombie và force-kill tức thời để dập tắt lỗi `EADDRINUSE`.
 - Cho phép kỹ sư con người mở VS Code, nhấn **F5** để nhảy ngay vào breakpoint tại dòng code nghi vấn mà Agent đã khoanh vùng.
 
-### 🔹 Tầng 3: Root Cause Analysis (RCA Diagnostic Loop)
+### Tầng 3: Root Cause Analysis (RCA Diagnostic Loop)
 - Quy trình 4 bước chuẩn SRE (Site Reliability Engineering):
   1. **Triệu chứng (Symptom)**: Ghép đôi mã lỗi HTTP 500 với Uncaught TypeError trên Frontend.
   2. **Truy vết (Trace)**: Đọc ngược Callstack từ Controller ➔ Service ➔ Repository.
   3. **Chứng minh (Proof)**: Tạo kịch bản Replay/Mutation Test tối thiểu để kích hoạt lỗi có chủ đích.
   4. **Khắc phục tận gốc (Root Fix)**: Sửa tại đúng nguồn phát sinh dữ liệu, cấm vá ngọn (monkey-patch).
 
-### 🔹 Tầng 4: RAG Knowledge Memory (Bộ nhớ cho AI)
+### Tầng 4: RAG Knowledge Memory (Bộ nhớ ngữ nghĩa cho AI)
 - Lưu trữ mọi trường hợp lỗi đã được chứng minh vào thư mục `knowledge/` dưới dạng tài liệu Markdown chuẩn hóa.
 - Định dạng tri thức bao gồm: `bugId`, `flow`, `symptoms`, `sourceLocation`, `rootCause`, `verified` và đường dẫn ảnh bằng chứng.
 - Phục vụ cơ chế **Semantic Memory**: Trước khi test một module mới, Agent truy vấn RAG để học lại các lỗi từng xảy ra, từ đó chọn kịch bản biên (Edge Cases) sắc bén hơn.
 
-### 🔹 Tầng 5: Canvas Visual Map (Bản đồ số cho Lập trình viên)
+### Tầng 5: Canvas Visual Map (Bản đồ số cho Lập trình viên)
 - Trực quan hóa toàn bộ chuỗi mắt xích nguyên nhân - kết quả thành đồ thị tương tác kết nối với mã nguồn mở **[canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)**.
 - Đóng vai trò cầu nối **Human-in-the-loop**: Kỹ sư con người nhìn đồ thị 5 giây là nắm trọn vẹn lỗi mà không phải đọc hàng ngàn dòng log thô.
 
-### 🔹 Tầng 6: Tự Động Sinh Regression Test
+### Tầng 6: Tự Động Sinh Regression Test (Phòng ngừa hồi quy)
 - Agent tự động tổng hợp ca kiểm thử thành file test tự động độc lập (Vitest/Playwright).
 - Cam kết nguyên tắc **Zero Empty Tests**: Mọi test case đều chứa các câu lệnh assertion thực chất, kiểm tra giá trị biên, sẵn sàng gắn vào CI/CD Pipeline.
 
+
+
 ---
 
-## ⚡ 5. Quy Trình Phân Tích Sự Cố (Full-Stack RCA Loop)
+### 4.1. Cơ Chế Phối Hợp Giữa Frontend Playwright & Backend CDP Debugger
+
+Sự khác biệt cốt lõi giữa hệ thống này và các công cụ E2E truyền thống nằm ở **sự liên kết hai chiều giữa Giao diện người dùng (Black-box UI) và Bộ nhớ máy chủ (White-box Heap Memory)**:
+
+```mermaid
+flowchart LR
+    subgraph Frontend ["1. Frontend Engine (Playwright)"]
+        PW_RUN["debug_browser_run"]
+        DOM["Thao tác DOM / Form Fill"]
+        NET["Bắt HTTP 500 & Console Error"]
+        SCREEN["Chụp ảnh screenshots/"]
+    end
+
+    subgraph Channel ["2. Giao Thức Kết Nối"]
+        WS["WebSocket (ws://127.0.0.1:9229)"]
+        CDP_PROTO["Chrome DevTools Protocol (CDP)"]
+    end
+
+    subgraph Backend ["3. Backend Diagnostic Engine (CDP Client)"]
+        CDP_CLIENT["debug_inspect_cdp"]
+        FREEZE["Đóng băng khi Uncaught Exception"]
+        HEAP["evaluateOnCallFrame: Soi biến trên RAM"]
+        STACK["Bóc Callstack: file:dòng vi phạm"]
+    end
+
+    subgraph Synthesis ["4. Tổng Hợp Tri Thức Kép"]
+        RAG["Markdown RAG (.md)"]
+        CANVAS["Canvas Note Engineer (.canvas.json)"]
+    end
+
+    DOM --> NET
+    NET --> SCREEN
+    NET -.->|"Kích hoạt điều tra"| CDP_CLIENT
+    CDP_CLIENT --> WS --> CDP_PROTO
+    CDP_PROTO --> FREEZE --> HEAP --> STACK
+    SCREEN --> Synthesis
+    STACK --> Synthesis
+```
+
+#### Nguyên Lý Phối Hợp Kỹ Thuật Chi Tiết:
+
+1. **Frontend Engine (Playwright Chromium - `mcp/server.mjs`)**:
+   - Đóng vai trò mô phỏng người dùng: tự động mở URL, điền form, click nút và kích hoạt các kịch bản biên (Edge Cases).
+   - Thiết lập 3 bộ lắng nghe sự kiện đồng thời:
+     - `page.on('console')`: Bắt mọi lỗi và cảnh báo trên tab console trình duyệt.
+     - `page.on('pageerror')`: Bắt ngoại lệ JavaScript làm treo giao diện (Uncaught UI Crash).
+     - `page.on('response')`: Đón chặn mọi request mạng trả về mã lỗi HTTP >= 400.
+   - Khi có sự cố (ví dụ `POST /api/v1/orders/voucher -> 500`), Playwright ghi nhận triệu chứng và tự động lưu ảnh chụp màn hình bằng chứng vào `screenshots/`.
+
+   ```javascript
+   // Trích từ mcp/server.mjs: Bộ giám sát đa kênh của Playwright
+   page.on('response', (resp) => {
+     if (resp.status() >= 400) {
+       failedRequests.push({ url: resp.url(), status: resp.status() });
+     }
+   });
+   page.on('pageerror', (err) => {
+     pageErrors.push({ message: err.message, stack: err.stack });
+   });
+   ```
+
+2. **Backend Diagnostic Engine (CDP WebSocket Client - `mcp/cdp-client.mjs`)**:
+   - Khác với kiểm thử truyền thống chỉ dừng lại ở việc báo lỗi "API 500", Agent lập tức gọi công cụ `debug_inspect_cdp`.
+   - Client CDP truy vấn endpoint `http://127.0.0.1:9229/json/list` để lấy `webSocketDebuggerUrl` của Node.js runtime.
+   - Thiết lập kết nối native WebSocket và kích hoạt: `Debugger.setPauseOnExceptions({ state: 'uncaught' })`.
+   - Khi mã nguồn backend văng ngoại lệ (Unhandled Exception), tiến trình Node.js **lập tức bị đóng băng trên bộ nhớ RAM (Heap)** tại đúng thời điểm sập.
+   - Client CDP gửi lệnh `Debugger.evaluateOnCallFrame` để trích xuất trực tiếp giá trị của các biến trong callframe mà không cần chèn bất kỳ dòng `console.log` nào:
+
+   ```javascript
+   // Trích từ mcp/cdp-client.mjs: Soi biến trực tiếp trên RAM qua CDP
+   ws.send(JSON.stringify({
+     id: reqId++,
+     method: 'Debugger.evaluateOnCallFrame',
+     params: {
+       callFrameId: topFrame.callFrameId,
+       expression: 'sellerRank',
+       returnByValue: true
+     }
+   }));
+   // Giá trị trả về trực tiếp từ RAM: { type: 'object', value: null }
+   ```
+
+3. **Cơ Chế Bàn Giao Cho Kỹ Sư Con Người (Human-in-the-Loop qua VS Code - `vscode/launch.json`)**:
+   - Nhờ backend được Agent khởi động với cờ `--inspect=0.0.0.0:9229`, phiên gỡ lỗi luôn sẵn sàng.
+   - Khi kỹ sư muốn trực tiếp quan sát bằng mắt, chỉ cần đặt breakpoint trong mã nguồn và nhấn **F5** trên VS Code (`Attach to Node Inspect`).
+   - VS Code sẽ gắn trực tiếp vào tiến trình đang chạy mà **không cần khởi động lại server**, giúp tiết kiệm tối đa thời gian phát triển.
+
+---
+
+## 5. Quy Trình Phân Tích Sự Cố (Full-Stack RCA Loop)
 
 Biểu đồ tuần tự dưới đây thể hiện sự phối hợp nhịp nhàng giữa AI Agent, Trình duyệt E2E, Máy chủ Backend và Hệ thống Canvas:
 
@@ -401,7 +436,7 @@ sequenceDiagram
 
 ---
 
-## 🎨 6. Hệ Thống Tri Thức Kép (AI Memory + Canvas Note Engineer)
+## 6. Hệ Thống Tri Thức Kép (AI Memory + Canvas Note Engineer)
 
 Một trong những đóng góp sáng tạo nhất của đề tài là giải quyết trọn vẹn bài toán: **Làm sao để vừa có tri thức máy cho AI Agent học ở các lần test sau, vừa có bản đồ trực quan dễ hiểu cho lập trình viên con người thẩm định?**
 
@@ -435,7 +470,7 @@ Hệ thống thiết lập cơ chế **Dual-Sided Knowledge Loop (Vòng Lặp Tr
 
 ---
 
-### 🖥️ Trải Nghiệm Giao Diện Canvas Note Engineer Trông Như Thế Nào?
+### Trải Nghiệm Giao Diện Canvas Note Engineer Trông Như Thế Nào?
 
 Khi bạn nạp file `.canvas.json` vào **[justpassingByte/canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)**, bạn không phải nhìn vào những dòng JSON hay bảng log nhàm chán. Toàn bộ chuỗi sự cố bung ra thành một **bản đồ số tương tác (Interactive Visual Board)**:
 
@@ -454,7 +489,7 @@ Khi bạn nạp file `.canvas.json` vào **[justpassingByte/canvas-note-engineer
 
 ---
 
-### ⚡ Cơ Chế Xử Lý Kép (Hybrid Ingestion: AST vs LLM)
+### Cơ Chế Xử Lý Kép (Hybrid Ingestion: AST vs LLM)
 
 ```mermaid
 flowchart LR
@@ -487,7 +522,7 @@ flowchart LR
 
 ---
 
-## 📁 7. Cấu Trúc Thư Mục Plugin Độc Lập
+## 7. Cấu Trúc Thư Mục Plugin Độc Lập
 
 ```text
 debug-plugin/
@@ -528,7 +563,7 @@ debug-plugin/
 
 ---
 
-## 🛠️ 8. Danh Mục 9 Công Cụ Trong MCP Server
+## 8. Danh Mục 9 Công Cụ Trong MCP Server
 
 Tất cả công cụ giao tiếp qua chuẩn **Model Context Protocol (JSON-RPC 2.0 stdio)**:
 
@@ -544,7 +579,7 @@ Tất cả công cụ giao tiếp qua chuẩn **Model Context Protocol (JSON-RPC
 | **`debug_stop_server`** | `app`, `pid` | Dừng tiến trình dev server một cách an toàn và giải phóng tài nguyên. |
 | **`debug_run_test`** | `command`, `cwd`, `timeoutMs` | Chạy test đơn lẻ trong môi trường cô lập, bóc tách Callstack và mã thoát lỗi khi thất bại. |
 
-## 🚀 9. Hướng Dẫn Cài Đặt & Thực Nghiệm Nhanh
+## 9. Hướng Dẫn Cài Đặt & Thực Nghiệm Nhanh
 
 ### Bước 1: Thiết lập môi trường Playwright (Chỉ 1 lệnh)
 Mở terminal tại thư mục `debug-plugin/mcp`:
@@ -586,7 +621,7 @@ Mở terminal tại thư mục `debug-plugin/mcp`:
 
 ---
 
-## 🎓 10. Khung Đề Cương Thuyết Minh Đồ Án Tốt Nghiệp
+## 10. Khung Đề Cương Thuyết Minh Đồ Án Tốt Nghiệp
 
 Dành cho sinh viên/nhóm nghiên cứu đưa vào nội dung Báo cáo Đồ án Tốt nghiệp Kỹ sư:
 
@@ -614,5 +649,5 @@ Dành cho sinh viên/nhóm nghiên cứu đưa vào nội dung Báo cáo Đồ �
 
 ---
 
-## ⚖️ Giấy Phép & Bản Quyền
+## Giấy Phép & Bản Quyền
 Dự án được phát hành theo giấy phép **MIT License**. Tự do sử dụng, sửa đổi và tích hợp vào các công trình nghiên cứu khoa học, đồ án tốt nghiệp hoặc dự án công nghiệp.
