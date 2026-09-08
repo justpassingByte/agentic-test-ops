@@ -22,10 +22,9 @@
 5. [Quy Trình Phân Tích Sự Cố (Full-Stack RCA Loop)](#-5-quy-trình-phân-tích-sự-cố-full-stack-rca-loop)
 6. [Hệ Thống Tri Thức Kép (AI Memory + Canvas Note Engineer)](#-6-hệ-thống-tri-thức-kép-ai-memory--canvas-note-engineer)
 7. [Cấu Trúc Thư Mục Plugin](#-7-cấu-trúc-thư-mục-plugin-độc-lập)
-8. [Bộ Công Cụ MCP Server (`mcp/server.mjs`)](#-8-danh-mục-7-công-cụ-trong-mcp-server)
+8. [Bộ 9 Công Cụ MCP Server (`mcp/server.mjs`)](#-8-danh-mục-9-công-cụ-trong-mcp-server)
 9. [Hướng Dẫn Cài Đặt & Chạy Thực Nghiệm (1-Click)](#-9-hướng-dẫn-cài-đặt--thực-nghiệm-nhanh)
 10. [Khung Đề Cương Nghiên Cứu & Báo Cáo Đồ Án (7 Chương)](#-10-khung-đề-cương-thuyết-minh-đồ-án-tốt-nghiệp)
-11. [Gợi Ý Đặt Tên Repository & Đóng Gói](#-11-gợi-ý-đặt-tên-repository)
 
 ---
 
@@ -607,19 +606,6 @@ Dành cho sinh viên/nhóm nghiên cứu đưa vào nội dung Báo cáo Đồ �
 5. **Chương 5 — Thực nghiệm & Đánh giá**: Xây dựng môi trường thử nghiệm Web App thực tế (Trustbase E-Commerce Platform), Kỹ thuật tiêm lỗi chủ động (Mutation Testing / Injected Faults), Đo đạc thời gian phát hiện và định vị lỗi.
 6. **Chương 6 — Bàn luận & Phân tích Kết quả**: So sánh hiệu năng đối chứng, Đánh giá tỷ lệ False Positives / False Negatives, Phân tích tính ổn định của bài test hồi quy.
 7. **Chương 7 — Kết luận & Hướng phát triển**: Tổng kết kết quả đạt được, Giới hạn hiện tại và Định hướng phát triển tính năng Tự phục hồi mã nguồn (Self-Healing Code).
-
----
-
-## 🏷️ 11. Gợi Ý Đặt Tên Repository
-
-Các tên gợi ý dưới đây được thiết kế chuyên nghiệp, chuẩn phong cách quốc tế, phù hợp làm thương hiệu dự án mã nguồn mở và bảo vệ đồ án tốt nghiệp:
-
-| Lựa chọn | Tên Repository đề xuất | Ý nghĩa & Phong cách | Khuyên dùng cho |
-|---|---|---|---|
-| ⭐ **Lựa chọn 1** *(Khuyên dùng)* | **`agentic-test-ops`** | Phản ánh xu thế thời thượng: **AI Agent + TestOps** (Tự động hóa vận hành kiểm thử bằng Agent). Rất chuyên nghiệp trong CV và báo cáo đồ án. | Đồ án tốt nghiệp / CV kỹ sư phần mềm / GitHub Portfolio. |
-| 🚀 **Lựa chọn 2** | **`omni-trace-agent`** | Nhấn mạnh sức mạnh **Omni-Trace** (Trinh sát toàn năng: Browser DOM + HTTP Network + Node.js Callstack + Visual Canvas). | Bài báo khoa học / Giới thiệu tính năng kỹ thuật sâu. |
-| 🎨 **Lựa chọn 3** | **`canvas-test-agent`** | Tạo sự gắn kết thương hiệu hoàn hảo với hệ sinh thái đối tác **`canvas-note-engineer`** (Bộ đôi: Canvas Note + Canvas Test). | Dự án nằm trong hệ sinh thái Canvas mở rộng. |
-| 🛡️ **Lựa chọn 4** | **`sentinel-debug-mcp`** | Mang hình tượng người gác cổng thông minh (Sentinel), nhấn mạnh chuẩn giao thức **Model Context Protocol (MCP)**. | Công bố trên các chợ Plugin MCP (Smithery / Glama). |
 
 ---
 
