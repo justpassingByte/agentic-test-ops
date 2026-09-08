@@ -448,74 +448,170 @@ sequenceDiagram
 
 Một trong những đóng góp sáng tạo nhất của đề tài là giải quyết trọn vẹn bài toán: **Làm sao để vừa có tri thức máy cho AI Agent học ở các lần test sau, vừa có bản đồ trực quan dễ hiểu cho lập trình viên con người thẩm định?**
 
-Hệ thống thiết lập cơ chế **Dual-Sided Knowledge Loop (Vòng Lặp Tri Thức Kép)**:
+```mermaid
+flowchart TD
+    BUG["Phát hiện & Chứng minh Defect\n(Tracing Kép UI Playwright + RAM Backend)"] --> EXPORT["Tool: debug_export_rag_report / debug_export_overnight_report"]
+    
+    EXPORT -->|"1. Xuất file Markdown RAG"| RAG["knowledge/*.md\n(Bản thể học lỗi có cấu trúc)\n- Root Cause & In-Memory State\n- Automated Regression Spec"]
+    EXPORT -->|"2. Xuất file Canvas JSON"| CANVAS_JSON["knowledge/*.canvas.json\n(Chuẩn SpawnClusterPayload)\n- 3 hoặc 7 Sub-Clusters\n- 5 Loại TestOps Badges & Edges"]
 
-```
-                            ┌───────────────────────────────┐
-                            │    PHÁT HIỆN & CHỨNG MINH BUG │
-                            │     (Bằng Chứng Tracing Kép)  │
-                            └───────────────┬───────────────┘
-                                            │
-                                            ▼
-                        ┌───────────────────────────────────────┐
-                        │   Tool: debug_export_rag_report       │
-                        │       (Xuất song song 2 định dạng)    │
-                        └───────┬───────────────────────┬───────┘
-                                │                       │
-            ┌───────────────────┴───┐               ┌───┴───────────────────┐
-            ▼                       ▼               ▼                       ▼
-   [Định dạng .md RAG Doc]                 [Định dạng .canvas.json]
-   • Bản thể học lỗi có cấu trúc           • Chuẩn SpawnClusterPayload
-   • Ngôn ngữ tự nhiên & Code blocks       • Tọa độ Node (X, Y) & Edges
-            │                                       │
-            ▼                                       ▼
- 🧠 DÀNH CHO AI AGENT TRUY VẤN           👨‍💻 DÀNH CHO DEVELOPER TRÊN CANVAS
- • AI đọc lại trước mỗi đợt test         • Giao diện không gian vô cực (Infinite)
- • Nhớ các kịch bản lỗi từng xảy ra      • Phóng to/Thu nhỏ, kéo thả trực quan
- • Tự suy luận Edge Case biến thể        • Thẻ Đỏ (Lỗi) ➔ Vàng (Gốc) ➔ Xanh (Vá)
- • Giảm 100% tỷ lệ ảo giác               • Nạp tức thì trong 5ms qua bộ AST
+    RAG --> AI["AI Agent Semantic Memory\n- Nạp vào RAG / Vector DB\n- Đọc lại trước mỗi phiên test sau\n- Giảm 100% tỷ lệ ảo giác"]
+    
+    CANVAS_JSON --> SYNC["Tự động đồng bộ sang:\nplugin-canvas-engineer/rag/"]
+    SYNC --> AST["Local AST Parser (5ms, 0 Token LLM)"]
+    AST --> BOARD["Giao Diện Canvas Vô Cực (React Flow Board)\n- Thầy cô & Tech Lead xem trong 5 giây\n- Tương tác Zoom, Pan, Đọc Incident Dossier"]
+
+    style BUG fill:#fee2e2,stroke:#ef4444
+    style EXPORT fill:#e0e7ff,stroke:#6366f1
+    style RAG fill:#dbeafe,stroke:#3b82f6
+    style CANVAS_JSON fill:#fae8ff,stroke:#d946ef
+    style AI fill:#dbeafe,stroke:#3b82f6
+    style AST fill:#dcfce7,stroke:#22c55e
+    style BOARD fill:#fef3c7,stroke:#f59e0b
 ```
 
 ---
 
-### Trải Nghiệm Giao Diện Canvas Note Engineer: Cụm Kiểm Thử TestOps Chuyên Biệt
+### 6.1. Cấu Trúc Trực Quan Của Một Cụm Kiểm Thử Trên Canvas (Single-Flow Topology)
 
-Ứng dụng **[justpassingByte/canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)** đã được nâng cấp chính thức với **Loại Cụm Chuyên Dụng Cho Kiểm Thử & Chẩn Đoán Phần Mềm (Dedicated TestOps Cluster)**:
+Khi bạn nạp file báo cáo kiểm thử đơn luồng (ví dụ: `TS-ORDER-001-e2e-checkout-voucher-validation.canvas.json`) vào **[justpassingByte/canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)**, giao diện vô cực không hiển thị những dòng JSON khô khan, mà tự động dựng thành **3 Phân Cụm (Sub-Clusters)** liên kết chặt chẽ theo chuỗi nhân quả:
 
-1. **Bộ 5 Thẻ Pod Kiểm Thử Chuyên Biệt (5 Specialized TestOps Visual Pods)**:
-   - **`test_case_passed` (Checkmark Xanh Emerald)**: Dành cho các ca kiểm thử thành công, hiển thị thời gian phản hồi (latency), mã trạng thái HTTP 200 OK.
-   - **`test_case_failed` (Alert Bát Giác Đỏ Rose)**: Dành cho ca kiểm thử thất bại, bắt quả tang HTTP 500 hoặc ngoại lệ làm vỡ màn hình.
-   - **`playwright_trace` (Trình Duyệt & Con Trỏ Xanh Cyan)**: Dành cho các tương tác DOM tự động của Playwright, selector nút bấm, input form và ảnh chụp màn hình bằng chứng.
-   - **`root_cause_defect` (Bọ Cánh Cứng Beetle Đỏ/Vàng Amber)**: Dành cho nguyên nhân gốc rễ, trỏ đích danh file:dòng lỗi Backend (`orders.service.ts:142`), hàm vi phạm và **soi trực tiếp giá trị biến trên bộ nhớ RAM (Heap)** bắt được từ CDP (`sellerRank = null`).
-   - **`regression_shield` (Khiên Bảo Mật Tím Violet)**: Dành cho bộ kiểm thử phòng ngừa hồi quy tự động khóa cứng invariant trong CI/CD.
+```mermaid
+flowchart TD
+    subgraph MasterCluster ["Cụm Trực Quan: [TEST SUITE] TS-ORDER-001: E2E Checkout & Voucher Validation"]
+        
+        subgraph Sub1 ["📋 Sub-Cluster 1: Test Scenarios Matrix (Ma Trận Ca Kiểm Thử)"]
+            TC1["TC-01: Standard Checkout\n[test_case_passed]\nStatus: 200 OK | Latency: 145ms"]
+            TC2["TC-02: Percentage Voucher SALE10\n[test_case_passed]\nStatus: 200 OK | Latency: 190ms"]
+            TC3["TC-03: Voucher on Negotiated Order\n[test_case_failed]\nStatus: 500 Error | Latency: 315ms"]
+        end
 
-2. **Cấu Trúc Đa Phân Cụm (Multi-Sub-Cluster Topology)**:
-   - **Báo Cáo Đơn Luồng (Single-Flow)**: Tự động gom nhóm thành 3 Sub-Clusters:
-     - `sub_test_scenarios`: Ma trận kịch bản kiểm thử (Happy Path, Edge Cases).
-     - `sub_browser_trace`: Dấu vết tương tác trình duyệt Playwright & API Interception.
-     - `sub_defect_defense`: Phân tích nguyên nhân gốc rễ & Khiên phòng vệ hồi quy.
-   - **Báo Cáo Quét Xuyên Đêm (Overnight Multi-Flow)**: Tự động gom nhóm thành 7 Sub-Clusters (Cụm Tổng quan KPI + 6 Cụm riêng biệt cho từng Flow: Auth, Catalog, Cart, Voucher, Payout, Dispute).
+        subgraph Sub2 ["🎭 Sub-Cluster 2: Browser & Network Trace (Playwright)"]
+            PW["Playwright: DOM Action (/checkout)\n[playwright_trace]\nĐiền mã voucher & Click Apply\nScreenshot: screenshots/error.png"]
+            API["API Intercept: POST /orders/voucher\nStatus: 500 Internal Server Error\nConsole: Uncaught TypeError"]
+        end
 
-3. **Cơ Chế Nạp Siêu Tốc Bằng AST Cục Bộ (Local AST Ingestion: 5ms, 0 Token AI)**:
-   - Khi kéo file `.canvas.json` vào giao diện Canvas, hệ thống sử dụng bộ phân tích cú pháp AST cục bộ để dựng toàn bộ đồ thị chỉ trong **5 mili-giây**, không tiêu tốn bất kỳ token LLM nào.
-   - Hỗ trợ cuộn phóng to/thu nhỏ vô cực (Infinite Canvas), di chuyển các cụm thẻ mượt mà và kiểm tra trực quan ngay trước hội đồng bảo vệ đồ án!
+        subgraph Sub3 ["🔍 Sub-Cluster 3: Root Cause & Regression Defense"]
+            CDP["CDP RAM Heap Snapshot\nsellerRank: null\norder.isNegotiated: true\nvoucherAmount: 50000n"]
+            RC["Root Cause: orders.service.ts:142\n[root_cause_defect]\nHàm: applyVoucher()\nTypeError: Cannot read properties of undefined"]
+            REG["Regression Shield: suite.spec.ts\n[regression_shield]\nCI/CD Pipeline: Protected"]
+        end
+
+        TC3 ==>|"Kích hoạt lỗi UI"| PW
+        PW ==>|"Bắn request thất bại"| API
+        API ==>|"Kích hoạt CDP đóng băng RAM"| CDP
+        CDP ==>|"Chỉ điểm dòng code vi phạm"| RC
+        RC ==>|"Khóa bài test ngăn tái phát"| REG
+    end
+
+    style MasterCluster fill:#f8fafc,stroke:#94a3b8
+    style Sub1 fill:#eef2ff,stroke:#6366f1
+    style Sub2 fill:#ecfeff,stroke:#06b6d4
+    style Sub3 fill:#fff1f2,stroke:#f43f5e
+    style TC1 fill:#ecfdf5,stroke:#10b981
+    style TC2 fill:#ecfdf5,stroke:#10b981
+    style TC3 fill:#fff1f2,stroke:#f43f5e
+    style PW fill:#ecfeff,stroke:#06b6d4
+    style API fill:#fff1f2,stroke:#f43f5e
+    style CDP fill:#fef3c7,stroke:#f59e0b
+    style RC fill:#fff1f2,stroke:#f43f5e
+    style REG fill:#f5f3ff,stroke:#8b5cf6
+```
+
+#### Giải Thích Ý Nghĩa 3 Sub-Clusters Trên Bàn Làm Việc:
+1. **Sub-Cluster 1: Ma Trận Ca Kiểm Thử (Test Scenarios Matrix)**:
+   - Liệt kê toàn bộ các kịch bản kiểm thử đã thực thi (Happy Path, Edge Case).
+   - Thẻ xanh biểu thị ca test vượt qua (`test_case_passed`), thẻ đỏ báo hiệu ca test gặp lỗi biên (`test_case_failed`).
+2. **Sub-Cluster 2: Dấu Vết Trình Duyệt & Mạng (Browser & Network Trace)**:
+   - Ghi lại chính xác hành động click chuột, điền form của Playwright kèm ảnh chụp màn hình lúc giao diện bị treo.
+   - Bắt trọn vẹn request API `POST /orders/voucher` trả về mã lỗi 500.
+3. **Sub-Cluster 3: Phân Tích Gốc Rễ & Phòng Thủ Hồi Quy (RCA & Defense)**:
+   - **Thẻ CDP RAM Heap**: Đọc ra giá trị biến sống trên RAM (`sellerRank = null`) mà không cần `console.log`.
+   - **Thẻ Root Cause Defect**: Con bọ đỏ trỏ thẳng vào `orders.service.ts:142` và hàm vi phạm `applyVoucher`.
+   - **Thẻ Regression Shield**: Khiên tím đại diện cho file test hồi quy độc lập bảo vệ CI/CD.
 
 ---
 
-### Cơ Chế Xử Lý Kép (Hybrid Ingestion: AST vs LLM)
+### 6.2. Bản Đồ Tổng Thể Quét Xuyên Đêm (Overnight Multi-Flow Canvas Board)
+
+Khi chạy qua đêm kịch bản `/overnight`, file `OVERNIGHT-SWEEP-<date>.canvas.json` tạo ra một **bản đồ toàn diện gồm 7 Phân Cụm** trên không gian vô cực:
+
+```mermaid
+flowchart TD
+    OVERVIEW["📊 SRE Executive Overview: 2026-09-09\n4/6 Flows Passed (66.7%) | 50/52 Test Cases\nCDP In-Memory Heap: Active\nThời gian quét: 00:00 - 05:30"]
+
+    subgraph GreenFlows ["Các Flow Hoạt Động Ổn Định (Màu Xanh Emerald)"]
+        F1["✅ FLOW-01: Authentication & RBAC\n[test_case_passed]\n8/8 Cases Passed | 112ms"]
+        F2["✅ FLOW-02: Catalog & Taxonomy\n[test_case_passed]\n12/12 Cases Passed | 145ms"]
+        F3["✅ FLOW-03: Cart & Draft Orders\n[test_case_passed]\n6/6 Cases Passed | 98ms"]
+        F6["✅ FLOW-06: Escrow & Disputes\n[test_case_passed]\n7/7 Cases Passed | 165ms"]
+    end
+
+    subgraph DefectFlows ["Các Flow Phát Hiện Defect (Màu Đỏ Rose)"]
+        F4["❌ FLOW-04: Voucher & Discount\n[test_case_failed] - HTTP 500"]
+        F4_CDP["CDP RAM: sellerRank = null"]
+        F4_CODE["Root Cause: orders.service.ts:142\n[root_cause_defect]"]
+
+        F5["❌ FLOW-05: Payout & Tax Engine\n[test_case_failed] - HTTP 500"]
+        F5_CDP["CDP RAM: rawRate = NaN"]
+        F5_CODE["Root Cause: payout.engine.ts:88\n[root_cause_defect]"]
+    end
+
+    OVERVIEW --> F1
+    OVERVIEW --> F2
+    OVERVIEW --> F3
+    OVERVIEW --> F6
+    OVERVIEW ==> F4
+    OVERVIEW ==> F5
+
+    F4 --> F4_CDP --> F4_CODE
+    F5 --> F5_CDP --> F5_CODE
+
+    style OVERVIEW fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+    style GreenFlows fill:#f0fdf4,stroke:#22c55e
+    style DefectFlows fill:#fff1f2,stroke:#ef4444
+    style F1 fill:#ecfdf5,stroke:#10b981
+    style F2 fill:#ecfdf5,stroke:#10b981
+    style F3 fill:#ecfdf5,stroke:#10b981
+    style F6 fill:#ecfdf5,stroke:#10b981
+    style F4 fill:#fff1f2,stroke:#f43f5e
+    style F5 fill:#fff1f2,stroke:#f43f5e
+    style F4_CODE fill:#fff1f2,stroke:#f43f5e
+    style F5_CODE fill:#fff1f2,stroke:#f43f5e
+```
+
+- **Cụm trung tâm (SRE Executive KPI)**: Cung cấp góc nhìn toàn cảnh về tỷ lệ sống sót của hệ thống (4/6 flows, 50/52 tests).
+- **Các cụm xanh (Green Sub-clusters)**: Đại diện cho các luồng đã an toàn, giúp kỹ sư yên tâm không cần rà soát lại.
+- **Các cụm đỏ (Defect Sub-clusters)**: Nổi bật tức thì với con bọ bug và đường dẫn mũi tên nối thẳng vào file backend cùng biến RAM bị hỏng.
+
+---
+
+### 6.3. Bộ 5 Thẻ Pod Kiểm Thử Chuyên Biệt Trên Canvas Note Engineer
+
+| Tên Badge Pod | Biểu Tượng SVG | Màu Sắc Chủ Đạo | Dữ Liệu Hiển Thị Bên Trong Thẻ |
+|---|---|---|---|
+| **`test_case_passed`** | CheckCircle2 | Xanh Emerald (`#10b981`) | Mã ca test, tên kịch bản, thời gian phản hồi (latency), kết quả PASS. |
+| **`test_case_failed`** | AlertOctagon | Đỏ Rose (`#f43f5e`) | Mã ca test, mô tả ngoại lệ, mã HTTP 500, kết quả FAIL. |
+| **`playwright_trace`** | AppWindow / Cursor | Xanh Cyan (`#06b6d4`) | Route URL (`/cart`), hành động DOM (click, fill), đường dẫn ảnh chụp màn hình. |
+| **`root_cause_defect`** | Beetle Bug | Vàng Amber / Đỏ Rose | Tên file (`orders.service.ts`), số dòng lỗi (`142`), hàm (`applyVoucher`), và **giá trị biến RAM heap** (`sellerRank = null`). |
+| **`regression_shield`** | ShieldCheck | Tím Violet (`#8b5cf6`) | Tên file test hồi quy tự động sinh, trạng thái bảo vệ CI/CD Gate. |
+
+---
+
+### 6.4. Cơ Chế Xử Lý Kép (Hybrid Ingestion: AST vs LLM)
 
 ```mermaid
 flowchart LR
-    IN["📥 File Báo Cáo Sự Cố / Bug Payload"] --> DEC{"Phát hiện Định dạng?"}
+    IN["File Báo Cáo Sự Cố / Bug Payload (.canvas.json)"] --> DEC{"Phát hiện Định dạng?"}
     
-    DEC -->|"File JSON thuần ({...})\n(Chuẩn .canvas.json)"| AST["⚡ Local AST Parser\n(Offline, 0 Tokens, ~5ms)"]
+    DEC -->|"File JSON thuần ({...})\n(Chuẩn .canvas.json)"| AST["Local AST Parser\n(Offline, 0 Tokens, ~5ms)"]
     DEC -->|"Markdown chứa tag\n[DOMAIN], [SERVICE]"| AST
     DEC -->|"Văn bản tự do, ghi chú thô\nUnstructured Notes"| CHECK{"Đã cấu hình API Key?"}
     
-    CHECK -->|"Có (OpenAI / Gemini)"| LLM["🧠 LLM Semantic Engine\n(Deep Comprehension, 1-3s)"]
+    CHECK -->|"Có (OpenAI / Gemini)"| LLM["LLM Semantic Engine\n(Deep Comprehension, 1-3s)"]
     CHECK -->|"Không có / Mạng lỗi"| AST
     
-    AST --> CANVAS["🎨 Canvas Graph Nodes & Edges\n(Hiển thị trực quan tương tác)"]
+    AST --> CANVAS["Canvas Graph Nodes & Edges\n(Hiển thị trực quan tương tác 5ms)"]
     LLM --> CANVAS
 
     style AST fill:#d4edda,stroke:#28a745,stroke-width:2px
@@ -525,13 +621,13 @@ flowchart LR
 
 ### So Sánh Chi Tiết Hai Nhánh Xử Lý Trong Canvas Note Engineer
 
-| Tiêu Chí So Sánh | Nhánh 1: Local AST Parser ("at") | Nhánh 2: AI Semantic API |
+| Tiêu Chí So Sánh | Nhánh 1: Local AST Parser ("fast-path") | Nhánh 2: AI Semantic API |
 |---|---|---|
-| **Điều kiện kích hoạt** | • File `.canvas.json` do `debug_export_rag_report` xuất ra.<br>• File Markdown có thẻ cấu trúc `[DOMAIN]:`, `[SERVICE CLUSTER]:`.<br>• Người dùng chọn `forceMode: 'ast'` hoặc không có API key. | • Nhập văn bản mô tả tự do, văn phong tự nhiên.<br>• Bấm nút trên Canvas UI: *AI Brainstorm, AI Expand Node, AI Spawn Concept*. |
+| **Điều kiện kích hoạt** | • File `.canvas.json` do `debug_export_rag_report` hoặc `debug_export_overnight_report` xuất ra.<br>• Kéo thả trực tiếp file vào màn hình Canvas. | • Nhập văn bản tự do, ghi chú thô chưa có cấu trúc.<br>• Bấm nút trên Canvas UI: *AI Brainstorm, AI Expand Node*. |
 | **Tiêu tốn Token** | **0 Tokens** *(Miễn phí 100%)* | Tốn Tokens gọi LLM (OpenAI/Gemini/Anthropic) |
-| **Thời gian nạp** | **~5ms** *(Tức thì)* | 1.5s – 4.0s (Phụ thuộc độ trễ mạng & LLM) |
+| **Thời gian nạp** | **~5ms** *(Tức thì không độ trễ)* | 1.5s – 4.0s (Phụ thuộc độ trễ mạng & LLM) |
 | **Tính nhất quán** | **100% Deterministic** (Không bao giờ bị ảo giác) | Phụ thuộc Temperature & Prompt |
-| **Mục đích sử dụng** | **Hiển thị chính xác chuỗi lỗi RCA** do Agent điều tra được | **Mở rộng ý tưởng kiểm thử**, phân tích tài liệu thô |
+| **Mục đích sử dụng** | **Hiển thị chính xác chuỗi lỗi RCA & Ma trận Test** do Agent điều tra được | **Mở rộng ý tưởng kiểm thử**, phân tích tài liệu thô |
 
 ---
 
