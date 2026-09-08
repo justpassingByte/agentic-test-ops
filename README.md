@@ -472,6 +472,16 @@ flowchart TD
 
 ---
 
+### Hình Ảnh & Video Thực Tế Trên Không Gian Vô Cực (Live Interactive Demo)
+
+<p align="center">
+  <img src="public/canvas-testops-demo.png" alt="Interactive TestOps Cluster on Canvas Note Engineer" width="100%" />
+</p>
+
+> **Video Trực Quan Hóa Thực Tế (Screen Recording MP4)**: [Xem Video Demo Thao Tác Trực Tiếp](public/canvas-demo.mp4) *(Thao tác Zoom, Pan mượt mà, phân tách các Sub-Clusters và kích hoạt hạt xung lực lỗi Bug Vector Particle bò dọc dây nối DAG).*
+
+---
+
 ### 6.1. Cấu Trúc Trực Quan Của Một Cụm Kiểm Thử Trên Canvas (Single-Flow Topology)
 
 Khi bạn nạp file báo cáo kiểm thử đơn luồng (ví dụ: `TS-ORDER-001-e2e-checkout-voucher-validation.canvas.json`) vào **[justpassingByte/canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)**, giao diện vô cực không hiển thị những dòng JSON khô khan, mà tự động dựng thành **3 Phân Cụm (Sub-Clusters)** liên kết chặt chẽ theo chuỗi nhân quả:
