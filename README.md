@@ -424,26 +424,31 @@ sequenceDiagram
     participant Canvas as 🎨 Canvas Note Engineer
 
     Tester->>Agent: Yêu cầu: "Kiểm thử luồng Đặt hàng & Áp Voucher giảm giá"
-    Agent->>Server: debug_status() ➔ Kiểm tra cổng kẹt 4201, 9229
+    Agent->>Server: debug_status() ➔ Quét cổng & dọn dẹp port kẹt
     Agent->>Server: debug_start_server(inspectPort: 9229)
     Server-->>Agent: Dev Server sẵn sàng với --inspect=0.0.0.0:9229 (PID 14220)
     
+    %% Pha 1: Phát hiện lỗi UI
     Agent->>Browser: debug_browser_run(url, actions: [add_to_cart, apply_voucher])
     Browser->>Server: HTTP POST /api/v1/orders/voucher
     Server-->>Browser: HTTP 500 Internal Server Error (Unhandled Exception)
-    Browser-->>Agent: Báo cáo lỗi UI: Toast Error, HTTP 500, Lưu ảnh screenshot
+    Browser-->>Agent: Báo cáo triệu chứng: UI Đơ, HTTP 500, Ảnh lỗi screenshots/
     
+    %% Pha 2: Điều tra sâu qua CDP & Isolated Replay Test
     rect rgb(254, 242, 242)
-        note over Agent,CDP: 🔬 Kích hoạt CDP Engine (Chrome DevTools Protocol) Soi Mã Nguồn & RAM
-        Agent->>CDP: debug_inspect_cdp(pauseOnExceptions: true)
-        CDP->>Server: Kết nối WebSocket & Đăng ký listener Debugger.setPauseOnExceptions
-        Server-->>CDP: Tự động ĐÓNG BĂNG TIẾN TRÌNH Node.js tại Uncaught Exception
-        CDP->>Server: Debugger.evaluateOnCallFrame ➔ Trích xuất biến sống trên RAM Heap
-        Server-->>CDP: Giá trị RAM: { sellerRank: null, order.isNegotiated: true }
-        CDP-->>Agent: Bóc Callstack chính xác (orders.service.ts:142) & Bằng chứng RAM Heap
+        note over Agent,CDP: 🔬 Pha Điều Tra Sâu: Đính kèm CDP & Tái Hiện Lỗi Để Soi RAM
+        Agent->>CDP: debug_inspect_cdp(pauseOnExceptions: 'uncaught', expressions: ['sellerRank'])
+        CDP->>Server: Kết nối WebSocket ws://... & Gài trap Debugger.setPauseOnExceptions
+        Agent->>Server: debug_run_test(tests/isolated/voucher.spec.ts) ➔ Kích hoạt tái hiện lỗi
+        Server-->>CDP: Ngoại lệ nổ ra ➔ Tự động ĐÓNG BĂNG TIẾN TRÌNH (Debugger.paused)
+        CDP->>Server: Debugger.evaluateOnCallFrame ➔ Soi biến sống trên RAM Heap
+        Server-->>CDP: Trả về giá trị RAM: { sellerRank: null, order.isNegotiated: true }
+        CDP->>Server: Debugger.resume ➔ Giải phóng tiến trình Node.js
+        CDP-->>Agent: Báo cáo Callstack (orders.service.ts:142) & Dữ liệu RAM
     end
     
-    Agent->>Agent: Phân tích Root Cause (RCA): Hàm applyVoucher() bỏ sót trường hợp sellerRank = null
+    %% Pha 3: Phân tích RCA & Xuất báo cáo
+    Agent->>Agent: Phân tích Root Cause (RCA): Hàm applyVoucher() thiếu null-check sellerRank
     
     Agent->>Canvas: debug_export_rag_report() ➔ Xuất file .canvas.json & .md
     Canvas-->>Tester: Đồ thị 3 Sub-Clusters trực quan hoá chuỗi lỗi (Nạp 5ms qua AST)
