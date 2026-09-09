@@ -420,26 +420,34 @@ sequenceDiagram
     participant Agent as 🤖 AI Testing Agent
     participant Browser as 🎭 Playwright Chromium
     participant Server as ⚙️ Node.js App (--inspect)
+    participant CDP as 🔬 CDP Debugger Engine (ws://127.0.0.1:9229)
     participant Canvas as 🎨 Canvas Note Engineer
 
     Tester->>Agent: Yêu cầu: "Kiểm thử luồng Đặt hàng & Áp Voucher giảm giá"
-    Agent->>Server: debug_status() -> Kiểm tra cổng 4201, 9229
+    Agent->>Server: debug_status() ➔ Kiểm tra cổng kẹt 4201, 9229
     Agent->>Server: debug_start_server(inspectPort: 9229)
-    Server-->>Agent: Sẵn sàng (PID 14220, Debugger listening trên ws://...)
+    Server-->>Agent: Dev Server sẵn sàng với --inspect=0.0.0.0:9229 (PID 14220)
     
     Agent->>Browser: debug_browser_run(url, actions: [add_to_cart, apply_voucher])
     Browser->>Server: HTTP POST /api/v1/orders/voucher
     Server-->>Browser: HTTP 500 Internal Server Error (Unhandled Exception)
-    Browser-->>Agent: Báo cáo lỗi: UI Đơ, HTTP 500, Lưu ảnh screenshot
+    Browser-->>Agent: Báo cáo lỗi UI: Toast Error, HTTP 500, Lưu ảnh screenshot
     
-    Agent->>Server: debug_run_test(tests/isolated/voucher.spec.ts)
-    Server-->>Agent: Callstack: orders.service.ts:142 (Cannot read 'discount' of null)
+    rect rgb(254, 242, 242)
+        note over Agent,CDP: 🔬 Kích hoạt CDP Engine (Chrome DevTools Protocol) Soi Mã Nguồn & RAM
+        Agent->>CDP: debug_inspect_cdp(pauseOnExceptions: true)
+        CDP->>Server: Kết nối WebSocket & Đăng ký listener Debugger.setPauseOnExceptions
+        Server-->>CDP: Tự động ĐÓNG BĂNG TIẾN TRÌNH Node.js tại Uncaught Exception
+        CDP->>Server: Debugger.evaluateOnCallFrame ➔ Trích xuất biến sống trên RAM Heap
+        Server-->>CDP: Giá trị RAM: { sellerRank: null, order.isNegotiated: true }
+        CDP-->>Agent: Bóc Callstack chính xác (orders.service.ts:142) & Bằng chứng RAM Heap
+    end
     
-    Agent->>Agent: Phân tích RCA: Thiếu kiểm tra null khi đơn hàng có thỏa thuận giá
+    Agent->>Agent: Phân tích Root Cause (RCA): Hàm applyVoucher() bỏ sót trường hợp sellerRank = null
     
-    Agent->>Canvas: debug_export_rag_report() -> Xuất file .canvas.json & .md
-    Canvas-->>Tester: Đồ thị trực quan hoá chuỗi lỗi (Nạp bằng AST chỉ trong 5ms)
-    Tester-->>Agent: Thẩm định chuẩn xác! Phê duyệt sinh Regression Test
+    Agent->>Canvas: debug_export_rag_report() ➔ Xuất file .canvas.json & .md
+    Canvas-->>Tester: Đồ thị 3 Sub-Clusters trực quan hoá chuỗi lỗi (Nạp 5ms qua AST)
+    Tester-->>Agent: Thẩm định chuẩn xác! Phê duyệt sinh Regression Test Suite
 ```
 
 ---
