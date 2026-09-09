@@ -12,19 +12,6 @@
 > *Đóng gói độc lập dạng Standalone Plugin (Self-contained) theo tiêu chuẩn Model Context Protocol (MCP).*  
 > *100% Zero-Impact — Tích hợp ngay lập tức vào bất kỳ dự án Web/Backend nào mà không làm biến đổi hay phụ thuộc vào mã nguồn mục tiêu.*
 
-<p align="center">
-  <img src="public/canvas-testops-demo.png" alt="Autonomous Web Testing and Diagnostic Agent - Canvas Note Engineer Integration" width="100%" />
-</p>
-
-<p align="center">
-  <video src="https://github.com/justpassingByte/agentic-test-ops/raw/main/public/canvas-demo.mp4" controls="controls" width="100%"></video>
-</p>
-
-<p align="center">
-  <em>Trực quan hóa không gian vô cực: Ma trận kiểm thử Playwright liên kết nhân quả với biến sống trên RAM (CDP Debugger) và khiên hồi quy CI/CD trên Canvas Note Engineer.</em><br>
-  <a href="https://github.com/justpassingByte/agentic-test-ops/raw/main/public/canvas-demo.mp4"><strong>[Bấm vào đây để tải / xem video MP4 chất lượng cao]</strong></a>
-</p>
-
 ---
 
 ## Mục Lục
@@ -492,12 +479,12 @@ flowchart TD
 </p>
 
 <p align="center">
-  <video src="https://github.com/justpassingByte/agentic-test-ops/raw/main/public/canvas-demo.mp4" controls="controls" width="100%"></video>
+  <video src="https://raw.githubusercontent.com/justpassingByte/agentic-test-ops/main/public/canvas-demo.mp4" controls="controls" width="100%" preload="metadata" playsinline></video>
 </p>
 
 <p align="center">
   <em>Video thao tác trực tiếp: Zoom, Pan mượt mà, phân tách các Sub-Clusters và kích hoạt hạt xung lực lỗi Bug Vector Particle bò dọc dây nối DAG.</em><br>
-  <a href="https://github.com/justpassingByte/agentic-test-ops/raw/main/public/canvas-demo.mp4"><strong>[Xem / Tải Video MP4 Trực Tiếp]</strong></a>
+  <a href="https://raw.githubusercontent.com/justpassingByte/agentic-test-ops/main/public/canvas-demo.mp4"><strong>[Bấm vào đây để mở / phát video MP4 trực tiếp]</strong></a>
 </p>
 
 ---
