@@ -1,572 +1,582 @@
 # -*- coding: utf-8 -*-
 """
-Tạo slide PowerPoint báo cáo thi cuối kỳ (Chuẩn 10 slides, 16:9, Chuyên nghiệp)
+Tạo bài thuyết trình PowerPoint báo cáo đồ án môn học (Chuẩn 10 slides, 16:9)
+Phong cách: Học thuật, trang trọng, không màu mè, không emoji, không dấu gạch nối kiểu AI.
 Đề tài: Nghiên cứu kỹ thuật Agentic TestOps và ứng dụng kiểm thử hệ thống TrustBase
-GVHD: ThS. Lê Phi Hùng - ĐH Nông Lâm TP.HCM
+GVHD: ThS. Lê Phi Hùng - Trường ĐH Nông Lâm TP.HCM - Khoa CNTT
 """
 
-import os
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.enum.shapes import MSO_SHAPE
 
-def build_presentation(output_path):
+def build_academic_presentation(output_path):
     prs = Presentation()
-    # 16:9 widescreen
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
     blank_layout = prs.slide_layouts[6]
 
-    # Bảng màu
-    BG_DARK = RGBColor(15, 23, 42)      # #0f172a
-    PRIMARY = RGBColor(37, 99, 235)     # #2563eb
-    PRIMARY_LIGHT = RGBColor(96, 165, 250) # #60a5fa
-    ACCENT_GREEN = RGBColor(16, 185, 129)  # #10b981
-    ACCENT_AMBER = RGBColor(245, 158, 11)  # #f59e0b
-    TEXT_LIGHT = RGBColor(248, 250, 252)   # #f8fafc
-    TEXT_MUTED = RGBColor(148, 163, 184)   # #94a3b8
-    CARD_BG = RGBColor(30, 41, 59)         # #1e293b
-    CARD_BORDER = RGBColor(51, 65, 85)     # #334155
+    # Bảng màu học thuật (Academic Formal Theme: Off-white nền sáng, chữ xanh đậm và than chì)
+    BG_PAGE = RGBColor(248, 250, 252)       # Slate 50
+    CARD_BG = RGBColor(255, 255, 255)       # Pure White
+    CARD_BORDER = RGBColor(203, 213, 225)   # Slate 300
+    HEADER_NAVY = RGBColor(15, 23, 42)      # Slate 900
+    TEXT_MAIN = RGBColor(30, 41, 59)        # Slate 800
+    TEXT_MUTED = RGBColor(71, 85, 105)      # Slate 600
+    PRIMARY_BLUE = RGBColor(27, 54, 93)     # Deep Academic Navy
+    ACCENT_BLUE = RGBColor(30, 64, 175)     # Blue 800
+    TAG_BG = RGBColor(241, 245, 249)        # Slate 100
 
-    def add_background(slide, color=BG_DARK):
+    def add_background(slide):
         bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(13.333), Inches(7.5))
         bg.fill.solid()
-        bg.fill.fore_color.rgb = color
+        bg.fill.fore_color.rgb = BG_PAGE
         bg.line.fill.background()
         return bg
 
-    def add_header(slide, title_text, subtitle_text="BÁO CÁO ĐỒ ÁN MÔN HỌC - KIỂM THỬ & ĐBCLPM"):
-        # Header banner
-        header_box = slide.shapes.add_textbox(Inches(0.8), Inches(0.4), Inches(11.733), Inches(1.1))
-        tf = header_box.text_frame
+    def add_header(slide, title_text, section_text="BÁO CÁO ĐỒ ÁN MÔN HỌC: KIỂM THỬ VÀ ĐẢM BẢO CHẤT LƯỢNG PHẦN MỀM"):
+        # Section header
+        tb = slide.shapes.add_textbox(Inches(0.8), Inches(0.4), Inches(11.733), Inches(1.1))
+        tf = tb.text_frame
         tf.word_wrap = True
         tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
         
-        p_sub = tf.paragraphs[0]
-        p_sub.text = subtitle_text.upper()
-        p_sub.font.name = "Segoe UI"
-        p_sub.font.size = Pt(11)
-        p_sub.font.bold = True
-        p_sub.font.color.rgb = PRIMARY_LIGHT
+        p_sec = tf.paragraphs[0]
+        p_sec.text = section_text.upper()
+        p_sec.font.name = "Times New Roman"
+        p_sec.font.size = Pt(11)
+        p_sec.font.bold = True
+        p_sec.font.color.rgb = ACCENT_BLUE
         
         p_title = tf.add_paragraph()
         p_title.text = title_text
-        p_title.font.name = "Segoe UI"
-        p_title.font.size = Pt(22)
+        p_title.font.name = "Times New Roman"
+        p_title.font.size = Pt(21)
         p_title.font.bold = True
-        p_title.font.color.rgb = TEXT_LIGHT
+        p_title.font.color.rgb = HEADER_NAVY
+        p_title.space_before = Pt(3)
 
-    def add_card(slide, left, top, width, height, title="", border_color=PRIMARY):
-        card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)
+    def add_card(slide, left, top, width, height, title="", border_color=CARD_BORDER):
+        card = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
         card.fill.solid()
         card.fill.fore_color.rgb = CARD_BG
         card.line.color.rgb = border_color
-        card.line.width = Pt(1.5)
+        card.line.width = Pt(1.0)
         
         if title:
             tb = slide.shapes.add_textbox(left + Inches(0.2), top + Inches(0.15), width - Inches(0.4), Inches(0.4))
             tf = tb.text_frame
             tf.word_wrap = True
+            tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
             p = tf.paragraphs[0]
             p.text = title
-            p.font.name = "Segoe UI"
-            p.font.size = Pt(14)
+            p.font.name = "Times New Roman"
+            p.font.size = Pt(13.5)
             p.font.bold = True
-            p.font.color.rgb = PRIMARY_LIGHT
+            p.font.color.rgb = PRIMARY_BLUE
         return card
 
     # =========================================================================
-    # SLIDE 1: TRANG BÌA
+    # SLIDE 1: TRANG TIÊU ĐỀ BÁO CÁO
     # =========================================================================
     s1 = prs.slides.add_slide(blank_layout)
     add_background(s1)
+
+    # Khung chính trang bìa
+    main_card = add_card(s1, Inches(0.8), Inches(0.8), Inches(11.733), Inches(5.9), "", PRIMARY_BLUE)
     
-    # Title box
-    tbox = s1.shapes.add_textbox(Inches(1.0), Inches(1.2), Inches(11.333), Inches(4.5))
+    tbox = s1.shapes.add_textbox(Inches(1.2), Inches(1.1), Inches(10.933), Inches(5.3))
     tf1 = tbox.text_frame
     tf1.word_wrap = True
     
     p = tf1.paragraphs[0]
-    p.text = "TRƯỜNG ĐẠI HỌC NÔNG LÂM TP. HỒ CHÍ MINH — KHOA CÔNG NGHỆ THÔNG TIN"
-    p.font.name = "Segoe UI"
+    p.text = "TRƯỜNG ĐẠI HỌC NÔNG LÂM TP. HỒ CHÍ MINH\nKHOA CÔNG NGHỆ THÔNG TIN"
+    p.font.name = "Times New Roman"
+    p.font.size = Pt(14)
+    p.font.bold = True
+    p.font.color.rgb = PRIMARY_BLUE
+    p.alignment = PP_ALIGN.CENTER
+    
+    p = tf1.add_paragraph()
+    p.text = "BÁO CÁO THI KẾT THÚC HỌC PHẦN: KIỂM THỬ VÀ ĐBCL PHẦN MỀM"
+    p.font.name = "Times New Roman"
     p.font.size = Pt(13)
     p.font.bold = True
-    p.font.color.rgb = PRIMARY_LIGHT
+    p.font.color.rgb = ACCENT_BLUE
+    p.alignment = PP_ALIGN.CENTER
+    p.space_before = Pt(14)
     
     p = tf1.add_paragraph()
-    p.text = "BÁO CÁO THI CUỐI KỲ — ĐỒ ÁN KIỂM THỬ & ĐBCL PHẦN MỀM"
-    p.font.name = "Segoe UI"
-    p.font.size = Pt(15)
+    p.text = "ĐỀ TÀI: NGHIÊN CỨU KỸ THUẬT AGENTIC TESTOPS\nVÀ ỨNG DỤNG KIỂM THỬ HỆ THỐNG TRUSTBASE"
+    p.font.name = "Times New Roman"
+    p.font.size = Pt(24)
     p.font.bold = True
-    p.font.color.rgb = ACCENT_AMBER
-    p.space_before = Pt(8)
-    
-    p = tf1.add_paragraph()
-    p.text = "NGHIÊN CỨU KỸ THUẬT AGENTIC TESTOPS\nVÀ ỨNG DỤNG KIỂM THỬ HỆ THỐNG TRUSTBASE"
-    p.font.name = "Segoe UI"
-    p.font.size = Pt(28)
-    p.font.bold = True
-    p.font.color.rgb = TEXT_LIGHT
+    p.font.color.rgb = HEADER_NAVY
+    p.alignment = PP_ALIGN.CENTER
     p.space_before = Pt(16)
     
     p = tf1.add_paragraph()
-    p.text = "Kiểm thử tự động chu trình giao dịch đa phân vai (Buyer -> Seller -> Admin) với cơ chế Tự sinh kịch bản, Tự chữa lành & Xuất bằng chứng kép (Dual Visual Evidence)"
-    p.font.name = "Segoe UI"
+    p.text = "Tự động hóa kiểm thử chu trình giao dịch đa phân vai (Buyer -> Seller -> Admin)\nỨng dụng cơ chế sinh kịch bản tự động, tự chữa lành và lưu vết thực thi"
+    p.font.name = "Times New Roman"
     p.font.size = Pt(13)
     p.font.color.rgb = TEXT_MUTED
+    p.alignment = PP_ALIGN.CENTER
     p.space_before = Pt(12)
-
-    # Info card at bottom
-    add_card(s1, Inches(1.0), Inches(5.3), Inches(11.333), Inches(1.5), "", ACCENT_GREEN)
-    ibox = s1.shapes.add_textbox(Inches(1.2), Inches(5.4), Inches(11.0), Inches(1.3))
-    itf = ibox.text_frame
-    itf.word_wrap = True
     
-    p = itf.paragraphs[0]
-    p.text = "👨‍🏫 Giảng viên hướng dẫn: ThS. LÊ PHI HÙNG"
-    p.font.name = "Segoe UI"
-    p.font.size = Pt(14)
-    p.font.bold = True
-    p.font.color.rgb = TEXT_LIGHT
-    
-    p = itf.add_paragraph()
-    p.text = "👥 Nhóm thực hiện: NHÓM 05 | Thành viên: Nguyễn Hữu Thắng (Nhóm trưởng) — Phạm Trần Nhụt Quang — Huỳnh Văn Sĩ"
-    p.font.name = "Segoe UI"
+    p = tf1.add_paragraph()
+    p.text = "Giảng viên hướng dẫn: ThS. Lê Phi Hùng\nNhóm thực hiện: Nhóm 05 (Nguyễn Hữu Thắng, Phạm Trần Nhụt Quang, Huỳnh Văn Sĩ)"
+    p.font.name = "Times New Roman"
     p.font.size = Pt(13)
-    p.font.color.rgb = PRIMARY_LIGHT
-    p.space_before = Pt(4)
+    p.font.bold = True
+    p.font.color.rgb = TEXT_MAIN
+    p.alignment = PP_ALIGN.CENTER
+    p.space_before = Pt(22)
 
     # =========================================================================
-    # SLIDE 2: THÀNH VIÊN NHÓM & TỰ ĐÁNH GIÁ (THANG ĐIỂM 10)
+    # SLIDE 2: THÀNH VIÊN NHÓM VÀ TỰ ĐÁNH GIÁ (THANG ĐIỂM 10)
     # =========================================================================
     s2 = prs.slides.add_slide(blank_layout)
     add_background(s2)
-    add_header(s2, "1. GIỚI THIỆU THÀNH VIÊN VÀ BẢNG TỰ ĐÁNH GIÁ ĐÓNG GÓP", "PHÂN CÔNG & ĐÁNH GIÁ TRÁCH NHIỆM")
+    add_header(s2, "1. Thành viên nhóm và Bảng tự đánh giá đóng góp", "Phân công trách nhiệm và nghiệm thu công việc")
 
     members = [
         {
             "name": "Nguyễn Hữu Thắng",
+            "mssv": "MSSV: 21130541",
             "role": "Nhóm trưởng / Test Lead",
-            "score": "10 / 10",
-            "pct": "100%",
-            "color": ACCENT_GREEN,
+            "score": "Điểm tự chấm: 10/10",
             "tasks": [
-                "Nghiên cứu nguyên lý & kiến trúc Agentic TestOps",
-                "Xây dựng MCP Server điều khiển CDP & Playwright",
-                "Phát triển kịch bản kiểm thử E2E đa phân vai",
-                "Tích hợp GitHub Actions CI/CD & Xuất video bằng chứng",
-                "Chịu trách nhiệm thuyết trình chính & Demo live"
+                "Nghiên cứu nguyên lý kỹ thuật Agentic TestOps và giao thức MCP.",
+                "Xây dựng MCP Server điều khiển CDP và Playwright Runner.",
+                "Lập trình kịch bản E2E kiểm thử chu trình đa phân vai khép kín.",
+                "Thiết lập pipeline CI/CD GitHub Actions và xuất bằng chứng tự động.",
+                "Chịu trách nhiệm thuyết trình báo cáo và điều phối phần demo."
             ]
         },
         {
             "name": "Phạm Trần Nhụt Quang",
+            "mssv": "MSSV: 21130495",
             "role": "QA Engineer / Test Designer",
-            "score": "9.5 / 10",
-            "pct": "100%",
-            "color": PRIMARY,
+            "score": "Điểm tự chấm: 9.5/10",
             "tasks": [
-                "Thiết kế Test Suite 30 Test Case cho hệ thống TrustBase",
-                "Áp dụng 4 kỹ thuật kiểm thử hộp đen (EP, BVA, Decision Table, State Transition)",
-                "Soạn thảo tài liệu đặc tả kiểm thử & ma trận truy vết (RTM)",
-                "Đóng góp hoàn thiện Báo cáo Word 4 phần chuẩn quy định",
-                "Hỗ trợ trả lời vấn đáp kỹ thuật kiểm thử"
+                "Thiết kế bộ Test Suite 30 Test Cases chi tiết theo chuẩn IEEE 829.",
+                "Áp dụng 4 kỹ thuật kiểm thử hộp đen: EP, BVA, Decision Table, State Transition.",
+                "Xây dựng ma trận truy vết yêu cầu phần mềm (RTM).",
+                "Soạn thảo tài liệu đặc tả ca kiểm thử và kiểm chứng dữ liệu hạt giống.",
+                "Phản biện kỹ thuật và chuẩn bị nội dung câu hỏi vấn đáp."
             ]
         },
         {
             "name": "Huỳnh Văn Sĩ",
+            "mssv": "MSSV: 21130528",
             "role": "Automation Engineer / QA Analyst",
-            "score": "9.5 / 10",
-            "pct": "100%",
-            "color": ACCENT_AMBER,
+            "score": "Điểm tự chấm: 9.5/10",
             "tasks": [
-                "Theo dõi, ghi nhận và quản lý 6 Defect Log thực tế",
-                "Kiểm thử bảo mật (OWASP, SQLi, IDOR) & Kiểm thử tải SUT",
-                "Tổng hợp số liệu Dashboard KPI chất lượng phần mềm",
-                "Thiết kế bố cục Slide thuyết trình 10 trang & Đóng gói sản phẩm",
-                "Hỗ trợ chuẩn bị môi trường Docker & cơ sở dữ liệu"
+                "Quản lý và biên tập Bảng nhật ký 6 lỗi thực tế (Defect Log).",
+                "Thực hiện kiểm thử phi chức năng: Kiểm thử tải và rà soát an toàn bảo mật.",
+                "Tổng hợp số liệu Dashboard KPI đo lường chất lượng phần mềm.",
+                "Thiết kế tài liệu thuyết trình và đóng gói sản phẩm nghiệm thu.",
+                "Cấu hình và duy trì hạ tầng Docker Compose (PostgreSQL, Redis)."
             ]
         }
     ]
 
     for i, m in enumerate(members):
         left = Inches(0.8 + i * 4.0)
-        add_card(s2, left, Inches(1.7), Inches(3.733), Inches(5.2), "", m["color"])
+        add_card(s2, left, Inches(1.6), Inches(3.733), Inches(5.3), "", PRIMARY_BLUE)
         
-        tb = s2.shapes.add_textbox(left + Inches(0.2), Inches(1.9), Inches(3.333), Inches(4.8))
+        tb = s2.shapes.add_textbox(left + Inches(0.2), Inches(1.75), Inches(3.333), Inches(5.0))
         tf = tb.text_frame
         tf.word_wrap = True
+        tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
         
         p = tf.paragraphs[0]
         p.text = m["name"]
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(16)
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(15)
         p.font.bold = True
-        p.font.color.rgb = TEXT_LIGHT
+        p.font.color.rgb = PRIMARY_BLUE
         
         p = tf.add_paragraph()
-        p.text = m["role"]
-        p.font.name = "Segoe UI"
+        p.text = f"{m['mssv']} | {m['role']}"
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(11)
+        p.font.color.rgb = ACCENT_BLUE
+        
+        p = tf.add_paragraph()
+        p.text = f"{m['score']} (Đóng góp 100%)"
+        p.font.name = "Times New Roman"
         p.font.size = Pt(12)
         p.font.bold = True
-        p.font.color.rgb = m["color"]
+        p.font.color.rgb = HEADER_NAVY
+        p.space_before = Pt(4)
         
         p = tf.add_paragraph()
-        p.text = f"Điểm tự chấm: {m['score']}  |  Đóng góp: {m['pct']}"
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(12)
-        p.font.bold = True
-        p.font.color.rgb = TEXT_LIGHT
-        p.space_before = Pt(6)
-        
-        p = tf.add_paragraph()
-        p.text = "Trách nhiệm & Sản phẩm bàn giao:"
-        p.font.name = "Segoe UI"
+        p.text = "Nhiệm vụ và sản phẩm hoàn thành:"
+        p.font.name = "Times New Roman"
         p.font.size = Pt(11)
         p.font.bold = True
-        p.font.color.rgb = PRIMARY_LIGHT
+        p.font.color.rgb = TEXT_MAIN
         p.space_before = Pt(8)
         
         for task in m["tasks"]:
             p = tf.add_paragraph()
-            p.text = f"• {task}"
-            p.font.name = "Segoe UI"
-            p.font.size = Pt(11)
+            p.text = f"- {task}"
+            p.font.name = "Times New Roman"
+            p.font.size = Pt(10.5)
             p.font.color.rgb = TEXT_MUTED
             p.space_before = Pt(4)
 
     # =========================================================================
-    # SLIDE 3: HỆ THỐNG MỤC TIÊU TRUSTBASE & BÀI TOÁN KIỂM THỬ ĐA PHÂN VAI
+    # SLIDE 3: HỆ THỐNG MỤC TIÊU TRUSTBASE VÀ BÀI TOÁN KIỂM THỬ
     # =========================================================================
     s3 = prs.slides.add_slide(blank_layout)
     add_background(s3)
-    add_header(s3, "2. HỆ THỐNG KIỂM THỬ TRUSTBASE (SUT) & BÀI TOÁN KIỂM THỬ", "BỐI CẢNH THỰC TẾ & THÁCH THỨC")
+    add_header(s3, "2. Hệ thống mục tiêu TrustBase và Bài toán kiểm thử", "Bối cảnh ứng dụng và yêu cầu nghiệp vụ thực tế")
 
-    add_card(s3, Inches(0.8), Inches(1.7), Inches(5.7), Inches(5.2), "🏢 Giới thiệu Sàn Bản Quyền Số TrustBase", PRIMARY)
-    tb = s3.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(5.3), Inches(4.5))
+    add_card(s3, Inches(0.8), Inches(1.6), Inches(5.7), Inches(5.3), "Kiến trúc nền tảng TrustBase (SUT)", PRIMARY_BLUE)
+    tb = s3.shapes.add_textbox(Inches(1.0), Inches(2.1), Inches(5.3), Inches(4.6))
     tf = tb.text_frame
     tf.word_wrap = True
+    tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
     
-    pts = [
-        ("Bản chất SUT:", "TrustBase là sàn thương mại điện tử chuyên biệt phân phối License Key, Steam Wallet, Voucher số với cơ chế Ký quỹ bảo đảm giao dịch trung gian (Digital Key Escrow)."),
-        ("Công nghệ xây dựng:", "Kiến trúc Monorepo hiện đại gồm Customer Web (Port 4200), Admin Console (Port 4203), Backend Fastify API (Port 4201), PostgreSQL 15 (Docker) và Redis Cache."),
-        ("Quy mô kiểm thử:", "54 bảng dữ liệu, 56 seed listings, 5 gian hàng mẫu và hệ thống tích hợp thanh toán VietQR đa ngân hàng.")
+    sut_pts = [
+        ("Mô hình hoạt động:", "Sàn thương mại điện tử chuyên biệt phân phối License Key, phần mềm bản quyền và thẻ nạp số với cơ chế Ký quỹ trung gian (Digital Key Escrow)."),
+        ("Kiến trúc kỹ thuật:", "Hệ thống đa ứng dụng Monorepo gồm Customer Web (cổng 4200), Admin Console (cổng 4203), Backend Fastify API (cổng 4201), PostgreSQL 15 và Redis Cache."),
+        ("Quy mô kiểm thử:", "54 bảng cơ sở dữ liệu, 56 seed listings, 5 gian hàng mẫu và tích hợp cổng thanh toán VietQR chuyển khoản tự động.")
     ]
-    for i, (k, v) in enumerate(pts):
+    for i, (k, v) in enumerate(sut_pts):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.text = f"• {k} {v}"
-        p.font.name = "Segoe UI"
+        p.text = f"{k} {v}"
+        p.font.name = "Times New Roman"
         p.font.size = Pt(12)
-        p.font.color.rgb = TEXT_LIGHT
+        p.font.color.rgb = TEXT_MAIN
         p.space_before = Pt(10)
 
-    add_card(s3, Inches(6.8), Inches(1.7), Inches(5.7), Inches(5.2), "⚠️ Thách Thức Khi Kiểm Thử Chu Trình Đa Phân Vai", ACCENT_AMBER)
-    tb2 = s3.shapes.add_textbox(Inches(7.0), Inches(2.2), Inches(5.3), Inches(4.5))
+    add_card(s3, Inches(6.8), Inches(1.6), Inches(5.7), Inches(5.3), "Thách thức của chu trình kiểm thử đa phân vai", PRIMARY_BLUE)
+    tb2 = s3.shapes.add_textbox(Inches(7.0), Inches(2.1), Inches(5.3), Inches(4.6))
     tf2 = tb2.text_frame
     tf2.word_wrap = True
+    tf2.margin_left = tf2.margin_top = tf2.margin_right = tf2.margin_bottom = 0
     
-    pts2 = [
-        ("Vòng đời 3 Phân vai:", "Buyer (mua hàng, tiền đóng băng trong Escrow) -> Seller (giao key, hoàn tất KYC, yêu cầu rút tiền Payout) -> Admin (thẩm định gian hàng, đối soát và giải ngân)."),
-        ("Kiểm thử thủ công (Manual):", "Tốn 15-20 phút cho một vòng lặp, dễ sót trạng thái, chuyển đổi session/cookie giữa 3 tài khoản rất dễ nhầm lẫn."),
-        ("Kiểm thử tự động cũ (Automation):", "Kịch bản Playwright/Cypress thông thường dễ bị 'gãy' (Flaky) khi UI thay đổi class, không tự xử lý được các logic nghiệp vụ phức tạp như KYC payout lock.")
+    challenge_pts = [
+        ("Vòng đời 3 phân vai:", "Kéo dài liên tục qua Buyer (đặt hàng, ký quỹ Escrow) -> Seller (giao hàng, eKYC, tạo yêu cầu rút tiền Payout) -> Admin (thẩm định và giải ngân chi trả)."),
+        ("Hạn chế kiểm thử thủ công:", "Thời gian kiểm thử mỗi vòng lặp tốn 15 đến 20 phút, việc chuyển đổi qua lại giữa 3 phiên đăng nhập dễ phát sinh nhầm lẫn dữ liệu."),
+        ("Hạn chế kiểm thử tự động cũ:", "Kịch bản Playwright hoặc Cypress thông thường dễ bị dừng hoạt động khi giao diện thay đổi class, không tự xử lý được các ràng buộc logic ngầm.")
     ]
-    for i, (k, v) in enumerate(pts2):
+    for i, (k, v) in enumerate(challenge_pts):
         p = tf2.paragraphs[0] if i == 0 else tf2.add_paragraph()
-        p.text = f"• {k} {v}"
-        p.font.name = "Segoe UI"
+        p.text = f"{k} {v}"
+        p.font.name = "Times New Roman"
         p.font.size = Pt(12)
-        p.font.color.rgb = TEXT_LIGHT
+        p.font.color.rgb = TEXT_MAIN
         p.space_before = Pt(10)
 
     # =========================================================================
-    # SLIDE 4: GIẢI PHÁP AGENTIC TESTOPS LÀ GÌ?
+    # SLIDE 4: CƠ SỞ LÝ THUYẾT: MÔ HÌNH AGENTIC TESTOPS
     # =========================================================================
     s4 = prs.slides.add_slide(blank_layout)
     add_background(s4)
-    add_header(s4, "3. GIẢI PHÁP ĐỀ XUẤT: AGENTIC TESTOPS TIÊN PHONG", "ĐỘT PHÁ CÔNG NGHỆ KIỂM THỬ THẾ HỆ MỚI")
+    add_header(s4, "3. Cơ sở lý thuyết: Mô hình Agentic TestOps", "So sánh phương pháp luận kiểm thử truyền thống và kiểm thử tự trị")
 
-    add_card(s4, Inches(0.8), Inches(1.7), Inches(11.733), Inches(1.5), "💡 Bản chất của Agentic TestOps", PRIMARY)
-    tb = s4.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(11.333), Inches(0.9))
+    # Bảng so sánh 2 cột
+    add_card(s4, Inches(0.8), Inches(1.6), Inches(5.7), Inches(5.3), "Kiểm thử tự động truyền thống (Test Automation)", CARD_BORDER)
+    tb = s4.shapes.add_textbox(Inches(1.0), Inches(2.1), Inches(5.3), Inches(4.6))
     tf = tb.text_frame
     tf.word_wrap = True
-    p = tf.paragraphs[0]
-    p.text = "Agentic TestOps là sự kết hợp giữa Mô hình Ngôn ngữ Lớn (LLM Agent), Giao thức Bối cảnh Chuẩn hóa (Model Context Protocol - MCP) và Khung kiểm thử tự động (Playwright/CDP). Agent đóng vai trò là một 'Kỹ sư QA thông minh' có thể tự tư duy, tự khám phá hệ sinh thái SUT và tự hành động."
-    p.font.name = "Segoe UI"
-    p.font.size = Pt(12.5)
-    p.font.color.rgb = TEXT_LIGHT
-
-    # So sánh 2 cột
-    add_card(s4, Inches(0.8), Inches(3.4), Inches(5.7), Inches(3.5), "❌ Traditional Test Automation", CARD_BORDER)
-    tb = s4.shapes.add_textbox(Inches(1.0), Inches(3.9), Inches(5.3), Inches(2.8))
-    tf = tb.text_frame
-    tf.word_wrap = True
+    tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
     trad = [
-        "Con người phải tự gõ code kịch bản (.spec.ts) thủ công từ đầu đến cuối.",
-        "Kịch bản cứng (Hardcoded): UI đổi class hay ID là test gãy lập tức.",
-        "Báo lỗi thụ động: Chỉ in ra assertion fail, không phân tích tại sao lỗi.",
-        "Không biết xử lý luồng nghiệp vụ rẽ nhánh hoặc điều kiện tiên quyết (eKYC, OTP)."
+        ("Soạn thảo kịch bản:", "Kỹ sư kiểm thử phải tự viết mã kịch bản (.spec.ts) hoàn toàn thủ công."),
+        ("Khả năng thích ứng:", "Kịch bản cố định, dễ gãy (flaky) khi frontend thay đổi cấu trúc DOM, ID hoặc selector CSS."),
+        ("Xử lý lỗi:", "Chỉ thông báo lỗi assertion failed, không có khả năng phân tích nguyên nhân gốc rễ phía máy chủ."),
+        ("Duy trì kịch bản:", "Chi phí bảo trì kiểm thử tăng tuyến tính theo số lượng sprint và tính năng mới.")
     ]
-    for i, t in enumerate(trad):
+    for i, (k, v) in enumerate(trad):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.text = f"• {t}"
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(11.5)
+        p.text = f"- {k} {v}"
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(12)
         p.font.color.rgb = TEXT_MUTED
-        p.space_before = Pt(6)
+        p.space_before = Pt(10)
 
-    add_card(s4, Inches(6.8), Inches(3.4), Inches(5.7), Inches(3.5), "✅ Agentic TestOps (Đề tài Nhóm 05)", ACCENT_GREEN)
-    tb = s4.shapes.add_textbox(Inches(7.0), Inches(3.9), Inches(5.3), Inches(2.8))
+    add_card(s4, Inches(6.8), Inches(1.6), Inches(5.7), Inches(5.3), "Mô hình Agentic TestOps (Phương pháp đề xuất)", PRIMARY_BLUE)
+    tb = s4.shapes.add_textbox(Inches(7.0), Inches(2.1), Inches(5.3), Inches(4.6))
     tf = tb.text_frame
     tf.word_wrap = True
-    ag = [
-        "Tự động sinh kịch bản test (Test Generation): Đọc DOM & API để tự viết code.",
-        "Tự chữa lành kịch bản (Self-Healing): Tự phát hiện và cập nhật selector mới.",
-        "Tự điều tra nguyên nhân gốc (Autonomous Root Cause Analysis): Đọc log DB & HTTP.",
-        "Tự quản lý phiên đa phân vai: Tự động switch cookie Buyer -> Seller -> Admin."
+    tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
+    agentic = [
+        ("Tự động sinh kịch bản:", "Agent tự phân tích giao diện và hợp đồng API để tự viết file kịch bản Playwright chuẩn."),
+        ("Cơ chế tự chữa lành (Self-Healing):", "Agent tự định vị lại phần tử khi UI thay đổi và cập nhật lại file kịch bản."),
+        ("Điều tra nguyên nhân gốc (RCA):", "Tự động kết hợp kiểm tra trạng thái cơ sở dữ liệu và phản hồi HTTP để xác định nguyên nhân."),
+        ("Tối ưu hóa tài nguyên:", "Tự động quản lý phiên làm việc đa phân vai và loại trừ các thao tác lặp lại.")
     ]
-    for i, t in enumerate(ag):
+    for i, (k, v) in enumerate(agentic):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.text = f"• {t}"
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(11.5)
-        p.font.color.rgb = TEXT_LIGHT
-        p.space_before = Pt(6)
+        p.text = f"- {k} {v}"
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(12)
+        p.font.color.rgb = TEXT_MAIN
+        p.space_before = Pt(10)
 
     # =========================================================================
     # SLIDE 5: KIẾN TRÚC KỸ THUẬT CỦA HỆ THỐNG
     # =========================================================================
     s5 = prs.slides.add_slide(blank_layout)
     add_background(s5)
-    add_header(s5, "4. KIẾN TRÚC KỸ THUẬT HỆ THỐNG AGENTIC TESTOPS", "THIẾT KẾ 4 TẦNG MODULE HÓA")
+    add_header(s5, "4. Kiến trúc kỹ thuật của hệ thống Agentic TestOps", "Thiết kế phân tầng từ mô hình suy luận đến hạ tầng thực thi")
 
     layers = [
-        ("TẦNG 1: LLM REASONING & ORCHESTRATION", "Đóng vai trò 'Bộ não' phân tích yêu cầu, chia tách kịch bản đa phân vai, lập kế hoạch hành động và diễn giải kết quả kiểm thử.", PRIMARY),
-        ("TẦNG 2: GIAO THỨC CHUẨN HÓA MCP & CDP", "MCP Server (mcp/server.mjs) cung cấp công cụ chuẩn cho Agent: đọc DOM, dispatch click, nạp cookie, quản lý process cổng debug Node.js.", PRIMARY_LIGHT),
-        ("TẦNG 3: AUTOMATION ENGINE & RECORDER", "Playwright kết hợp Chrome thật và FFmpeg engine: Thực thi thao tác gõ phím, click chuột thật, chụp ảnh checkpoints và ghi video 60fps.", ACCENT_AMBER),
-        ("TẦNG 4: APPLICATION UNDER TEST (SUT)", "Môi trường TrustBase chạy nội bộ qua Docker: Web Khách (4200), Web Admin (4203), Fastify API (4201), PostgreSQL (5432) và Redis (6379).", ACCENT_GREEN)
+        ("TẦNG 1: SUY LUẬN VÀ ĐIỀU PHỐI (LLM AGENT REASONING LAYER)",
+         "Phân tích yêu cầu kiểm thử, lập kế hoạch thực thi từng phân vai, ra quyết định rẽ nhánh dựa trên phản hồi của hệ thống."),
+        ("TẦNG 2: GIAO THỨC BỐI CẢNH VÀ KẾT NỐI (MCP & CDP PROTOCOL LAYER)",
+         "Sử dụng Model Context Protocol (MCP) làm cầu nối chuẩn hóa giữa Agent với trình duyệt Chrome qua Chrome DevTools Protocol."),
+        ("TẦNG 3: ĐỘNG CƠ KIỂM THỬ VÀ GHI HÌNH (TEST RUNNER & RECORDER LAYER)",
+         "Sử dụng Playwright Engine điều khiển hành vi người dùng thật (nhập liệu, click chuột, xử lý popup) và ghi hình thực tế."),
+        ("TẦNG 4: HỆ THỐNG ĐƯỢC KIỂM THỬ (APPLICATION UNDER TEST LAYER)",
+         "Hệ thống TrustBase triển khai qua Docker: Cổng khách 4200, Cổng quản trị 4203, API 4201, PostgreSQL 5432 và Redis 6379.")
     ]
 
-    for i, (l_title, l_desc, color) in enumerate(layers):
-        top = Inches(1.7 + i * 1.3)
-        add_card(s5, Inches(0.8), top, Inches(11.733), Inches(1.15), "", color)
-        tb = s5.shapes.add_textbox(Inches(1.0), top + Inches(0.12), Inches(11.333), Inches(0.9))
+    for i, (l_title, l_desc) in enumerate(layers):
+        top = Inches(1.6 + i * 1.35)
+        add_card(s5, Inches(0.8), top, Inches(11.733), Inches(1.2), "", PRIMARY_BLUE)
+        tb = s5.shapes.add_textbox(Inches(1.0), top + Inches(0.12), Inches(11.333), Inches(0.95))
         tf = tb.text_frame
         tf.word_wrap = True
+        tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
         
         p = tf.paragraphs[0]
         p.text = l_title
-        p.font.name = "Segoe UI"
+        p.font.name = "Times New Roman"
         p.font.size = Pt(13)
         p.font.bold = True
-        p.font.color.rgb = color
+        p.font.color.rgb = PRIMARY_BLUE
         
         p = tf.add_paragraph()
         p.text = l_desc
-        p.font.name = "Segoe UI"
+        p.font.name = "Times New Roman"
         p.font.size = Pt(11.5)
-        p.font.color.rgb = TEXT_LIGHT
+        p.font.color.rgb = TEXT_MAIN
         p.space_before = Pt(3)
 
     # =========================================================================
-    # SLIDE 6: THIẾT KẾ TEST SUITE & 4 KỸ THUẬT HỘP ĐEN
+    # SLIDE 6: THIẾT KẾ TEST SUITE VÀ KỸ THUẬT HỘP ĐEN
     # =========================================================================
     s6 = prs.slides.add_slide(blank_layout)
     add_background(s6)
-    add_header(s6, "5. THIẾT KẾ TEST SUITE (30 TEST CASES) & KỸ THUẬT HỘP ĐEN", "CHUẨN HÓA KIỂM THỬ THEO ISTQB")
+    add_header(s6, "5. Thiết kế Bộ kiểm thử (30 Test Cases) và Kỹ thuật áp dụng", "Áp dụng chuẩn quốc tế ISTQB và tài liệu đặc tả IEEE 829")
 
     techs = [
-        ("Phân Vùng Tương Đương (EP)", "Phân chia lớp hợp lệ và không hợp lệ cho thông tin người mua (Email domain allowlist, số điện thoại Việt Nam chuẩn 10 số, số tiền nạp rút).", PRIMARY),
-        ("Phân Tích Giá Trị Biên (BVA)", "Kiểm thử giá trị cận biên của hạn mức rút tiền (Tối thiểu 50.000 ₫, tối đa 50.000.000 ₫), số lượng mua key (1 key đến tồn kho tối đa).", PRIMARY_LIGHT),
-        ("Bảng Quyết Định (Decision Table)", "Kiểm thử ma trận logic điều kiện: Trạng thái KYC của Shop x Số dư khả dụng x Tài khoản ngân hàng liên kết => Quyết định cho phép rút hay khóa nút.", ACCENT_AMBER),
-        ("Chuyển Đổi Trạng Thái (State Transition)", "Kiểm thử vòng đời trạng thái Escrow và Payout: CREATED -> ESCROW_HOLDING -> DELIVERED -> COMPLETED hoặc DISPUTED -> REFUNDED.", ACCENT_GREEN)
+        ("Phân Vùng Tương Đương (Equivalence Partitioning)",
+         "Phân chia các lớp giá trị hợp lệ và không hợp lệ cho dữ liệu biểu mẫu khách hàng: Kiểm tra danh sách tên miền email cho phép, định dạng số điện thoại chuẩn Việt Nam (10 chữ số) và độ dài họ tên người mua."),
+        ("Phân Tích Giá Trị Biên (Boundary Value Analysis)",
+         "Xác định và kiểm tra các điểm ranh giới nhạy cảm: Hạn mức rút tiền tối thiểu 50.000 VND, tối đa 50.000.000 VND trên mỗi giao dịch; số lượng mã key số được mua từ 1 key đến mức tồn kho khả dụng."),
+        ("Bảng Quyết Định (Decision Table Testing)",
+         "Thiết lập bảng kết hợp đa điều kiện đối với chức năng rút tiền người bán: Kiểm tra điều kiện đồng thời gồm Trạng thái KYC gian hàng (Approved/Pending/Rejected), Số dư khả dụng và Tài khoản ngân hàng hợp lệ."),
+        ("Chuyển Đổi Trạng Thái (State Transition Testing)",
+         "Kiểm thử toàn diện vòng đời đơn hàng ký quỹ và phiếu chi trả: Chuyển đổi trạng thái từ PENDING sang ESCROW_HOLDING, DELIVERED, COMPLETED; hoặc chuyển sang DISPUTED và REFUNDED khi có khiếu nại.")
     ]
 
-    for i, (t_title, t_desc, color) in enumerate(techs):
-        top = Inches(1.7 + (i % 2) * 2.6)
-        left = Inches(0.8 if i < 2 else 6.8)
-        # 0: left, top 1.7; 1: left, top 4.3; 2: right, top 1.7; 3: right, top 4.3
+    for i, (t_title, t_desc) in enumerate(techs):
         col_left = Inches(0.8) if i in [0, 1] else Inches(6.8)
-        col_top = Inches(1.7) if i in [0, 2] else Inches(4.3)
+        col_top = Inches(1.6) if i in [0, 2] else Inches(4.3)
         
-        add_card(s6, col_left, col_top, Inches(5.7), Inches(2.4), f"🎯 {t_title}", color)
-        tb = s6.shapes.add_textbox(col_left + Inches(0.2), col_top + Inches(0.55), Inches(5.3), Inches(1.7))
+        add_card(s6, col_left, col_top, Inches(5.7), Inches(2.5), t_title, PRIMARY_BLUE)
+        tb = s6.shapes.add_textbox(col_left + Inches(0.2), col_top + Inches(0.55), Inches(5.3), Inches(1.8))
         tf = tb.text_frame
         tf.word_wrap = True
+        tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
         p = tf.paragraphs[0]
         p.text = t_desc
-        p.font.name = "Segoe UI"
+        p.font.name = "Times New Roman"
         p.font.size = Pt(11.5)
-        p.font.color.rgb = TEXT_LIGHT
+        p.font.color.rgb = TEXT_MAIN
 
     # =========================================================================
-    # SLIDE 7: TÍCH HỢP CI/CD PIPELINE & BẰNG CHỨNG KÉP
+    # SLIDE 7: TỰ ĐỘNG HÓA CI/CD VÀ QUẢN LÝ BẰNG CHỨNG KIỂM THỬ
     # =========================================================================
     s7 = prs.slides.add_slide(blank_layout)
     add_background(s7)
-    add_header(s7, "6. TÍCH HỢP CI/CD PIPELINE & CHIẾN LƯỢC BẰNG CHỨNG KÉP", "TỰ ĐỘNG HÓA HOÀN TOÀN TRÊN GITHUB ACTIONS")
+    add_header(s7, "6. Tự động hóa CI/CD và Quản lý Bằng chứng kiểm thử", "Tích hợp pipeline liên tục và lưu trữ bằng chứng thực nghiệm")
 
-    add_card(s7, Inches(0.8), Inches(1.7), Inches(5.7), Inches(5.2), "⚙️ Quy Trình CI/CD Pipeline (GitHub Actions)", PRIMARY)
-    tb = s7.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(5.3), Inches(4.5))
+    add_card(s7, Inches(0.8), Inches(1.6), Inches(5.7), Inches(5.3), "Tích hợp CI/CD Pipeline (GitHub Actions)", PRIMARY_BLUE)
+    tb = s7.shapes.add_textbox(Inches(1.0), Inches(2.1), Inches(5.3), Inches(4.6))
     tf = tb.text_frame
     tf.word_wrap = True
-    cicd_steps = [
-        "1. Kích hoạt tự động: Khi Developer tạo Pull Request hoặc Push code lên nhánh main/develop.",
-        "2. Service Containers: Tự động dựng Postgres 15 và Redis trong runner Ubuntu để phục vụ SUT.",
-        "3. Setup Headless Chrome & FFmpeg: Cài đặt Playwright engine hỗ trợ quay video độ phân giải cao.",
-        "4. Kích hoạt Agentic Runner: Chạy kịch bản đa phân vai khép kín 3 vai trò trong vòng ~60 giây.",
-        "5. Xuất Artifacts: Đóng gói toàn bộ bằng chứng kiểm thử nạp lên GitHub Actions."
+    tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
+    cicd = [
+        ("Sự kiện kích hoạt:", "Pipeline được kích hoạt tự động khi có Pull Request mới hoặc mã nguồn được đẩy lên nhánh main."),
+        ("Dịch vụ phụ trợ:", "Tự động khởi động dịch vụ cơ sở dữ liệu PostgreSQL và Redis thông qua Service Container của GitHub Actions."),
+        ("Cài đặt môi trường:", "Thiết lập môi trường Node.js 20, cài đặt trình duyệt Playwright và thư viện FFmpeg phục vụ ghi hình."),
+        ("Thực thi kịch bản:", "Triệu gọi kịch bản kiểm thử E2E đa phân vai khép kín trong môi trường headless/xvfb.")
     ]
-    for i, s in enumerate(cicd_steps):
+    for i, (k, v) in enumerate(cicd):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.text = s
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(11.5)
-        p.font.color.rgb = TEXT_LIGHT
+        p.text = f"{k} {v}"
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(12)
+        p.font.color.rgb = TEXT_MAIN
         p.space_before = Pt(8)
 
-    add_card(s7, Inches(6.8), Inches(1.7), Inches(5.7), Inches(5.2), "📸 Chiến Lược Bằng Chứng Kép (Dual Visual Evidence)", ACCENT_GREEN)
-    tb = s7.shapes.add_textbox(Inches(7.0), Inches(2.2), Inches(5.3), Inches(4.5))
+    add_card(s7, Inches(6.8), Inches(1.6), Inches(5.7), Inches(5.3), "Thu thập và lưu trữ Bằng chứng kiểm thử (Artifacts)", PRIMARY_BLUE)
+    tb = s7.shapes.add_textbox(Inches(7.0), Inches(2.1), Inches(5.3), Inches(4.6))
     tf = tb.text_frame
     tf.word_wrap = True
-    evidence_pts = [
-        "Tại sao cần Bằng chứng kép?",
-        "• 1. Ảnh Screenshots (.png): Bằng chứng xác định tại các checkpoint quan trọng (Đã tạo đơn, Đã bấm rút tiền, Đã giải ngân) để xem nhanh trên PR mà không cần tải video.",
-        "• 2. Video Ghi hình (.webm): Bằng chứng liên tục chứng minh tương tác thật 100% (Gõ bàn phím, click chuột, QR code VietQR xuất hiện, chuyển vai), loại trừ việc làm giả kết quả.",
-        "• Cơ chế if: always(): Ngay cả khi kiểm thử gặp lỗi (Fail), pipeline vẫn xuất toàn bộ video tại giây phút lỗi để lập trình viên điều tra ngay lập tức."
+    tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
+    evidence = [
+        ("Ảnh chụp màn hình (Screenshots):", "Ghi lại hình ảnh tại các thời điểm quan trọng (Tạo đơn ký quỹ, Gửi yêu cầu rút tiền, Quản trị duyệt giải ngân) để xem nhanh trên báo cáo."),
+        ("Video ghi hình thực tế:", "Quay lại toàn bộ quá trình tương tác thực tế của trình duyệt, chứng minh hệ thống chạy thật trên các cổng dịch vụ 4200 và 4203."),
+        ("Lưu vết thực thi (Execution Logs):", "Ghi nhận chi tiết mã trạng thái phản hồi HTTP, truy vấn cơ sở dữ liệu và thời gian phản hồi của từng yêu cầu."),
+        ("Cơ chế xuất luôn luôn (if: always):", "Đảm bảo artifacts luôn được đóng gói tải lên hệ thống kể cả khi kịch bản thành công hoặc thất bại.")
     ]
-    for i, s in enumerate(evidence_pts):
+    for i, (k, v) in enumerate(evidence):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.text = s
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(11.5)
-        p.font.color.rgb = TEXT_LIGHT
-        p.space_before = Pt(6)
+        p.text = f"{k} {v}"
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(12)
+        p.font.color.rgb = TEXT_MAIN
+        p.space_before = Pt(8)
 
     # =========================================================================
-    # SLIDE 8: KẾT QUẢ THỰC NGHIỆM & 6 DEFECTS PHÁT HIỆN
+    # SLIDE 8: KẾT QUẢ THỰC NGHIỆM VÀ PHÂN TÍCH LỖI (DEFECT LOG)
     # =========================================================================
     s8 = prs.slides.add_slide(blank_layout)
     add_background(s8)
-    add_header(s8, "7. KẾT QUẢ KIỂM THỬ THỰC NGHIỆM & BÁO CÁO LỖI (DEFECT LOG)", "PHÁT HIỆN 6 LỖI NGHIỆM THU THỰC TẾ TRÊN TRUSTBASE")
+    add_header(s8, "7. Kết quả thực nghiệm và Phân tích lỗi (Defect Log)", "Tổng hợp các lỗi thực tế được phát hiện trên hệ thống TrustBase")
 
     defects = [
-        ("DEF-001 (High)", "Khóa rút tiền do KYC ngầm: Người bán có số dư nhưng nút rút bị disable do feature flag 'seller:kyc_gate_payouts' chưa thỏa điều kiện onboarding_progress."),
-        ("DEF-002 (Medium)", "Form Checkout chặn email hợp lệ: Allowlist chỉ chấp nhận Gmail/Yahoo/Outlook, từ chối email doanh nghiệp/tên miền riêng."),
-        ("DEF-003 (High)", "Lỗi HTTP 500 khi áp dụng voucher hết hạn: Backend ném Unhandled Exception thay vì trả về lỗi nghiệp vụ 400 Bad Request kèm thông báo thân thiện."),
-        ("DEF-004 (Medium)", "Xung đột selector giao diện Desktop vs Mobile: Form Checkout render trùng lặp cả input mobile và desktop khiến automation bị click nhầm phần tử ẩn."),
-        ("DEF-005 (Medium)", "Admin Console thiếu cảnh báo trạng thái Payout: Chưa hiển thị badge cảnh báo nếu người bán chưa liên kết thông tin thanh toán VietQR."),
-        ("DEF-006 (Low)", "Thiếu cơ chế tự động giải phóng đơn ký quỹ hết hạn: Đơn hàng quá 24h không thanh toán vẫn giữ trạng thái PENDING thay vì CANCELLED.")
+        ("DEF-001 (Nghiêm trọng cao):", "Khóa rút tiền do ràng buộc KYC ngầm: Người bán có số dư khả dụng nhưng nút rút tiền bị vô hiệu hóa do tính năng kyc_gate_payouts kích hoạt khi dữ liệu onboarding_progress chưa phê duyệt."),
+        ("DEF-002 (Nghiêm trọng trung bình):", "Biểu mẫu thanh toán từ chối email hợp lệ: Cấu hình danh sách cho phép (domain allowlist) chỉ chấp nhận Gmail, Yahoo, Outlook và từ chối các email có tên miền riêng."),
+        ("DEF-003 (Nghiêm trọng cao):", "Lỗi máy chủ nội bộ HTTP 500 khi áp dụng mã giảm giá: Backend phát sinh lỗi ngoại lệ chưa xử lý đối với mã giảm giá đã hết hạn thay vì trả về lỗi nghiệp vụ 400 kèm thông báo."),
+        ("DEF-004 (Nghiêm trọng trung bình):", "Xung đột định danh phần tử giao diện Desktop và Mobile: Biểu mẫu render trùng lặp cả input mobile và desktop dẫn đến trường hợp công cụ automation tương tác nhầm phần tử ẩn."),
+        ("DEF-005 (Nghiêm trọng trung bình):", "Giao diện quản trị thiếu thông báo trạng thái VietQR: Cổng Admin chưa hiển thị cảnh báo khi tài khoản người bán chưa hoàn tất cấu hình phương thức chi trả VietQR."),
+        ("DEF-006 (Nghiêm trọng thấp):", "Thiếu cơ chế tự động hủy đơn hàng ký quỹ quá hạn: Đơn hàng ở trạng thái chờ thanh toán quá 24 giờ không tự động chuyển về trạng thái hủy.")
     ]
 
     for i, (d_title, d_desc) in enumerate(defects):
-        top = Inches(1.7 + (i % 3) * 1.7)
+        top = Inches(1.6 + (i % 3) * 1.75)
         left = Inches(0.8 if i < 3 else 6.8)
-        color = ACCENT_AMBER if "High" in d_title else PRIMARY_LIGHT
         
-        add_card(s8, left, top, Inches(5.7), Inches(1.55), f"🐞 {d_title}", color)
-        tb = s8.shapes.add_textbox(left + Inches(0.2), top + Inches(0.45), Inches(5.3), Inches(1.0))
+        add_card(s8, left, top, Inches(5.7), Inches(1.6), "", PRIMARY_BLUE)
+        tb = s8.shapes.add_textbox(left + Inches(0.2), top + Inches(0.12), Inches(5.3), Inches(1.35))
         tf = tb.text_frame
         tf.word_wrap = True
-        p = tf.paragraphs[0]
-        p.text = d_desc
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(11)
-        p.font.color.rgb = TEXT_LIGHT
-
-    # =========================================================================
-    # SLIDE 9: KẾ HOẠCH DEMO THỰC TẾ & BỐ TRÍ THỜI GIAN 10 PHÚT
-    # =========================================================================
-    s9 = prs.slides.add_slide(blank_layout)
-    add_background(s9)
-    add_header(s9, "8. KẾ HOẠCH DEMO THỰC TẾ & PHÂN BỔ THỜI GIAN 10 PHÚT", "BỐ TRÍ BÁO CÁO KHOA HỌC — ĐÚNG QUY ĐỊNH HỘI ĐỒNG")
-
-    schedule = [
-        ("00:00 - 02:00 (2 phút)", "BÁO CÁO SLIDES TỔNG QUAN", "Giới thiệu thành viên, mục tiêu đề tài, bài toán kiểm thử đa phân vai trên TrustBase và bảng tự chấm điểm thang 10.", PRIMARY),
-        ("02:00 - 06:30 (4.5 phút)", "DEMO TRỰC QUAN CHU TRÌNH 3 PHÂN VAI", "Chiếu Video thực tế / Demo live: Buyer đặt mua Steam Wallet (Escrow VietQR) -> Seller yêu cầu rút tiền Payout -> Admin thẩm định port 4203.", ACCENT_GREEN),
-        ("06:30 - 08:30 (2 phút)", "DEMO FILE TEST TỰ SINH & CI/CD PIPELINE", "Mở file test script chuẩn Playwright do Agent tự sinh ra (tests/*.spec.ts) và quy trình GitHub Actions xuất Artifacts.", PRIMARY_LIGHT),
-        ("08:30 - 10:00 (1.5 phút)", "TRẢ LỜI CÂU HỎI VẤN ĐÁP (Q&A)", "Giải đáp câu hỏi chuyên môn của Thầy Lê Phi Hùng về MCP Protocol, Self-healing, và tính trung thực của bằng chứng kép.", ACCENT_AMBER)
-    ]
-
-    for i, (t_time, t_step, t_detail, color) in enumerate(schedule):
-        top = Inches(1.7 + i * 1.3)
-        add_card(s9, Inches(0.8), top, Inches(11.733), Inches(1.15), "", color)
-        tb = s9.shapes.add_textbox(Inches(1.0), top + Inches(0.12), Inches(11.333), Inches(0.9))
-        tf = tb.text_frame
-        tf.word_wrap = True
+        tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
         
         p = tf.paragraphs[0]
-        p.text = f"{t_time} — {t_step}"
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(13)
+        p.text = d_title
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(12)
         p.font.bold = True
-        p.font.color.rgb = color
+        p.font.color.rgb = PRIMARY_BLUE
         
         p = tf.add_paragraph()
-        p.text = t_detail
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(11.5)
-        p.font.color.rgb = TEXT_LIGHT
+        p.text = d_desc
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(10.5)
+        p.font.color.rgb = TEXT_MAIN
         p.space_before = Pt(3)
 
     # =========================================================================
-    # SLIDE 10: KẾT LUẬN & ĐÓNG GÓP CỦA ĐỒ ÁN
+    # SLIDE 9: KẾ HOẠCH BÁO CÁO VÀ DEMO THỰC TẾ TRONG 10 PHÚT
+    # =========================================================================
+    s9 = prs.slides.add_slide(blank_layout)
+    add_background(s9)
+    add_header(s9, "8. Kế hoạch Báo cáo và Demo thực tế trong 10 phút", "Phân bổ thời gian chặt chẽ theo hướng dẫn của Giảng viên")
+
+    schedule = [
+        ("GIAI ĐOẠN 1: BÁO CÁO NỘI DUNG TỔNG QUAN (00:00 - 02:00 | 2 PHÚT)",
+         "Trình bày tóm tắt mục tiêu đề tài, bài toán kiểm thử sàn ký quỹ TrustBase, kiến trúc Agentic TestOps và bảng tự đánh giá thành viên nhóm theo thang điểm 10."),
+        ("GIAI ĐOẠN 2: TRÌNH CHIẾU DEMO CHU TRÌNH 3 PHÂN VAI (02:00 - 06:30 | 4.5 PHÚT)",
+         "Chiếu video thực tế hoặc chạy kịch bản tự hành: (1) Buyer tạo đơn mua bản quyền số và ký quỹ VietQR; (2) Seller đã eKYC yêu cầu rút tiền; (3) Admin đăng nhập cổng 4203 thẩm định giải ngân."),
+        ("GIAI ĐOẠN 3: MINH HỌA FILE TEST TỰ SINH VÀ CI/CD (06:30 - 08:30 | 2 PHÚT)",
+         "Trình chiếu file kịch bản Playwright chuẩn do Agent tự sinh ra trong thư mục tests, cấu hình pipeline GitHub Actions và thư mục lưu trữ artifacts."),
+        ("GIAI ĐOẠN 4: TRẢ LỜI CÂU HỎI VẤN ĐÁP CỦA GIẢNG VIÊN (08:30 - 10:00 | 1.5 PHÚT)",
+         "Giải đáp các câu hỏi chuyên môn của ThS. Lê Phi Hùng về giao thức MCP, kỹ thuật xử lý ranh giới dữ liệu và kết quả thực nghiệm thu được.")
+    ]
+
+    for i, (t_time, t_detail) in enumerate(schedule):
+        top = Inches(1.6 + i * 1.35)
+        add_card(s9, Inches(0.8), top, Inches(11.733), Inches(1.2), "", PRIMARY_BLUE)
+        tb = s9.shapes.add_textbox(Inches(1.0), top + Inches(0.12), Inches(11.333), Inches(0.95))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
+        
+        p = tf.paragraphs[0]
+        p.text = t_time
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(12.5)
+        p.font.bold = True
+        p.font.color.rgb = PRIMARY_BLUE
+        
+        p = tf.add_paragraph()
+        p.text = t_detail
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(11.5)
+        p.font.color.rgb = TEXT_MAIN
+        p.space_before = Pt(3)
+
+    # =========================================================================
+    # SLIDE 10: KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN ĐỀ TÀI
     # =========================================================================
     s10 = prs.slides.add_slide(blank_layout)
     add_background(s10)
-    add_header(s10, "9. KẾT LUẬN, ĐÓNG GÓP & LỜI CẢM ƠN", "TỔNG KẾT KẾT QUẢ ĐỒ ÁN MÔN HỌC")
+    add_header(s10, "9. Kết luận và Hướng phát triển đề tài", "Tổng kết đóng góp khoa học và lời cảm ơn")
 
-    add_card(s10, Inches(0.8), Inches(1.7), Inches(5.7), Inches(5.2), "🏆 Đóng Góp Chính Của Đề Tài", PRIMARY)
-    tb = s10.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(5.3), Inches(4.5))
+    add_card(s10, Inches(0.8), Inches(1.6), Inches(5.7), Inches(5.3), "Đóng góp chính của đề tài", PRIMARY_BLUE)
+    tb = s10.shapes.add_textbox(Inches(1.0), Inches(2.1), Inches(5.3), Inches(4.6))
     tf = tb.text_frame
     tf.word_wrap = True
+    tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
     concl = [
-        "1. Ứng dụng thành công kỹ thuật Agentic TestOps tiên phong vào hệ thống thực tế TrustBase, chứng minh tính khả thi vượt trội so với Automation truyền thống.",
-        "2. Giải quyết triệt để bài toán kiểm thử chu trình đa phân vai (Multi-Role Lifecycle) phức tạp kéo dài qua 3 thực thể (Buyer -> Seller -> Admin).",
-        "3. Xây dựng thành công cơ chế Bằng chứng kép (Dual Visual Evidence) trên CI/CD, xuất đồng thời Screenshots và Video ghi hình thực tế 100%.",
-        "4. Phát hiện 6 Defect nghiệp vụ quan trọng giúp củng cố chất lượng cho hệ thống TrustBase."
+        "1. Ứng dụng thành công mô hình Agentic TestOps vào hệ thống thực tế TrustBase, chứng minh tính khả thi của việc kết hợp AI Agent với tự động hóa kiểm thử.",
+        "2. Giải quyết trọn vẹn bài toán kiểm thử chu trình giao dịch đa phân vai phức tạp (Buyer -> Seller -> Admin) mà kiểm thử truyền thống gặp khó khăn.",
+        "3. Xây dựng quy trình tự động hóa CI/CD với khả năng lưu vết bằng chứng thực thi minh bạch gồm ảnh chụp màn hình, video và nhật ký lỗi.",
+        "4. Phát hiện 6 lỗi thực tế hỗ trợ nâng cao chất lượng và độ tin cậy cho nền tảng thương mại số TrustBase."
     ]
     for i, c in enumerate(concl):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.text = c
-        p.font.name = "Segoe UI"
-        p.font.size = Pt(11.5)
-        p.font.color.rgb = TEXT_LIGHT
+        p.font.name = "Times New Roman"
+        p.font.size = Pt(12)
+        p.font.color.rgb = TEXT_MAIN
         p.space_before = Pt(8)
 
-    add_card(s10, Inches(6.8), Inches(1.7), Inches(5.7), Inches(5.2), "🚀 Định Hướng & Lời Cảm Ơn", ACCENT_GREEN)
-    tb = s10.shapes.add_textbox(Inches(7.0), Inches(2.2), Inches(5.3), Inches(4.5))
+    add_card(s10, Inches(6.8), Inches(1.6), Inches(5.7), Inches(5.3), "Định hướng phát triển và Lời cảm ơn", PRIMARY_BLUE)
+    tb = s10.shapes.add_textbox(Inches(7.0), Inches(2.1), Inches(5.3), Inches(4.6))
     tf = tb.text_frame
     tf.word_wrap = True
+    tf.margin_left = tf.margin_top = tf.margin_right = tf.margin_bottom = 0
     futs = [
-        "Định hướng phát triển:",
-        "• Mở rộng bộ công cụ MCP kết nối với kiểm thử hiệu năng k6 và kiểm thử bảo mật tự động ZAP.",
-        "• Tích hợp Agent tự động tạo GitHub Issues kèm video và stack trace khi phát hiện bug.",
+        "Hướng phát triển tiếp theo:",
+        "- Tích hợp công cụ MCP với kiểm thử tải k6 và công cụ quét lỗ hổng OWASP ZAP.",
+        "- Tự động tạo Issue trên GitHub kèm theo log lỗi và video ghi hình khi phát hiện lỗi.",
         "",
-        "LỜI CẢM ƠN CHÂN THÀNH:",
-        "Nhóm 05 xin trân trọng gửi lời cảm ơn sâu sắc đến ThS. Lê Phi Hùng đã tận tình hướng dẫn, truyền đạt kiến thức và định hướng quý báu cho nhóm trong suốt môn học Kiểm thử & Đảm bảo Chất lượng Phần mềm.",
+        "Lời cảm ơn:",
+        "Nhóm 05 xin trân trọng cảm ơn ThS. Lê Phi Hùng đã tận tình hướng dẫn và đóng góp những ý kiến quý báu cho nhóm trong suốt quá trình thực hiện đồ án môn học Kiểm thử và Đảm bảo Chất lượng Phần mềm.",
         "",
-        "XIN CHÂN THÀNH CẢM ƠN THẦY VÀ CÁC BẠN ĐÃ LẮNG NGHE!"
+        "Trân trọng cảm ơn Thầy và các bạn đã lắng nghe!"
     ]
     for i, f in enumerate(futs):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.text = f
-        p.font.name = "Segoe UI"
+        p.font.name = "Times New Roman"
         p.font.size = Pt(11.5)
-        if "LỜI CẢM ƠN" in f or "XIN CHÂN THÀNH" in f:
+        if "Lời cảm ơn:" in f or "Hướng phát triển" in f:
             p.font.bold = True
-            p.font.color.rgb = ACCENT_AMBER
-        elif "Định hướng" in f:
+            p.font.color.rgb = PRIMARY_BLUE
+        elif "Trân trọng cảm ơn" in f:
             p.font.bold = True
-            p.font.color.rgb = PRIMARY_LIGHT
+            p.font.color.rgb = ACCENT_BLUE
         else:
-            p.font.color.rgb = TEXT_LIGHT
-        p.space_before = Pt(4)
+            p.font.color.rgb = TEXT_MAIN
+        p.space_before = Pt(3)
 
-    # Lưu file
     prs.save(output_path)
-    print(f"Đã tạo file trình chiếu PowerPoint thành công: {output_path}")
+    print(f"Đã tạo bài thuyết trình học thuật chuẩn 10 slides tại: {output_path}")
 
 if __name__ == "__main__":
     out = r"C:\Users\NoNomt007\agentic-test-ops\Nhom05_AgenticTestOps_ThuyetTrinh.pptx"
-    build_presentation(out)
+    build_academic_presentation(out)
