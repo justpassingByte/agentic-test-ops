@@ -1,5 +1,42 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+
+/**
+ * Resolves the Canvas Note Engineer RAG sync directory without machine-specific paths.
+ * Priority: explicit args.canvasRagDir -> CANVAS_RAG_DIR env -> sibling workspace -> Desktop folder.
+ */
+function resolveCanvasRagDir(baseDir, args = {}) {
+  const candidates = [
+    args.canvasRagDir,
+    process.env.CANVAS_RAG_DIR,
+    path.resolve(baseDir, '..', '..', 'plugin-canvas-engineer', 'rag'),
+    path.resolve(baseDir, '..', '..', 'canvas-note-engineer', 'rag'),
+    path.join(os.homedir(), 'Desktop', 'plugin-canvas-engineer', 'rag')
+  ].filter(Boolean);
+
+  for (const dir of candidates) {
+    if (fs.existsSync(dir)) return dir;
+  }
+  return null;
+}
+
+function syncCanvasArtifact(baseDir, filenameBase, canvasPayload, args = {}) {
+  if (args.syncToCanvasDir === false) {
+    return { syncedToCanvas: false, canvasRagDir: null };
+  }
+  const targetDir = resolveCanvasRagDir(baseDir, args);
+  if (!targetDir) {
+    return { syncedToCanvas: false, canvasRagDir: null };
+  }
+  try {
+    const targetCopy = path.join(targetDir, filenameBase + '.canvas.json');
+    fs.writeFileSync(targetCopy, JSON.stringify(canvasPayload, null, 2), 'utf8');
+    return { syncedToCanvas: true, canvasRagDir: targetDir };
+  } catch {
+    return { syncedToCanvas: false, canvasRagDir: targetDir };
+  }
+}
 
 /**
  * Exports Dual-Mode Test & Diagnostic Knowledge:
@@ -54,26 +91,28 @@ export function exportRagReport(args, baseDir) {
   const passedCount = testCases.filter(t => t.status === 'passed').length;
   const totalCount = testCases.length;
   const passRate = ((passedCount / totalCount) * 100).toFixed(1);
+  const techniques = Array.isArray(args.testingTechniques) && args.testingTechniques.length > 0
+    ? args.testingTechniques
+    : ['Black-Box (EP / BVA / Decision Table / State Transition)', 'Grey-Box CDP Heap Trace'];
 
-  // 1. Generate Markdown RAG Document
-  const mdPath = path.join(knowledgeDir, filenameBase + '.md');
-  const mdContent = [
+  const mdSections = [
     '# [' + testId + '] ' + title,
     '',
     '- **Target Route**: `' + (args.route || '/checkout') + '`',
     '- **Execution Timestamp**: ' + new Date().toISOString(),
-    '- **Test Result**: ' + passedCount + '/' + totalCount + ' Passed (' + passRate + '%) — ' + (passedCount === totalCount ? '✅ ALL GREEN' : '❌ DEFECT DETECTED'),
+    '- **Test Result**: ' + passedCount + '/' + totalCount + ' Passed (' + passRate + '%) — ' + (passedCount === totalCount ? 'ALL GREEN' : 'DEFECT DETECTED'),
     '- **Severity**: ' + (args.severity || 'HIGH'),
+    '- **Testing Methodologies**: ' + techniques.join(', '),
     '',
     '---',
     '',
-    '## 📋 1. Test Scenarios Matrix',
-    ...testCases.map(tc => '- **' + (tc.id || 'TC') + '**: ' + tc.title + ' ➔ **' + (tc.status === 'passed' ? 'PASSED ✅' : 'FAILED ❌') + '** (' + (tc.metric || 'N/A') + ')\n  *Summary*: ' + (tc.summary || '')),
+    '## 1. Test Scenarios Matrix',
+    ...testCases.map(tc => '- **' + (tc.id || 'TC') + '**: ' + tc.title + ' -> **' + (tc.status === 'passed' ? 'PASSED' : 'FAILED') + '** (' + (tc.metric || 'N/A') + (tc.technique ? ' | Technique: ' + tc.technique : '') + ')\n  *Summary*: ' + (tc.summary || '')),
     '',
     '---',
     '',
-    '## 🎭 2. Browser & Network Execution Trace (Playwright)',
-    '- **DOM Interaction**: `' + (args.actionDescription || 'Fill voucher code and click submit button') + '`',
+    '## 2. Browser & Network Execution Trace (Playwright)',
+    '- **DOM Interaction**: `' + (args.actionDescription || 'Fill form inputs and trigger user action') + '`',
     '- **Console Errors**:',
     '```text',
     args.symptoms?.consoleError || 'No console errors detected.',
@@ -86,12 +125,36 @@ export function exportRagReport(args, baseDir) {
     '',
     '---',
     '',
-    '## 🔍 3. Root Cause Analysis (RCA) & Regression Defense',
+    '## 3. Root Cause Analysis (RCA) & Regression Defense',
     '- **Source Location**: `' + (args.sourceLocation?.file || 'N/A') + ':' + (args.sourceLocation?.line || '0') + '` (Function: `' + (args.sourceLocation?.function || 'N/A') + '`)',
     '- **Root Cause**:',
-    args.rootCause || 'Missing null-safety check on negotiated order data structure.',
+    args.rootCause || 'Missing null-safety or validation guard in service layer.',
     '- **Automated Regression Suite**: `' + (args.regressionTestFile || 'tests/regression/suite.spec.ts') + '`'
-  ].join('\n');
+  ];
+
+  if (args.cdpHeapInspection) {
+    mdSections.push(
+      '',
+      '### CDP In-Memory Heap Snapshot',
+      '```json',
+      JSON.stringify(args.cdpHeapInspection, null, 2),
+      '```'
+    );
+  }
+
+  if (args.coverageMetrics) {
+    mdSections.push(
+      '',
+      '### White-Box Coverage & Complexity Metrics',
+      '```json',
+      JSON.stringify(args.coverageMetrics, null, 2),
+      '```'
+    );
+  }
+
+  // 1. Generate Markdown RAG Document
+  const mdPath = path.join(knowledgeDir, filenameBase + '.md');
+  const mdContent = mdSections.join('\n');
 
   fs.writeFileSync(mdPath, mdContent, 'utf8');
 
@@ -145,15 +208,20 @@ export function exportRagReport(args, baseDir) {
             }
           },
           {
-            title: 'API Intercept: ' + (args.symptoms?.failedRequest ? args.symptoms.failedRequest.split('->')[0]?.trim() || 'HTTP Request' : 'POST /api/v1/orders/voucher'),
+            title: 'API Intercept: ' + (args.symptoms?.failedRequest ? args.symptoms.failedRequest.split('->')[0]?.trim() || 'HTTP Request' : 'HTTP Endpoint Check'),
             role: 'gateway',
             summary: 'Intercepted backend HTTP response: ' + (args.symptoms?.failedRequest || 'Status 200 OK'),
             schematic_template: 'circuit_breaker_backoff',
             schematic_data: {
-              metric: args.symptoms?.failedRequest?.includes('->') ? args.symptoms.failedRequest.split('->')[1]?.trim() : 'HTTP 500 Internal Server Error',
+              metric: args.symptoms?.failedRequest
+                ? (args.symptoms.failedRequest.includes('->') ? args.symptoms.failedRequest.split('->')[1]?.trim() : args.symptoms.failedRequest)
+                : '200 OK',
               items: [
-                { label: 'HTTP Status: 500 Internal Server Error', status: args.symptoms?.failedRequest ? 'error' : 'ok' },
-                { label: 'Endpoint: ' + (args.route || '/api/v1/orders/voucher'), status: 'info' }
+                {
+                  label: args.symptoms?.failedRequest ? ('Failed Request: ' + args.symptoms.failedRequest) : 'HTTP Status: 200 OK',
+                  status: args.symptoms?.failedRequest ? 'error' : 'ok'
+                },
+                { label: 'Endpoint: ' + (args.route || '/'), status: 'info' }
               ]
             }
           }
@@ -214,15 +282,7 @@ export function exportRagReport(args, baseDir) {
 
   fs.writeFileSync(jsonPath, JSON.stringify(canvasPayload, null, 2), 'utf8');
 
-  let syncedToCanvas = false;
-  const canvasRagDir = 'C:\\Users\\MSI\\Desktop\\plugin-canvas-engineer\\rag';
-  if (args.syncToCanvasDir !== false && fs.existsSync(canvasRagDir)) {
-    try {
-      const targetCopy = path.join(canvasRagDir, filenameBase + '.canvas.json');
-      fs.writeFileSync(targetCopy, JSON.stringify(canvasPayload, null, 2), 'utf8');
-      syncedToCanvas = true;
-    } catch {}
-  }
+  const { syncedToCanvas, canvasRagDir } = syncCanvasArtifact(baseDir, filenameBase, canvasPayload, args);
 
   return {
     testId,
@@ -231,6 +291,7 @@ export function exportRagReport(args, baseDir) {
     mdPath,
     jsonPath,
     syncedToCanvas,
+    canvasRagDir,
     canvasSubClustersCount: canvasPayload.sub_clusters.length
   };
 }
@@ -557,15 +618,7 @@ export function exportOvernightSweepReport(args = {}, baseDir = import.meta.dirn
 
   fs.writeFileSync(jsonPath, JSON.stringify(canvasPayload, null, 2), 'utf8');
 
-  let syncedToCanvas = false;
-  const canvasRagDir = 'C:\\Users\\MSI\\Desktop\\plugin-canvas-engineer\\rag';
-  if (args.syncToCanvasDir !== false && fs.existsSync(canvasRagDir)) {
-    try {
-      const targetCopy = path.join(canvasRagDir, filenameBase + '.canvas.json');
-      fs.writeFileSync(targetCopy, JSON.stringify(canvasPayload, null, 2), 'utf8');
-      syncedToCanvas = true;
-    } catch {}
-  }
+  const { syncedToCanvas, canvasRagDir } = syncCanvasArtifact(baseDir, filenameBase, canvasPayload, args);
 
   return {
     sweepId,
@@ -577,6 +630,7 @@ export function exportOvernightSweepReport(args = {}, baseDir = import.meta.dirn
     mdPath,
     jsonPath,
     syncedToCanvas,
+    canvasRagDir,
     subClustersCount: canvasPayload.sub_clusters.length
   };
 }

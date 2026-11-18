@@ -28,14 +28,41 @@ const activeServers = new Map();
 
 // Reusable browser instance & isolated worker contexts for parallel flow execution
 let cachedBrowser = null;
+let cachedBrowserKey = null;
 const activeContexts = new Map();
 
-async function getSharedBrowser(chromium, headless = true) {
+async function getSharedBrowser(chromium, { headless = true, slowMo = 0 } = {}) {
+  const targetKey = `${headless}:${slowMo}`;
+  if (cachedBrowser && cachedBrowser.isConnected() && cachedBrowserKey !== targetKey) {
+    try { await cachedBrowser.close(); } catch {}
+    activeContexts.clear();
+    cachedBrowser = null;
+  }
+
   if (!cachedBrowser || !cachedBrowser.isConnected()) {
-    cachedBrowser = await chromium.launch({
+    const launchOptions = {
       headless,
+      slowMo,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    };
+    try {
+      cachedBrowser = await chromium.launch(launchOptions);
+    } catch (primaryErr) {
+      let fallbackErr = primaryErr;
+      for (const channel of ['chrome', 'msedge']) {
+        try {
+          cachedBrowser = await chromium.launch({ ...launchOptions, channel });
+          fallbackErr = null;
+          break;
+        } catch (err) {
+          fallbackErr = err;
+        }
+      }
+      if (fallbackErr) {
+        throw fallbackErr;
+      }
+    }
+    cachedBrowserKey = targetKey;
   }
   return cachedBrowser;
 }
@@ -146,36 +173,58 @@ const TOOLS = [
       "properties": {
         "sweepId": { "type": "string", "description": "Custom Sweep ID (e.g. SWEEP-20260909)" },
         "date": { "type": "string", "description": "Sweep date (YYYY-MM-DD)" },
+        "canvasRagDir": { "type": "string", "description": "Optional target directory of Canvas Note Engineer rag/ folder (overrides CANVAS_RAG_DIR)." },
         "flows": {
           "type": "array",
-          "description": "Array of evaluated flows with test results, CDP in-memory heap evaluations, and defect locations."
+          "description": "Array of evaluated flows with test results, formal methodology tags, CDP in-memory heap evaluations, and defect locations.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "flowId": { "type": "string" },
+              "name": { "type": "string" },
+              "route": { "type": "string" },
+              "status": { "type": "string", "enum": ["passed", "failed"] },
+              "totalCases": { "type": "number" },
+              "passedCases": { "type": "number" },
+              "avgLatencyMs": { "type": "number" },
+              "summary": { "type": "string" },
+              "testingTechniques": { "type": "array", "items": { "type": "string" } },
+              "defect": { "type": "object" }
+            }
+          }
         }
       }
     }
   },
   {
     "name": "debug_export_rag_report",
-    "description": "Export verified bug findings into Dual-Mode format: (1) Human Markdown Report (.md) and (2) Canvas JSON Payload (.canvas.json) fully compliant with Canvas Note Engineer.",
+    "description": "Export verified bug or test-suite findings into Dual-Mode format: (1) Human Markdown Report (.md) and (2) Canvas JSON Payload (.canvas.json) fully compliant with Canvas Note Engineer.",
     "inputSchema": {
       "type": "object",
       "required": [
-        "bugId",
         "title",
-        "route",
-        "rootCause"
+        "route"
       ],
       "properties": {
+        "testId": {
+          "type": "string",
+          "description": "Test suite or trace identifier (e.g. TS-ORDER-001)"
+        },
         "bugId": {
           "type": "string",
-          "description": "Unique bug identifier"
+          "description": "Unique bug identifier (used if testId is omitted)"
         },
         "title": {
           "type": "string",
-          "description": "Title of the issue"
+          "description": "Title of the issue or test suite"
         },
         "route": {
           "type": "string",
           "description": "Target URL route"
+        },
+        "actionDescription": {
+          "type": "string",
+          "description": "Playwright user interaction summary"
         },
         "severity": {
           "type": "string",
@@ -185,6 +234,34 @@ const TOOLS = [
             "HIGH",
             "CRITICAL"
           ]
+        },
+        "testCases": {
+          "type": "array",
+          "description": "Executed test cases matrix (id, title, status: passed|failed, metric, summary, technique).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "status": { "type": "string", "enum": ["passed", "failed"] },
+              "metric": { "type": "string" },
+              "summary": { "type": "string" },
+              "technique": { "type": "string" }
+            }
+          }
+        },
+        "testingTechniques": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Applied SQA methodologies (e.g. ['Weak Robust EP', 'Robustness BVA 6n+1', 'CDP Heap Trace', 'Branch Coverage'])"
+        },
+        "coverageMetrics": {
+          "type": "object",
+          "description": "Optional white-box coverage & complexity metrics (statementCoverage, branchCoverage, mccabeComplexity, mutationScore)."
+        },
+        "cdpHeapInspection": {
+          "type": "object",
+          "description": "Live in-memory variables evaluated via CDP WebSocket."
         },
         "symptoms": {
           "type": "object",
@@ -219,6 +296,10 @@ const TOOLS = [
         },
         "regressionTestFile": {
           "type": "string"
+        },
+        "canvasRagDir": {
+          "type": "string",
+          "description": "Optional target directory of Canvas Note Engineer rag/ folder (overrides CANVAS_RAG_DIR)."
         },
         "syncToCanvasDir": {
           "type": "boolean"
@@ -315,7 +396,9 @@ const TOOLS = [
             }
           }
         },
+        contextId: { type: 'string', description: 'Optional isolated browser context ID for parallel workers (e.g. "worker-1", "worker-2"). Keeps cookies/storage separate.' },
         headless: { type: 'boolean', description: 'Run headless (default: true). Set to false to show the Chromium window during live demos.' },
+        slowMo: { type: 'number', description: 'Optional delay in ms between actions when demonstrating visually (default: 0).' },
         timeoutMs: { type: 'number', description: 'Timeout in ms (default: 30000)' }
       }
     }
@@ -484,6 +567,7 @@ async function handleToolCall(name, args) {
     case 'debug_browser_run': {
       const chromium = await getPlaywrightChromium();
       const headless = args.headless !== false; // default true
+      const slowMo = typeof args.slowMo === 'number' ? args.slowMo : 0;
       const timeout = args.timeoutMs || 30000;
       const actions = args.actions || [];
       const contextId = args.contextId || null;
@@ -495,8 +579,9 @@ async function handleToolCall(name, args) {
       let finalUrl = args.url;
       let actionCount = 0;
 
-      const browser = await getSharedBrowser(chromium, headless);
-      let context;
+      const browser = await getSharedBrowser(chromium, { headless, slowMo });
+      let context = null;
+      let page = null;
       let shouldCloseContext = false;
 
       if (contextId && activeContexts.has(contextId)) {
@@ -513,7 +598,7 @@ async function handleToolCall(name, args) {
       }
 
       try {
-        const page = await context.newPage();
+        page = await context.newPage();
 
         // Listen for console logs
         page.on('console', (msg) => {
@@ -606,13 +691,12 @@ async function handleToolCall(name, args) {
             : `Browser scenario completed successfully across ${actionCount} action(s). 0 console errors, 0 failed HTTP requests.`
         };
       } catch (runErr) {
-        // Capture screenshot on crash
+        // Capture screenshot on crash from active page
         try {
-          const timestamp = Date.now();
-          screenshotPath = path.join(screenshotsDir, `debug_crash_${timestamp}.png`);
-          const pages = browser.contexts()[0]?.pages();
-          if (pages && pages.length > 0) {
-            await pages[0].screenshot({ path: screenshotPath });
+          if (page && !page.isClosed()) {
+            const timestamp = Date.now();
+            screenshotPath = path.join(screenshotsDir, `debug_crash_${timestamp}.png`);
+            await page.screenshot({ path: screenshotPath });
           }
         } catch {
           // ignore screenshot failure during crash
