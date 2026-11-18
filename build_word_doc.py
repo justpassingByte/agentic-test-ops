@@ -434,6 +434,7 @@ def create_document():
     add_toc_line(doc, "3.4. Vòng lặp Tri thức Kép (Dual-Sided Knowledge Loop: RAG + Canvas 5ms)", "11", level=2)
     add_toc_line(doc, "3.5. Đẩy ngược Tri thức: Tự động sản sinh bộ Test Hồi quy (Regression Suite)", "12", level=2)
     add_toc_line(doc, "3.6. Chuẩn hóa Phương pháp Luận Thiết kế Kiểm thử cho Agentic TestOps", "13", level=2)
+    add_toc_line(doc, "3.7. Kiểm thử Hộp xám / Hộp trắng (CDP, Coverage, McCabe, Mutation) & V-Model", "14", level=2)
     
     add_toc_line(doc, "PHẦN 4. KIẾN TRÚC HỆ THỐNG 6 TẦNG TOÀN TRÌNH", "13", level=1)
     add_toc_line(doc, "4.1. Chi tiết 6 tầng công nghệ (6-Tier Zero-Impact Architecture)", "13", level=2)
@@ -452,6 +453,7 @@ def create_document():
     add_toc_line(doc, "7.2. Lộ trình triển khai và sản phẩm bàn giao", "21", level=2)
     
     add_toc_line(doc, "PHẦN 8. KẾT LUẬN & HƯỚNG PHÁT TRIỂN", "22", level=1)
+    add_toc_line(doc, "PHẦN 9. SỔ TAY CÀI ĐẶT & SỬ DỤNG CHO MÃ NGUỒN (SRC) BẤT KỲ (HANDBOOK)", "23", level=1)
     
     # ----------------- DANH MỤC HÌNH VẼ & BẢNG BIỂU -----------------
     p_lof = doc.add_paragraph()
@@ -683,8 +685,18 @@ def create_document():
     add_bullet("Kỹ thuật Phân tích giá trị biên (BVA): Agent áp dụng phân tầng 3 cấp độ biên. Cấp 1 là Standard BVA (4n+1 ca kiểm thử) với 5 giá trị {min, min+, nom, max-, max} cho các trường nhập liệu thông thường; Cấp 2 là Robustness Testing (6n+1 ca kiểm thử) bổ sung 2 giá trị ngoại lệ ngoài biên (min- và max+) để kiểm chứng khả năng xử lý ngoại lệ (Exception Handling); Cấp 3 là Worst-case Testing (5^n ca kiểm thử) theo giả định đa lỗi (Multiple-fault assumption) dành riêng cho các module tài chính và ký quỹ có rủi ro cao.", bold_prefix="1. ")
     add_bullet("Kỹ thuật Phân vùng tương đương (Equivalence Partitioning): Hệ thống triển khai nguyên tắc Weak Robust EP dựa trên giả định đơn lỗi (Single-fault assumption). Trong mỗi ca kiểm thử, chỉ cho phép duy nhất một biến đầu vào nhận giá trị không hợp lệ (Invalid), trong khi toàn bộ các biến còn lại phải giữ giá trị hợp lệ. Quy tắc này triệt tiêu hoàn toàn hiện tượng che giấu lỗi (Fault Masking) - nguyên nhân hàng đầu khiến các bộ test tự động bỏ sót lỗi logic.", bold_prefix="2. ")
     add_bullet("Kỹ thuật Bảng quyết định (Decision Table): Đối với các luồng nghiệp vụ đa điều kiện (như luồng Checkout kết hợp giữa Hạng thành viên, Mã giảm giá, Số dư ví và Địa chỉ giao hàng), Agent tự động lập ma trận kết hợp điều kiện và hành động, giúp loại trừ các tổ hợp dư thừa và bảo đảm độ bao phủ toàn diện 100% các quy tắc nghiệp vụ.", bold_prefix="3. ")
-    add_bullet("Kiểm thử Chuyển đổi trạng thái (State Transition Testing): Mô hình hóa hành vi hệ thống thành máy trạng thái hữu hạn (FSM). Agent tự động xác minh không chỉ các bước chuyển hợp lệ (Valid Transitions) mà còn chủ động kích hoạt các chuyển đổi phi lý (Invalid Transitions) - ví dụ gửi yêu cầu giải ngân hoa hồng khi đơn hàng đang ở trạng thái Tranh chấp (Dispute) - để kiểm tra tính toàn vẹn của nghiệp vụ.", bold_prefix="4. ")
-    add_bullet("Chuỗi Lỗi và Vòng đời Lỗi (Defect Workflow) chuẩn ISO/IEEE: Hệ thống phân định rạch ròi 4 cấp độ: Error (hành vi thiếu sót của lập trình viên) -> Fault/Defect (khiếm khuyết mã nguồn do CDP phát hiện) -> Failure (sự cố HTTP 500 do Playwright ghi nhận) -> Incident (phiếu sự cố được gắn thẻ trên Canvas Node theo vòng đời New -> Open -> Investigating -> Fixed -> Re-test).", bold_prefix="5. ")
+    add_bullet("Kỹ thuật Chuyển đổi trạng thái (State Transition Testing): Mô hình hóa hành vi hệ thống thành máy trạng thái hữu hạn (FSM). Agent tự động xác minh không chỉ các bước chuyển hợp lệ (Valid Transitions) mà còn chủ động kích hoạt các chuyển đổi phi lý (Invalid Transitions) - ví dụ gửi yêu cầu giải ngân hoa hồng khi đơn hàng đang ở trạng thái Tranh chấp (Dispute) - để kiểm tra tính toàn vẹn của nghiệp vụ.", bold_prefix="4. ")
+    add_bullet("Chuỗi Lỗi và Vòng đời Lỗi (Defect Workflow) chuẩn ISO/IEEE: Hệ thống phân định rạch ròi 4 cấp độ: Error (hành vi thiếu sót của lập trình viên) -> Fault/Defect (khiếm khuyết mã nguồn do CDP phát hiện) -> Failure (sự cố HTTP 500 do Playwright ghi nhận) -> Incident (phiếu sự cố được gắn thẻ trên Canvas Node theo vòng đời New -> Open -> Investigating -> Fixed -> Re-test -> Closed/Re-opened).", bold_prefix="5. ")
+
+    add_h2("3.7. Kiểm thử Hộp xám / Hộp trắng (Grey-Box CDP, Coverage, McCabe, Mutation Testing) & V-Model")
+    add_p(
+        "Nếu các kỹ thuật Hộp đen ở Mục 3.6 giúp thiết kế đầu vào sắc bén tại tầng giao diện và API, thì ở tầng điều tra và sinh bộ kiểm thử hồi quy, Agentic TestOps vận dụng đồng bộ các phương pháp Kiểm thử Hộp xám / Hộp trắng và Mô hình chữ V (V-Model):"
+    )
+    add_bullet("Đối ứng V-Model (Validation vs Verification): Nhánh trái-phải của V-Model được phản chiếu qua Validation ('Are we building the right system?' — kiểm định nghiệp vụ đầu cuối bằng Playwright E2E) và Verification ('Are we building the system right?' — kiểm chứng logic mã nguồn, Callstack và bộ nhớ RAM thông qua Node Inspect CDP).", bold_prefix="• ")
+    add_bullet("Kiểm thử Hộp xám kết hợp Dual-Trace (Black-Box Trigger + White-Box Heap): Playwright đóng vai trò kích hoạt lỗi từ bên ngoài, ngay khi bắt được HTTP 500 hoặc Uncaught Exception, CDP WebSocket (ws://127.0.0.1:9229) đóng băng tiến trình Node.js để thanh tra trực tiếp biến cục bộ trên RAM Heap và Callstack nội tại mà không cần chèn console.log.", bold_prefix="• ")
+    add_bullet("Phủ cấp 1 (Statement Coverage) & Phủ cấp 2 (Branch Coverage): Khi Tầng 6 tự động sinh bộ Regression Test cô lập, mỗi ca kiểm thử phải thực thi 100% câu lệnh tại vùng mã phát sinh lỗi (Phủ cấp 1) và phủ đủ cả hai nhánh True/False của điều kiện rẽ nhánh (Phủ cấp 2).", bold_prefix="• ")
+    add_bullet("Độ phức tạp chu trình McCabe V(G) = P + 1: Dựa trên số lượng điểm quyết định điều kiện P của hàm vi phạm để xác định cận dưới số đường dẫn độc lập cần kiểm thử.", bold_prefix="• ")
+    add_bullet("Kiểm thử Đột biến (Mutation Testing / Fault Injection): Tiêm chủ động các đột biến nhân tạo (đảo toán tử so sánh, đổi boolean, gán null/undefined cho biến biên) vào module trọng yếu để đo độ nhạy của bộ test thông qua chỉ số Mutation Score = [Số đột biến bị tiêu diệt / Tổng đột biến tiêm vào] x 100%.", bold_prefix="• ")
 
     # ----------------- PHẦN 4 -----------------
     add_h1("PHẦN 4. KIẾN TRÚC HỆ THỐNG 6 TẦNG TOÀN TRÌNH")
@@ -782,11 +794,11 @@ def create_document():
         run.font.color.rgb = RGBColor(255, 255, 255)
         
     mcp_tools = [
-        ("debug_inspect_cdp", "inspectPort, pauseOnExceptions, expressions[]", "Client gỡ lỗi WebSocket CDP: Đóng băng tiến trình, trích xuất Callstack và đọc biến RAM heap."),
-        ("debug_export_overnight_report", "sweepId, date, flows[]", "Báo cáo kiểm thử quét qua đêm: Tổng hợp kết quả các flow, xuất cặp file OVERNIGHT-SWEEP.md và .canvas.json đa cụm."),
-        ("debug_export_rag_report", "testId, title, route, symptoms, sourceLocation", "Tự động xuất cặp file tri thức sự cố đơn luồng: .md cho RAG và .canvas.json 3 Sub-Clusters cho Canvas."),
-        ("debug_browser_run", "url, actions[], headless, timeoutMs", "Điều khiển Playwright Chromium, tự động hóa thao tác người dùng, lắng nghe Console và bắt HTTP 4xx/5xx."),
-        ("debug_status", "ports[] (Mặc định quét 9 cổng)", "Quét trạng thái cổng ứng dụng (3000, 4200) và cổng inspect (9229...), trả về PID tiến trình."),
+        ("debug_inspect_cdp", "inspectPort, pauseOnExceptions, expressions[], breakpoints[]", "Client gỡ lỗi WebSocket CDP: Đóng băng tiến trình, trích xuất Callstack và đọc biến RAM heap."),
+        ("debug_export_overnight_report", "sweepId, date, flows[], canvasRagDir", "Báo cáo kiểm thử quét qua đêm: Tổng hợp kết quả các flow, xuất cặp file OVERNIGHT-SWEEP.md và .canvas.json đa cụm."),
+        ("debug_export_rag_report", "testId/bugId, title, route, testCases[], testingTechniques[], canvasRagDir", "Tự động xuất cặp file tri thức sự cố đơn luồng: .md cho RAG và .canvas.json 3 Sub-Clusters cho Canvas (tự sync qua CANVAS_RAG_DIR)."),
+        ("debug_browser_run", "url, contextId, actions[], headless, slowMo, timeoutMs", "Điều khiển Playwright Chrome/Chromium hỗ trợ contextId cô lập đa luồng, lắng nghe Console và bắt HTTP 4xx/5xx."),
+        ("debug_status", "ports[] (Mặc định quét 9 cổng)", "Quét trạng thái cổng ứng dụng (3000, 4200, 4201, 4203) và cổng inspect (9229...), trả về PID tiến trình."),
         ("debug_kill_ports", "ports[] ([9229, 9230...])", "Force-kill tiến trình zombie chiếm dụng cổng, dập tắt dứt điểm lỗi EADDRINUSE."),
         ("debug_start_server", "command, inspectPort, app, cwd", "Khởi chạy dev server ở chế độ --inspect=0.0.0.0:<port> chạy ngầm, tự động dọn sạch port trước khi bật."),
         ("debug_stop_server", "app, pid", "Dừng tiến trình dev server an toàn và giải phóng tài nguyên hệ thống."),
@@ -920,7 +932,7 @@ def create_document():
 
     # Figures: Live Screenshots
     add_figure(doc, "public/canvas-testops-demo.png", "Hình 6.1: Giao diện thực tế đồ thị lỗi tương tác đa cụm trên Canvas Note Engineer (Đỏ = Lỗi, Vàng = Nguyên nhân gốc, Xanh = Đã khắc phục)", width=Inches(5.8))
-    add_figure(doc, "screenshots/debug_manual_1788894674493.png", "Hình 6.2: Bằng chứng kiểm thử tự động tầng giao diện do Playwright chụp lại khi phát hiện bất thường", width=Inches(5.8))
+    add_figure(doc, "screenshots/detailed_01_buyer_order.png", "Hình 6.2: Bằng chứng kiểm thử thực tế trên giao diện TrustBase — Đơn hàng Escrow kèm mã VietQR được Playwright tạo và xác thực", width=Inches(5.8))
 
     # ----------------- PHẦN 7 -----------------
     add_h1("PHẦN 7. PHÂN CÔNG NHIỆM VỤ NHÓM 3 THÀNH VIÊN & KẾ HOẠCH")
@@ -988,8 +1000,19 @@ def create_document():
         bold_prefix="Hướng phát triển tương lai: "
     )
     add_bullet("Tự Phục Hồi Mã Nguồn Tự Động (Self-Healing Code): Không chỉ dừng lại ở việc phát hiện lỗi và sinh bài test hồi quy, Agent sẽ tự động tạo nhánh git (branch), đề xuất Pull Request chứa bản vá mã nguồn đã được xác thực qua bài test hồi quy.", bold_prefix="1. ")
-    add_bullet("Mở rộng hỗ trợ Đa nền tảng Runtime: Bổ sung khả năng kết nối gỡ lỗi từ xa cho các nền tảng backend khác như Python (Debugpy), Java (JDWP), và Go (Delve).", bold_prefix="2. ")
+    add_bullet("Hỗ trợ gỡ lỗi Đa nền tảng Runtime: Bổ sung khả năng kết nối gỡ lỗi từ xa cho các nền tảng backend khác như Python (Debugpy), Java (JDWP), và Go (Delve).", bold_prefix="2. ")
     add_bullet("Tích hợp Trực tiếp vào GitHub Actions & GitLab CI: Đóng gói Agentic TestOps thành một CI Action độc lập, tự động kích hoạt bầy worker quét lỗi mỗi khi có Pull Request mới.", bold_prefix="3. ")
+
+    # ----------------- PHẦN 9: SỔ TAY HƯỚNG DẪN CÀI ĐẶT CHO MÃ NGUỒN BẤT KỲ -----------------
+    add_h1("PHẦN 9. SỔ TAY CÀI ĐẶT & SỬ DỤNG CHO MÃ NGUỒN (SRC) BẤT KỲ (HANDBOOK)")
+    add_p(
+        "Nhờ kiến trúc 100% Zero-Impact qua chuẩn MCP stdio, người dùng có thể áp dụng Agentic TestOps để kiểm thử bất kỳ dự án Web/Backend nào mà không cần chỉnh sửa mã nguồn đích (chi tiết đầy đủ xem thêm trong file HANDBOOK.md):"
+    )
+    add_bullet("Cài đặt một lần: Mở terminal tại thư mục mcp/ và chạy 'npm install' cùng '.\\setup-browser.ps1' (hoặc './setup-browser.sh'). Hệ thống tự động hỗ trợ cả Chromium tải về lẫn Google Chrome/Edge có sẵn trên máy.", bold_prefix="Bước 1 — Thiết lập Plugin & Playwright: ")
+    add_bullet("Gắn vào Antigravity IDE, Gemini CLI hoặc Claude Code bằng cách copy thư mục plugin vào '.agents/plugins/' của dự án mục tiêu hoặc khai báo lệnh 'node <path>/mcp/server.mjs' trong file cấu hình MCP (tùy chọn biến môi trường CANVAS_RAG_DIR).", bold_prefix="Bước 2 — Kết nối MCP Server với AI Agent: ")
+    add_bullet("Bật server Backend của src đích với cờ 'NODE_OPTIONS=--inspect=0.0.0.0:9229' (hoặc để Agent tự khởi động qua tool debug_start_server), đồng thời copy vscode/launch.json vào .vscode/ của src nếu muốn nhấn F5 attach trực quan.", bold_prefix="Bước 3 — Mở cổng Inspect trên src mục tiêu: ")
+    add_bullet("Ra lệnh Prompt cho Agent kiểm thử theo chuẩn Black-Box (EP Weak Robust, BVA 4n+1/6n+1/5^n, Decision Table, FSM) với headless=false để quan sát trực quan, kết hợp Grey-Box CDP soi biến RAM khi gặp HTTP 500 và xuất bộ test hồi quy đạt Statement/Branch Coverage.", bold_prefix="Bước 4 — Ra lệnh Prompt & Xem bằng chứng thật: ")
+    add_bullet("Đối chiếu kết quả thực tế tại thư mục screenshots/ (ảnh chụp xác thực DOM/HTTP, loại bỏ hoàn toàn video giả lập), knowledge/*.md (RAG Dossier) và kéo thả knowledge/*.canvas.json vào Canvas Note Engineer.", bold_prefix="Bước 5 — Thẩm định Bằng chứng: ")
 
     # Save Document
     target_path = os.path.abspath("Agentic_TestOps.docx")

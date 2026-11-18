@@ -22,12 +22,15 @@
   - [3.2. Các Chế Độ Tương Tác Ban Ngày (Interactive Workflows)](#32-các-chế-độ-tương-tác-ban-ngày-interactive-workflows)
 4. [Kiến Trúc Hệ Thống 6 Tầng Toàn Trình](#4-kiến-trúc-hệ-thống-6-tầng-toàn-trình)
   - [4.1. Cơ Chế Phối Hợp Giữa Frontend Playwright & Backend CDP Debugger](#41-cơ-chế-phối-hợp-giữa-frontend-playwright--backend-cdp-debugger)
+  - [4.2. Phương Pháp Luận & Kỹ Thuật Kiểm Thử Tích Hợp (Black-Box, Grey/White-Box, Coverage, Mutation)](#42-phương-pháp-luận--kỹ-thuật-kiểm-thử-tích-hợp)
 5. [Quy Trình Phân Tích Sự Cố (Full-Stack RCA Loop)](#5-quy-trình-phân-tích-sự-cố-full-stack-rca-loop)
 6. [Hệ Thống Tri Thức Kép (AI Memory + Canvas Note Engineer)](#6-hệ-thống-tri-thức-kép-ai-memory--canvas-note-engineer)
 7. [Cấu Trúc Thư Mục Plugin Độc Lập](#7-cấu-trúc-thư-mục-plugin-độc-lập)
 8. [Bộ 9 Công Cụ MCP Server (mcp/server.mjs)](#8-danh-mục-9-công-cụ-trong-mcp-server)
-9. [Hướng Dẫn Cài Đặt & Chạy Thực Nghiệm](#9-hướng-dẫn-cài-đặt--thực-nghiệm-nhanh)
+9. [Hướng Dẫn Cài Đặt Cho Một `src` Bất Kỳ & Bộ Prompt Mẫu (Handbook)](#9-hướng-dẫn-cài-đặt--thực-nghiệm-nhanh)
 10. [Khung Đề Cương Nghiên Cứu & Báo Cáo Đồ Án (7 Chương)](#10-khung-đề-cương-thuyết-minh-đồ-án-tốt-nghiệp)
+
+> 📘 **Sổ tay thực hành đầy đủ:** Xem [HANDBOOK.md](./HANDBOOK.md) để lấy trọn bộ hướng dẫn cài đặt vào **bất kỳ mã nguồn (`src`) nào**, quy chuẩn kỹ thuật kiểm thử chi tiết, bộ prompt copy-paste và cách đọc bằng chứng thực tế.
 
 ---
 
@@ -409,6 +412,21 @@ flowchart LR
 
 ---
 
+### 4.2. Phương Pháp Luận & Kỹ Thuật Kiểm Thử Tích Hợp
+
+Hệ thống không sinh kịch bản ngẫu hứng mà áp dụng đồng bộ các kỹ thuật thiết kế kiểm thử phần mềm chính quy theo **V-Model** và chuẩn **ISO/IEC/IEEE 29119 / 829**:
+
+| Nhóm phương pháp | Kỹ thuật áp dụng | Cách hệ thống thực thi thực tế |
+|---|---|---|
+| **Kiểm thử Hộp đen (Black-Box)** (`agents/flow-worker.md`) | **Equivalence Partitioning (Weak Robust EP)** | Tuân thủ *Single Fault Assumption*: mỗi ca kiểm thử chỉ cho duy nhất 1 biến nhận giá trị Invalid, các biến khác giữ Valid để triệt tiêu hiện tượng **che giấu lỗi (Fault Masking)**. |
+| **Kiểm thử Hộp đen (Black-Box)** (`agents/flow-worker.md`) | **Boundary Value Analysis (BVA 3 cấp độ)** | • **Standard BVA ($4n+1$):** $\{\min, \min^+, \text{nom}, \max^-, \max\}$.<br>• **Robustness BVA ($6n+1$):** mở rộng $\min^-, \max^+$ kiểm tra Exception Handling.<br>• **Worst-Case ($5^n$):** giả định đa lỗi cho module tài chính/Escrow/hoa hồng BigInt. |
+| **Kiểm thử Hộp đen (Black-Box)** (`agents/flow-worker.md`) | **Decision Table & State Transition (FSM)** | Lập bảng quyết định đa điều kiện (KYC × Số dư × Voucher) và kích hoạt cả **Valid** lẫn **Invalid Transitions** (vd: Payout khi đơn hàng đang `CANCELLED`/`DISPUTED`). |
+| **Kiểm thử Hộp xám / Hộp trắng (Grey/White-Box)** (`mcp/cdp-client.mjs`) | **Dual-Trace CDP Heap Inspection** | Tương tác từ UI Black-Box (`Playwright`) ➔ tự động gắn WebSocket CDP `ws://127.0.0.1:9229` đóng băng tiến trình khi có Uncaught Exception, soi biến sống trên RAM Heap & Callstack `file:line`. |
+| **Chất lượng bộ Test Hồi quy** (`skills/overnight-sweep/SKILL.md`) | **Statement/Branch Coverage, McCabe & Mutation Testing** | Bộ test hồi quy Tầng 6 nhắm tới **Phủ cấp 1 (Statement)**, **Phủ cấp 2 (Branch True/False)**, đo độ phức tạp chu trình **McCabe** $V(G)=P+1$ và kiểm định độ nhạy bằng **Mutation Testing** (24 mutants). |
+| **Quy trình & Chống Flaky** (`agents/orchestrator.md`) | **V-Model, ISO/IEEE Error Chain & Defect Lifecycle** | Đối ứng **Validation** (UI E2E) ↔ **Verification** (CDP/Unit); phân rạch chuỗi `Error -> Fault -> Failure -> Incident`; gắn vòng đời `New -> Open -> Investigating (CDP) -> Fixed -> Re-test -> Closed`; cô lập polluter bằng `find-polluter`. |
+
+---
+
 ## 5. Quy Trình Phân Tích Sự Cố (Full-Stack RCA Loop)
 
 Biểu đồ tuần tự dưới đây thể hiện sự phối hợp nhịp nhàng giữa AI Agent, Trình duyệt E2E, Máy chủ Backend và Hệ thống Canvas:
@@ -485,7 +503,11 @@ flowchart TD
 
 ---
 
-### Hình Ảnh & Video Thực Tế Trên Không Gian Vô Cực (Live Interactive Demo)
+### Hình Ảnh & Video Demo Không Gian Vô Cực Canvas Note Engineer
+
+> **Phân biệt minh bạch các bằng chứng Demo:**
+> - Ảnh và video MP4 ngay bên dưới minh họa **giao diện hiển thị tri thức lỗi trên [canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer)** sau khi nạp file `.canvas.json`.
+> - Khi Agent thực thi kiểm thử trực tiếp trên **Web Application mục tiêu (TrustBase SUT)**, bằng chứng được thu thập dưới dạng **trình duyệt Chrome thao tác trực quan (`headless: false`), ảnh chụp màn hình từng bước đã xác thực DOM/HTTP tại `screenshots/`, và kịch bản tái hiện `.spec.ts`** (không sử dụng video giả lập).
 
 <p align="center">
   <img src="public/canvas-testops-demo.png" alt="Interactive TestOps Cluster on Canvas Note Engineer" width="100%" />
@@ -496,8 +518,8 @@ flowchart TD
 </p>
 
 <p align="center">
-  <em>Video thao tác trực tiếp: Zoom, Pan mượt mà, phân tách các Sub-Clusters và kích hoạt hạt xung lực lỗi Bug Vector Particle bò dọc dây nối DAG.</em><br>
-  <a href="https://raw.githubusercontent.com/justpassingByte/agentic-test-ops/main/public/canvas-demo.mp4"><strong>[Bấm vào đây để mở / phát video MP4 trực tiếp]</strong></a>
+  <em>Video thao tác trực tiếp trên Canvas Note Engineer: Zoom, Pan, phân tách Sub-Clusters và chạy Bug Vector Particle dọc dây nối DAG.</em><br>
+  <a href="https://raw.githubusercontent.com/justpassingByte/agentic-test-ops/main/public/canvas-demo.mp4"><strong>[Bấm vào đây để mở / phát video demo Canvas Note Engineer]</strong></a>
 </p>
 
 ---
@@ -664,40 +686,38 @@ flowchart LR
 ## 7. Cấu Trúc Thư Mục Plugin Độc Lập
 
 ```text
-debug-plugin/
+agentic-test-ops/
 ├── .claude-plugin/
-│   └── plugin.json                  # Manifest định danh plugin (hỗ trợ Claude Code & Antigravity)
+│   └── plugin.json                        # Manifest định danh plugin (Claude Code & Antigravity)
+├── .github/workflows/
+│   └── agentic-testops-ci.yml             # CI Pipeline kiểm định MCP Server, Playwright & xuất Artifacts
 ├── mcp/
-│   ├── server.mjs                   # Zero-dependency Node.js MCP Server (JSON-RPC 2.0 stdio, 7 tools)
-│   ├── rag-exporter.mjs             # Module xuất Dual-Mode RAG Document & Canvas Graph (.canvas.json)
-│   ├── package.json                 # Khai báo dependency Playwright Chromium
-│   ├── setup-browser.ps1            # Script tự động cài đặt Chromium (Windows PowerShell)
-│   └── setup-browser.sh             # Script tự động cài đặt Chromium (Linux / macOS)
-├── knowledge/                       # Kho tri thức lỗi (RAG Docs & Canvas JSON cho canvas-note-engineer)
-│   ├── BUG-2026-001-order-escrow-race.md
-│   └── BUG-2026-001-order-escrow-race.canvas.json
-├── screenshots/                     # Bằng chứng hình ảnh tự động chụp khi xảy ra lỗi
-├── skills/
-│   └── debug-rca/
-│       ├── SKILL.md                 # Quy trình 4 bước Full-Stack RCA
-│       ├── references/
-│       │   ├── frontend-e2e-debugging.md   # Đối chiếu Network & UI Console
-│       │   ├── systematic-debugging.md     # Phương pháp kiểm định giả thuyết khoa học
-│       │   ├── root-cause-tracing.md       # Kỹ thuật lần ngược callstack
-│       │   ├── log-and-ci-analysis.md      # Khai phá log máy chủ & CI
-│       │   └── verification.md             # Tiêu chuẩn nghiệm thu chứng cứ
-│       └── scripts/
-│           ├── find-polluter.ps1    # Cô lập test case gây ô nhiễm môi trường (PowerShell)
-│           └── find-polluter.sh     # Cô lập test case gây ô nhiễm môi trường (Bash)
+│   ├── server.mjs                         # Node.js MCP Server (JSON-RPC 2.0 stdio, 9 tools)
+│   ├── cdp-client.mjs                     # Client WebSocket kết nối Node --inspect CDP soi biến RAM
+│   ├── rag-exporter.mjs                   # Module xuất Dual-Mode RAG (.md) & Canvas Graph (.canvas.json)
+│   ├── package.json                       # Khai báo dependency Playwright Chromium
+│   ├── setup-browser.ps1                  # Script cài đặt Chromium (Windows PowerShell)
+│   └── setup-browser.sh                   # Script cài đặt Chromium (Linux / macOS)
 ├── agents/
-│   └── debugger.md                  # Subagent SRE điều tra sự cố toàn trình
+│   ├── orchestrator.md                    # Subagent chỉ huy Overnight Fan-Out/Fan-In & V-Model
+│   ├── flow-worker.md                     # Subagent thực thi Black-Box (EP, BVA 3 cấp, Decision Table, FSM)
+│   ├── cdp-investigator.md                # Subagent gắn CDP WebSocket bắt exception & heap RAM
+│   └── debugger.md                        # Subagent SRE điều tra sự cố full-stack
 ├── commands/
-│   └── debug.md                     # Slash command /debug [nội dung vấn đề]
+│   ├── debug.md                           # Slash command /debug [mô tả vấn đề]
+│   └── overnight.md                       # Slash command /overnight [--workers 3] [--flows ...]
+├── skills/
+│   ├── debug-rca/                         # Quy trình RCA 4 bước + script find-polluter.ps1/.sh
+│   └── overnight-sweep/                   # Quy trình quét đa luồng & White-Box coverage
+├── knowledge/                             # Kho tri thức lỗi (.md cho AI RAG & .canvas.json cho Canvas)
+├── screenshots/                           # Bằng chứng ảnh chụp thực tế từ Playwright
+├── tests/
+│   └── repro_voucher_bug.spec.ts          # Kịch bản tái hiện lỗi độc lập (Regression Test)
 ├── vscode/
-│   ├── launch.json                  # Cấu hình F5 Attach vào Node Inspect CDP
-│   └── tasks.json                   # Task tự động quét dọn port kẹt EADDRINUSE
-├── ai_agent_testing_project_idea.md # Đề cương nghiên cứu chi tiết 50 mục của đề tài
-└── README.md                        # Tài liệu hướng dẫn & thuyết minh đồ án chuẩn mực
+│   ├── launch.json                        # Cấu hình F5 Attach vào Node Inspect CDP (9229 / 9230)
+│   └── tasks.json                         # Task tự động quét dọn port kẹt EADDRINUSE
+├── HANDBOOK.md                            # Sổ tay tích hợp cho dự án src bất kỳ & Bộ Prompt thực chiến
+└── README.md                              # Tài liệu tổng quan & kiến trúc đề tài
 ```
 
 ---
@@ -708,55 +728,58 @@ Tất cả công cụ giao tiếp qua chuẩn **Model Context Protocol (JSON-RPC
 
 | Tên Tool | Tham số đầu vào | Chức năng kỹ thuật |
 |---|---|---|
-| **`debug_inspect_cdp`** | `inspectPort`, `pauseOnExceptions`, `expressions[]`, `timeoutMs` | **Client gỡ lỗi tự động qua CDP**: Kết nối trực tiếp vào `ws://127.0.0.1:9229`, tự động đóng băng tiến trình khi văng Uncaught Exception, trích xuất Callstack và **soi trực tiếp giá trị biến trên bộ nhớ RAM** mà không cần con người bấm F5! |
-| **`debug_export_overnight_report`** | `sweepId`, `date`, `flows[]` | **Báo cáo kiểm thử quét qua đêm**: Tổng hợp kết quả kiểm thử của toàn bộ các flow nghiệp vụ, trích xuất lỗi RAM từ CDP, xuất cặp file `OVERNIGHT-SWEEP-<date>.md` và `OVERNIGHT-SWEEP-<date>.canvas.json` đa cụm. |
-| **`debug_export_rag_report`** | `testId`, `title`, `route`, `symptoms`, `sourceLocation` | Tự động xuất cặp file tri thức TestOps đơn luồng: `.md` cho RAG và `.canvas.json` 3 Sub-Clusters nạp tức thì vào **canvas-note-engineer**. |
-| **`debug_browser_run`** | `url`, `contextId`, `actions[]`, `headless`, `timeoutMs` | Khởi chạy Playwright Chromium, tự động hóa thao tác người dùng, lắng nghe lỗi Console, bắt HTTP 4xx/5xx và chụp ảnh màn hình lỗi. |
-| **`debug_status`** | `ports[]` *(Mặc định quét 9 cổng)* | Quét trạng thái cổng ứng dụng (3000, 4200, 4201, 8080) và cổng inspect (9229, 9230...), trả về PID tiến trình đang giữ port. |
+| **`debug_inspect_cdp`** | `inspectPort`, `pauseOnExceptions`, `expressions[]`, `breakpoints[]`, `timeoutMs` | **Client gỡ lỗi tự động qua CDP**: Kết nối trực tiếp vào `ws://127.0.0.1:9229`, tự động đóng băng tiến trình khi văng Uncaught Exception, trích xuất Callstack và **soi trực tiếp giá trị biến trên bộ nhớ RAM** mà không cần `console.log`. |
+| **`debug_export_overnight_report`** | `sweepId`, `date`, `flows[]`, `canvasRagDir` | **Báo cáo kiểm thử quét qua đêm**: Tổng hợp kết quả các flow, trích xuất lỗi RAM từ CDP, xuất cặp file `OVERNIGHT-SWEEP-<date>.md` và `.canvas.json` đa cụm. |
+| **`debug_export_rag_report`** | `testId`/`bugId`, `title`, `route`, `testCases[]`, `testingTechniques[]`, `coverageMetrics`, `cdpHeapInspection`, `symptoms`, `sourceLocation`, `rootCause`, `canvasRagDir` | Tự động xuất cặp file tri thức TestOps đơn luồng: `.md` cho RAG và `.canvas.json` 3 Sub-Clusters nạp tức thì vào **canvas-note-engineer** (tự sync qua biến môi trường `CANVAS_RAG_DIR` hoặc `canvasRagDir`). |
+| **`debug_browser_run`** | `url`, `contextId`, `actions[]`, `headless`, `slowMo`, `timeoutMs` | Khởi chạy Playwright (hỗ trợ `contextId` cô lập phiên chạy song song, tự fallback sang Chrome/Edge nếu chưa tải Chromium), lắng nghe lỗi Console, bắt HTTP 4xx/5xx và chụp ảnh vào `screenshots/`. |
+| **`debug_status`** | `ports[]` *(Mặc định quét 9 cổng)* | Quét trạng thái cổng ứng dụng (`3000, 4200, 4201, 4203, 5173, 8080`) và cổng inspect (`9229, 9230, 9231`), trả về PID tiến trình đang giữ port. |
 | **`debug_kill_ports`** | `ports[]` *(Mặc định `[9229, 9230, 9231]`)* | Force-kill các tiến trình đang chiếm dụng cổng, dập tắt dứt điểm lỗi `EADDRINUSE`. |
 | **`debug_start_server`** | `command`, `inspectPort`, `app`, `cwd` | Khởi chạy dev server ở chế độ `--inspect=0.0.0.0:<port>` chạy ngầm, tự động dọn sạch port trước khi bật. |
 | **`debug_stop_server`** | `app`, `pid` | Dừng tiến trình dev server một cách an toàn và giải phóng tài nguyên. |
 | **`debug_run_test`** | `command`, `cwd`, `timeoutMs` | Chạy test đơn lẻ trong môi trường cô lập, bóc tách Callstack và mã thoát lỗi khi thất bại. |
 
-## 9. Hướng Dẫn Cài Đặt & Thực Nghiệm Nhanh
+## 9. Hướng Dẫn Cài Đặt & Thực Nghiệm Nhanh (Cho Một `src` Bất Kỳ)
+
+> Xem hướng dẫn đầy đủ, kịch bản Prompt theo từng kỹ thuật kiểm thử và cách xử lý lỗi tại **[HANDBOOK.md](./HANDBOOK.md)**.
 
 ### Bước 1: Thiết lập môi trường Playwright (Chỉ 1 lệnh)
-Mở terminal tại thư mục `debug-plugin/mcp`:
+Mở terminal tại thư mục `agentic-test-ops/mcp`:
 - **Windows (PowerShell)**:
   ```powershell
   cd mcp
+  npm install
   .\setup-browser.ps1
   ```
 - **Linux / macOS**:
   ```bash
   cd mcp
+  npm install
   chmod +x setup-browser.sh
   ./setup-browser.sh
   ```
 
-### Bước 2: Kích hoạt Plugin trong AI Agent
+### Bước 2: Gắn Plugin / MCP Server vào dự án `src` bất kỳ
 - **Antigravity IDE / Gemini CLI**:
-  - Sao chép thư mục `debug-plugin` vào `~/.gemini/config/plugins/debug-plugin/` (áp dụng toàn máy).
-  - Hoặc đặt vào đồ án bất kỳ tại `.agents/plugins/debug-plugin/`.
+  - Đặt thư mục `agentic-test-ops` vào `~/.gemini/config/plugins/agentic-test-ops/` (dùng toàn máy) hoặc `<duong-dan-src>/.agents/plugins/agentic-test-ops/` (riêng dự án đó).
+  - Hoặc cấu hình `mcp_config.json`: `"command": "node"`, `"args": ["<path>/agentic-test-ops/mcp/server.mjs"]` (thêm `"CANVAS_RAG_DIR"` nếu muốn tự sync sang Canvas Note Engineer).
 - **Claude Code**:
-  - Cài đặt plugin bằng lệnh:
-    ```bash
-    claude plugin install ./debug-plugin
-    ```
-  - Khởi động điều tra sự cố:
-    ```bash
-    /debug "Nút Checkout bị đơ và phản hồi HTTP 500 khi áp voucher"
-    ```
+  ```bash
+  claude plugin install ./agentic-test-ops
+  ```
 
-### Bước 3: Trải nghiệm F5 Visual Debugging trong VS Code
-1. Copy 2 file `vscode/launch.json` và `vscode/tasks.json` vào thư mục `.vscode/` của dự án mục tiêu.
-2. Đặt breakpoint tại dòng code nghi vấn.
-3. Nhấn **F5** (hoặc chọn profile *"Attach to Node Inspect (AI Debugger)"*) để debug từng bước trực quan.
+### Bước 3: Bật Backend của `src` mục tiêu với `--inspect` & Ra lệnh cho AI Agent
+1. Khởi chạy Backend cần test kèm `NODE_OPTIONS="--inspect=0.0.0.0:9229"` (hoặc giao cho Agent tự gọi `debug_start_server`).
+2. Nhập Prompt mẫu vào khung chat của AI Agent (chi tiết thêm 5 mẫu Prompt ở [HANDBOOK.md](./HANDBOOK.md#4-bộ-prompt-thực-chiến-cho-mọi-dự-án-web--backend)):
+   ```text
+   Hãy đọc src tại [đường dẫn dự án], bật server với inspect port 9229, dùng `debug_browser_run` (headless: false)
+   kiểm thử luồng [Tên luồng] theo BVA (4n+1 / 6n+1) và Weak Robust EP. Nếu gặp HTTP 500, hãy dùng
+   `debug_inspect_cdp` soi biến RAM, xuất báo cáo qua `debug_export_rag_report` và viết regression test.
+   ```
 
-### Bước 4: Mở bản đồ trực quan trên Canvas Note Engineer
-1. Khởi động ứng dụng [justpassingByte/canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer).
-2. Kéo thả file `knowledge/BUG-2026-001-order-escrow-race.canvas.json` vào giao diện Canvas.
-3. Bản đồ trực quan lập tức bung ra với đầy đủ màu sắc trạng thái (Đỏ = Lỗi, Vàng = Nguyên nhân gốc, Xanh = Đã khắc phục).
+### Bước 4: Trải nghiệm F5 Visual Debugging trong VS Code & Mở Canvas Note Engineer
+1. Copy 2 file `vscode/launch.json` và `vscode/tasks.json` vào thư mục `.vscode/` của dự án mục tiêu; đặt breakpoint và nhấn **F5** để attach vào cổng `9229`.
+2. Mở [justpassingByte/canvas-note-engineer](https://github.com/justpassingByte/canvas-note-engineer) và kéo thả file `.canvas.json` trong `knowledge/` để xem sơ đồ nguyên nhân gốc rễ tức thì trong ~5ms.
+3. Đối với **bộ kịch bản Demo trực quan TrustBase**, chạy `CHAY_DEMO_AGENTIC_TESTOPS.bat` (Customer Web 4 màn hình) hoặc `XUAT_BANG_CHUNG_TESTOPS.bat` (E2E 3 phân vai kiểm chứng nghiêm ngặt, lưu ảnh tại `screenshots/`).
 
 ---
 
