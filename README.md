@@ -11,7 +11,7 @@
 ---
 
 ## Mục Lục
-1. [Hướng Dẫn Cài Đặt & Tích Hợp Vào Một Dự Án (`src`) Bất Kỳ](#-1-hướng-dẫn-cài-đặt--tích-hợp-vào-một-dự-án-src-bất-kỳ)
+1. [Hướng Dẫn Cài Đặt & Tích Hợp Vào Một Dự Án (`src`) Bất Kỳ](#1-hướng-dẫn-cài-đặt--tích-hợp-vào-một-dự-án-src-bất-kỳ)
 2. [Giới Thiệu, Triết Lý Cốt Lõi & Bảng Đối Chiếu Công Cụ](#2-giới-thiệu-triết-lý-cốt-lõi--bảng-đối-chiếu-công-cụ)
 3. [Phương Pháp Luận & Kỹ Thuật Kiểm Thử Tích Hợp](#3-phương-pháp-luận--kỹ-thuật-kiểm-thử-tích-hợp)
 4. [Kiến Trúc Hệ Thống 6 Tầng & Quy Trình RCA Toàn Trình](#4-kiến-trúc-hệ-thống-6-tầng--quy-trình-rca-toàn-trình)
@@ -80,11 +80,16 @@ Chọn 1 trong các cách sau tùy công cụ AI bạn dùng khi mở thư mục
    ```text
    Hãy đọc cấu trúc src dự án hiện tại để xác định cổng Frontend/Backend và các luồng nghiệp vụ chính.
    1. Gọi `debug_status` kiểm tra cổng; nếu cần hãy bật Backend với `--inspect=9229` bằng `debug_start_server`.
-   2. Dùng `debug_browser_run` (headless: false, slowMo: 400) mở Chrome trực tiếp kiểm thử luồng [Tên luồng] theo kỹ thuật Weak Robust EP và BVA (4n+1 / 6n+1).
+   2. Dùng `debug_browser_run` (headless: false, slowMo: 400) mở Chrome trực tiếp kiểm thử luồng [Tên luồng] theo Weak Robust EP, BVA (4n+1 / 6n+1 / 5^n), Decision Table và FSM.
    3. Nếu gặp lỗi HTTP >= 400 hoặc crash giao diện, gọi `debug_inspect_cdp` để bắt biến Heap RAM và Callstack file:line.
-   4. Viết Regression Test cô lập trong `tests/` chạy bằng `debug_run_test`, sau đó gọi `debug_export_rag_report` để xuất báo cáo `.md`, dữ liệu có cấu trúc `.canvas.json` và ảnh chụp lỗi trong `screenshots/`.
+   4. Viết Regression Test cô lập trong `tests/` (đạt Statement/Branch Coverage) chạy bằng `debug_run_test`, sau đó gọi `debug_export_rag_report` để xuất `.md`, `.canvas.json` và ảnh chụp lỗi trong `screenshots/`.
    ```
    *(Xem đầy đủ 5 mẫu Prompt chi tiết trong [HANDBOOK.md](./HANDBOOK.md#4-bộ-prompt-thực-chiến-cho-mọi-dự-án-web--backend)).*
+
+### Bước 4: Xem Ảnh, Video Tùy Chọn & Dữ Liệu Có Cấu Trúc
+- **Ảnh chụp màn hình thực tế:** Kiểm tra tại `screenshots/*.png` (chụp đúng trạng thái DOM/HTTP thật lúc test hoặc khi lỗi).
+- **Video quay trình duyệt (tùy chọn):** Khi chạy kịch bản hỗ trợ cờ `--record-video` (hoặc `RECORD_VIDEO=1`), Playwright `recordVideo` xuất file `.webm` vào `videos/`.
+- **Dữ liệu có cấu trúc:** Đọc hồ sơ lỗi chi tiết trong `knowledge/*.md` và đưa file đồ thị `knowledge/*.canvas.json` vào **Obsidian Canvas** hoặc công cụ canvas tùy chọn (tự động đồng bộ nếu đặt biến `CANVAS_RAG_DIR`).
 
 ---
 
