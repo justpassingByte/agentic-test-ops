@@ -201,9 +201,9 @@ async function runVerifiedMultiRoleE2E() {
 
     const kycBanner = page.locator('[data-testid="payouts-kyc-blocked-banner"]');
     if (await kycBanner.count() > 0 && await kycBanner.isVisible()) {
-      await updateOverlay(page, 'ROLE 2: SELLER', 'BLOCKED: Chua xac minh eKYC', 'Nut rut tien bi khoa do seller1 chua duyet KYC (chay update_kyc.py truoc neu muon test Happy Path).', '#ef4444');
+      await updateOverlay(page, 'ROLE 2: SELLER', 'BLOCKED: Chua xac minh eKYC', 'Nut rut tien bi khoa do seller1 chua duyet KYC trong DB/Admin Console.', '#ef4444');
       await page.screenshot({ path: path.join(SCREENSHOTS_DIR, 'error_02_seller_kyc_blocked.png') });
-      throw new Error('Seller payout blocked by eKYC gate. Run update_kyc.py first if testing unlocked withdrawal.');
+      throw new Error('Seller payout blocked by eKYC gate. Approve eKYC for seller1 in Admin/DB before testing unlocked withdrawal.');
     }
 
     // Target ONLY the primary withdrawal action button (never the bottom filter tab)

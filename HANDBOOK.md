@@ -217,7 +217,7 @@ Hãy điều phối theo mô hình Orchestrator (V-Model):
    - Kiểm tra Backend có thực sự được khởi chạy bằng `NODE_OPTIONS="--inspect=0.0.0.0:9229"` (hoặc `--inspect=9229`) không, và thử mở `http://127.0.0.1:9229/json/list` xem có JSON trả về không.
 4. **Demo E2E báo lỗi khóa KYC hoặc Admin Login thất bại:**
    - Kiểm tra trạng thái dữ liệu seed trong PostgreSQL:
-     - Nếu `seller1` bị khóa eKYC trên `TrustBase`, chạy `python update_kyc.py` (hoặc dùng chính kết quả khóa KYC đó để minh họa Defect `DEF-001`!).
+     - Nếu `seller1` bị khóa eKYC trên `TrustBase`, hãy duyệt eKYC cho gian hàng qua Admin Console hoặc trong database `onboarding_progress` (hoặc dùng chính kết quả khóa KYC đó để minh họa Defect `DEF-001`!).
      - Kiểm tra mật khẩu `admin@trustbase.local` (script E2E hỗ trợ biến môi trường `TRUSTBASE_ADMIN_PASSWORD` nếu mật khẩu DB khác mặc định).
 5. **File `.canvas.json` không tự chép sang Canvas Note Engineer:**
    - Đặt biến môi trường `CANVAS_RAG_DIR=<đường-dẫn-đến-thư-mục-rag-của-canvas-note-engineer>` hoặc truyền trực tiếp tham số `canvasRagDir` khi gọi tool.
