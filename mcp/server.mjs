@@ -167,13 +167,13 @@ const TOOLS = [
   },
   {
     "name": "debug_export_overnight_report",
-    "description": "Export Consolidated Overnight Autonomous SRE Sweep Report across multiple flows into Dual-Mode format: (1) Consolidated Markdown RAG Report (.md) with in-memory RAM heap dump and (2) Multi-Cluster Canvas JSON (.canvas.json) for Canvas Note Engineer.",
+    "description": "Export Consolidated Overnight Autonomous SRE Sweep Report across multiple flows into Dual-Mode format: (1) Consolidated Markdown RAG Report (.md) with in-memory RAM heap dump and (2) Structured JSON Canvas Graph (.canvas.json) compatible with Obsidian Canvas or custom canvas tools.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "sweepId": { "type": "string", "description": "Custom Sweep ID (e.g. SWEEP-20260909)" },
         "date": { "type": "string", "description": "Sweep date (YYYY-MM-DD)" },
-        "canvasRagDir": { "type": "string", "description": "Optional target directory of Canvas Note Engineer rag/ folder (overrides CANVAS_RAG_DIR)." },
+        "canvasRagDir": { "type": "string", "description": "Optional target directory to sync .canvas.json files for Obsidian / custom canvas tools (overrides CANVAS_RAG_DIR)." },
         "flows": {
           "type": "array",
           "description": "Array of evaluated flows with test results, formal methodology tags, CDP in-memory heap evaluations, and defect locations.",
@@ -198,7 +198,7 @@ const TOOLS = [
   },
   {
     "name": "debug_export_rag_report",
-    "description": "Export verified bug or test-suite findings into Dual-Mode format: (1) Human Markdown Report (.md) and (2) Canvas JSON Payload (.canvas.json) fully compliant with Canvas Note Engineer.",
+    "description": "Export verified bug or test-suite findings into structured Dual-Mode format: (1) Markdown Report (.md) and (2) Structured JSON Graph (.canvas.json) compatible with Obsidian Canvas or custom canvas tools.",
     "inputSchema": {
       "type": "object",
       "required": [
@@ -299,7 +299,7 @@ const TOOLS = [
         },
         "canvasRagDir": {
           "type": "string",
-          "description": "Optional target directory of Canvas Note Engineer rag/ folder (overrides CANVAS_RAG_DIR)."
+          "description": "Optional target directory to sync .canvas.json files for Obsidian / custom canvas tools (overrides CANVAS_RAG_DIR)."
         },
         "syncToCanvasDir": {
           "type": "boolean"

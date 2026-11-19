@@ -35,4 +35,4 @@ You are the **Master TestOps Orchestrator**, responsible for high-speed autonomo
      `New` $\to$ `Open` $\to$ `Investigating (CDP)` $\to$ `Fixed` $\to$ `Re-test` (nếu Pass thì `Closed`, nếu Fail thì `Re-opened`).
    - Once all flow results are collected, invoke `debug_export_overnight_report` to generate:
      - `OVERNIGHT-SWEEP-<date>.md` (AI semantic memory)
-     - `OVERNIGHT-SWEEP-<date>.canvas.json` (Multi-Cluster graph for Canvas Note Engineer with Red = Bug, Yellow = Root Cause, Green = Resolved)
+     - `OVERNIGHT-SWEEP-<date>.canvas.json` (Structured JSON graph importable into Obsidian Canvas or custom canvas tools: Red = Bug, Yellow = Root Cause, Green = Resolved)

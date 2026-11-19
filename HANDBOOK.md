@@ -20,9 +20,9 @@ Agentic TestOps được đóng gói theo chuẩn **Model Context Protocol (MCP)
 
 | Thành phần thực thi trong Repo | Vai trò kỹ thuật thực tế |
 |---|---|
-| `mcp/server.mjs` | MCP Server cung cấp **9 công cụ**: quản lý cổng (`debug_status`, `debug_kill_ports`), bật/tắt server kèm `--inspect` (`debug_start_server`, `debug_stop_server`), chạy Playwright (`debug_browser_run` hỗ trợ `contextId`, `headless`, `slowMo`), soi RAM qua CDP (`debug_inspect_cdp`), chạy test cô lập (`debug_run_test`), xuất RAG + Canvas (`debug_export_rag_report`, `debug_export_overnight_report`). |
+| `mcp/server.mjs` | MCP Server cung cấp **9 công cụ**: quản lý cổng (`debug_status`, `debug_kill_ports`), bật/tắt server kèm `--inspect` (`debug_start_server`, `debug_stop_server`), chạy Playwright (`debug_browser_run` hỗ trợ `contextId`, `headless`, `slowMo`), soi RAM qua CDP (`debug_inspect_cdp`), chạy test cô lập (`debug_run_test`), xuất báo cáo & dữ liệu có cấu trúc (`debug_export_rag_report`, `debug_export_overnight_report`). |
 | `mcp/cdp-client.mjs` | Client kết nối trực tiếp tới WebSocket `ws://127.0.0.1:<inspectPort>` của Node.js `--inspect`, bật `Debugger.setPauseOnExceptions`, đóng băng luồng khi văng Uncaught Exception, gọi `Debugger.evaluateOnCallFrame` để đọc giá trị biến trên Heap RAM và bóc tách Callstack rồi tự `Debugger.resume`. |
-| `mcp/rag-exporter.mjs` | Xuất song song 2 định dạng trong `knowledge/`: **Markdown Defect Dossier (`.md`)** cho AI Semantic Memory và **Canvas Graph (`.canvas.json`)** chuẩn `SpawnClusterPayload` (nạp ~5ms vào Canvas Note Engineer, hỗ trợ biến môi trường `CANVAS_RAG_DIR`). |
+| `mcp/rag-exporter.mjs` | Xuất dữ liệu có cấu trúc trong `knowledge/`: **Markdown Defect Dossier (`.md`)** cho con người & AI RAG và **Structured JSON Graph (`.canvas.json`)** có thể nạp vào **Obsidian Canvas** hoặc công cụ canvas tùy chọn (hỗ trợ biến môi trường `CANVAS_RAG_DIR`). |
 | `agents/`, `skills/`, `commands/` | Bộ hướng dẫn điều phối cho AI Agent (`orchestrator`, `flow-worker`, `cdp-investigator`, `debugger`, `/debug`, `/overnight`), quy định chặt kỹ thuật thiết kế test và quy trình RCA 4 bước. |
 | `vscode/` | Cấu hình `launch.json` và `tasks.json` cho phép lập trình viên nhấn **F5** trên VS Code để nhảy thẳng vào tiến trình đang mở `--inspect=9229/9230` (Human-in-the-loop). |
 
@@ -70,7 +70,7 @@ Hệ thống kết hợp **Kiểm thử Hộp đen (Black-Box)** ở tầng giao
   - **Validation** (*"Are we building the right system?"*): Tầng Playwright E2E mô phỏng hành vi Buyer / Seller / Admin trên giao diện thật.
   - **Verification** (*"Are we building the system right?"*): Tầng CDP Inspect + Unit/Integration Regression Test kiểm chứng tính đúng đắn bên trong mã nguồn và trạng thái bộ nhớ/DB.
 - **Chuỗi truy vết sự cố chuẩn ISO/IEEE:**
-  $$\text{Error (Mistake)} \longrightarrow \text{Fault / Defect (Code Line via CDP)} \longrightarrow \text{Failure (HTTP 500 / UI Crash)} \longrightarrow \text{Incident (Canvas Dossier)}$$
+  $$\text{Error (Mistake)} \longrightarrow \text{Fault / Defect (Code Line via CDP)} \longrightarrow \text{Failure (HTTP 500 / UI Crash)} \longrightarrow \text{Incident (Structured Report)}$$
 - **Vòng đời lỗi (Defect Life Cycle):** `New` → `Open` → `Investigating (CDP)` → `Fixed` → `Re-test` → `Closed` (nếu Pass) hoặc `Re-opened` (nếu Fail).
 
 ---
@@ -107,15 +107,12 @@ npm install
      "mcpServers": {
        "debug-controller": {
          "command": "node",
-         "args": ["C:/Users/<TenUser>/agentic-test-ops/mcp/server.mjs"],
-         "env": {
-           "CANVAS_RAG_DIR": "C:/duong-dan/toi/plugin-canvas-engineer/rag"
-         }
+         "args": ["C:/Users/<TenUser>/agentic-test-ops/mcp/server.mjs"]
        }
      }
    }
    ```
-   *(Biến `CANVAS_RAG_DIR` là tùy chọn; nếu có, báo cáo `.canvas.json` sẽ tự động đồng bộ sang Canvas Note Engineer).*
+   *(Tùy chọn: có thể thêm `"env": { "CANVAS_RAG_DIR": "<thu-muc-obsidian-hoac-canvas-tuy-chon>" }` nếu muốn tự đồng bộ file `.canvas.json` sang Obsidian Canvas hoặc công cụ canvas khác).*
 
 #### Lựa chọn B — Claude Code
 ```bash
@@ -198,11 +195,13 @@ Hãy điều phối theo mô hình Orchestrator (V-Model):
 
 ## 5. Xem Bằng Chứng Thực Thi & Sử Dụng Demo Trực Quan (No-Cap)
 
-| Loại bằng chứng | Vị trí lưu | Cách mở & kiểm chứng sự thật |
+Hệ thống hỗ trợ xuất **3 nhóm kết quả rõ ràng, kiểm chứng được**: ảnh chụp màn hình, video quay trình duyệt tùy chọn và dữ liệu báo cáo có cấu trúc.
+
+| Loại kết quả xuất ra | Vị trí lưu | Cách mở & kiểm chứng sự thật |
 |---|---|---|
 | **Ảnh chụp màn hình thực tế** | `screenshots/*.png` | Mỗi khi chạy demo hoặc `debug_browser_run` gặp lỗi/lệnh `screenshot`, Playwright chụp nguyên khung DOM/VietQR/thông báo lỗi. Luôn đối chiếu ảnh với log HTTP để đảm bảo không lệch trạng thái. |
-| **Tri thức lỗi Markdown (RAG)** | `knowledge/*.md` | Mở trực tiếp để đọc Matrix test case, Console error, Network failed request, Source location (`file:line`), và Heap RAM JSON. |
-| **Bản đồ trực quan Canvas** | `knowledge/*.canvas.json` | Kéo thả file vào ứng dụng **Canvas Note Engineer** (hoặc set `CANVAS_RAG_DIR` để tự đồng bộ) — nạp trong ~5ms qua AST Parser để xem các Pod Xanh / Đỏ / Vàng / Tím. |
+| **Video quay trình duyệt tùy chọn** | `videos/*.webm` | Truyền `--record-video` (hoặc `RECORD_VIDEO=1`) khi chạy `record_multi_role_detailed_demo.mjs` để Playwright `recordVideo` quay trực tiếp thao tác Chrome thật. |
+| **Dữ liệu có cấu trúc (Markdown & JSON Canvas)** | `knowledge/*.md`<br>`knowledge/*.canvas.json` | `.md` lưu Matrix test case, Console/Network error, `file:line`, Heap RAM; `.canvas.json` chứa graph có cấu trúc để đưa vào **Obsidian Canvas** hoặc bất kỳ công cụ canvas nào tùy chọn (tự sync qua `CANVAS_RAG_DIR` nếu cấu hình). |
 | **Demo trực quan trên Chrome (TrustBase)** | `CHAY_DEMO_AGENTIC_TESTOPS.bat` & `XUAT_BANG_CHUNG_TESTOPS.bat` | Bật `TrustBase` ở 3 cổng `4200`, `4201`, `4203` rồi chạy file `.bat`. Script mở Google Chrome thật (`headless: false`), **kiểm tra chặt chẽ URL, HTTP status và DOM** trước khi gắn overlay xanh; nếu kẹt eKYC hay sai mật khẩu Admin sẽ dừng và chụp ảnh lỗi `screenshots/error_*.png` thay vì báo ảo. *(Nếu muốn quay thêm `.webm`, truyền cờ `--record-video` vào `record_multi_role_detailed_demo.mjs`)*. |
 
 ---
@@ -219,5 +218,5 @@ Hãy điều phối theo mô hình Orchestrator (V-Model):
    - Kiểm tra trạng thái dữ liệu seed trong PostgreSQL:
      - Nếu `seller1` bị khóa eKYC trên `TrustBase`, hãy duyệt eKYC cho gian hàng qua Admin Console hoặc trong database `onboarding_progress` (hoặc dùng chính kết quả khóa KYC đó để minh họa Defect `DEF-001`!).
      - Kiểm tra mật khẩu `admin@trustbase.local` (script E2E hỗ trợ biến môi trường `TRUSTBASE_ADMIN_PASSWORD` nếu mật khẩu DB khác mặc định).
-5. **File `.canvas.json` không tự chép sang Canvas Note Engineer:**
-   - Đặt biến môi trường `CANVAS_RAG_DIR=<đường-dẫn-đến-thư-mục-rag-của-canvas-note-engineer>` hoặc truyền trực tiếp tham số `canvasRagDir` khi gọi tool.
+5. **Muốn tự đồng bộ file `.canvas.json` sang Obsidian Vault hoặc thư mục Canvas tùy chọn:**
+   - Đặt biến môi trường `CANVAS_RAG_DIR=<duong-dan-thu-muc-dich>` hoặc truyền trực tiếp tham số `canvasRagDir` khi gọi `debug_export_rag_report` / `debug_export_overnight_report`.

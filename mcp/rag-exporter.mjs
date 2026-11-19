@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 /**
- * Resolves the Canvas Note Engineer RAG sync directory without machine-specific paths.
+ * Resolves an optional target directory for syncing exported .canvas.json files (e.g. Obsidian vault or custom canvas workspace).
  * Priority: explicit args.canvasRagDir -> CANVAS_RAG_DIR env -> sibling workspace -> Desktop folder.
  */
 function resolveCanvasRagDir(baseDir, args = {}) {
@@ -299,7 +299,7 @@ export function exportRagReport(args, baseDir) {
 /**
  * Exports Consolidated Overnight Autonomous SRE Sweep Report:
  * 1. Comprehensive Markdown RAG Report (OVERNIGHT-SWEEP-<date>.md) with flow breakdown & RCA.
- * 2. Multi-Cluster Infinite Canvas Graph (OVERNIGHT-SWEEP-<date>.canvas.json) for Canvas Note Engineer.
+ * 2. Structured Multi-Cluster JSON Graph (OVERNIGHT-SWEEP-<date>.canvas.json) importable into Obsidian Canvas or custom canvas viewers.
  */
 export function exportOvernightSweepReport(args = {}, baseDir = import.meta.dirname) {
   const dateStr = args.date || new Date().toISOString().slice(0, 10);

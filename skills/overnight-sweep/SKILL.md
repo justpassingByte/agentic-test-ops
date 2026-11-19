@@ -35,7 +35,6 @@ When any worker detects an HTTP 500:
 4. Synthesize an isolated unit/integration regression test targeting Phủ cấp 1 (Statement Coverage) & Phủ cấp 2 (Branch Coverage) for the affected backend logic.
 
 ### Phase 4: Synthesis & Reporting (Fan-In)
-Call `debug_export_overnight_report` to generate:
+Call `debug_export_overnight_report` to generate structured evidence alongside `screenshots/` (and optional `--record-video` recordings):
 - `knowledge/OVERNIGHT-SWEEP-<date>.md` (Defect Dossier with SQA Metrics)
-- `knowledge/OVERNIGHT-SWEEP-<date>.canvas.json` (7 Sub-Clusters, mapped to Defect Lifecycle)
-Sync to `plugin-canvas-engineer/rag/` for immediate visualization in the morning.
+- `knowledge/OVERNIGHT-SWEEP-<date>.canvas.json` (Structured JSON graph for Obsidian Canvas or custom canvas tools, optionally synced via `CANVAS_RAG_DIR`)
