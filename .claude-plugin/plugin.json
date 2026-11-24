@@ -16,7 +16,7 @@
   "mcpServers": {
     "debug-controller": {
       "command": "node",
-      "args": ["${pluginDir}/mcp/server.mjs"]
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"]
     }
   },
   "skills": "./skills",

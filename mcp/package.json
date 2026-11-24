@@ -4,6 +4,9 @@
   "description": "Zero-dependency Model Context Protocol (MCP) Server for managing Node.js debug ports, processes, and test execution.",
   "main": "server.mjs",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node server.mjs"
   },

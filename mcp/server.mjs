@@ -109,7 +109,8 @@ async function findProcessOnPort(port) {
       }
       return Array.from(pids);
     } else {
-      const { stdout } = await execAsync(`lsof -ti :${port}`);
+      // Only processes LISTENING on the port; plain `lsof -ti :port` also returns connected clients (e.g. the browser).
+      const { stdout } = await execAsync(`lsof -ti tcp:${port} -sTCP:LISTEN`);
       const pids = stdout.trim().split('\n').map(p => parseInt(p, 10)).filter(p => !isNaN(p) && p > 0);
       return Array.from(new Set(pids));
     }
@@ -140,13 +141,16 @@ async function killPid(pid) {
 const TOOLS = [
   {
     "name": "debug_inspect_cdp",
-    "description": "Autonomous Chrome DevTools Protocol (CDP) Client. Connects directly to a running Node.js --inspect session, catches uncaught exceptions, captures live callstack frames, and evaluates heap memory variables in RAM without human F5 intervention.",
+    "description": "Autonomous Chrome DevTools Protocol (CDP) Client. Connects to a running Node.js --inspect session (Node >= 22 required for the MCP server), pauses on the first application exception (including errors that a web framework catches and turns into HTTP 500), captures the callstack and evaluates heap variables, then resumes. Start listening BEFORE triggering the failing request.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "inspectPort": { "type": "number", "description": "Node inspect port (default: 9229)" },
         "timeoutMs": { "type": "number", "description": "Inspection timeout in ms (default: 15000)" },
-        "pauseOnExceptions": { "type": "string", "enum": ["uncaught", "all", "none"], "description": "Pause mode (default: 'uncaught')" },
+        "pauseOnExceptions": { "type": "string", "enum": ["all", "uncaught", "none"], "description": "Pause mode (default: 'all'). Use 'all' for HTTP 500s handled by Express/NestJS/Fastify; 'uncaught' only sees crashes and unhandled rejections." },
+        "includeLibraryExceptions": { "type": "boolean", "description": "Also report exceptions thrown inside node_modules or Node internals (default: false; they are auto-resumed)." },
+        "exceptionFilter": { "type": "string", "description": "Optional case-insensitive regex on the exception text; non-matching exceptions (e.g. ones a library throws and catches itself) are auto-resumed. Example: 'does not exist|violates|TypeError: Cannot'." },
+        "targetFilter": { "type": "string", "description": "Optional substring of the inspect target title/url to attach to when several targets exist." },
         "expressions": {
           "type": "array",
           "items": { "type": "string" },
@@ -157,8 +161,10 @@ const TOOLS = [
           "items": {
             "type": "object",
             "properties": {
-              "file": { "type": "string" },
-              "line": { "type": "number" }
+              "file": { "type": "string", "description": "Path fragment of the script (e.g. 'disputes/disputes.service.ts')." },
+              "line": { "type": "number", "description": "1-based line in the code V8 runs (not the TypeScript source when transpiled)." },
+              "column": { "type": "number" },
+              "match": { "type": "string", "description": "Source-text breakpoint: pause at the first occurrence of this text in the loaded script. Use for tsx/ts-node/bundled code where TS line numbers do not exist at runtime." }
             }
           }
         }
@@ -167,9 +173,10 @@ const TOOLS = [
   },
   {
     "name": "debug_export_overnight_report",
-    "description": "Export Consolidated Overnight Autonomous SRE Sweep Report across multiple flows into Dual-Mode format: (1) Consolidated Markdown RAG Report (.md) with in-memory RAM heap dump and (2) Structured JSON Canvas Graph (.canvas.json) compatible with Obsidian Canvas or custom canvas tools.",
+    "description": "Export a consolidated multi-flow sweep report from the results actually collected: (1) Markdown report (.md), (2) structured graph (.canvas.json) for custom canvas tools, (3) JSON Canvas file (.canvas) that Obsidian opens directly. Writes only the data passed in; fails if 'flows' is empty.",
     "inputSchema": {
       "type": "object",
+      "required": ["flows"],
       "properties": {
         "sweepId": { "type": "string", "description": "Custom Sweep ID (e.g. SWEEP-20260909)" },
         "date": { "type": "string", "description": "Sweep date (YYYY-MM-DD)" },
@@ -189,7 +196,10 @@ const TOOLS = [
               "avgLatencyMs": { "type": "number" },
               "summary": { "type": "string" },
               "testingTechniques": { "type": "array", "items": { "type": "string" } },
-              "defect": { "type": "object" }
+              "defect": {
+                "type": "object",
+                "description": "For failed flows: httpStatus, failedRequest, consoleError, sourceLocation {file, line, function}, cdpHeapInspection (output of debug_inspect_cdp), rootCause, mitigation, regressionTest."
+              }
             }
           }
         }
@@ -198,12 +208,13 @@ const TOOLS = [
   },
   {
     "name": "debug_export_rag_report",
-    "description": "Export verified bug or test-suite findings into structured Dual-Mode format: (1) Markdown Report (.md) and (2) Structured JSON Graph (.canvas.json) compatible with Obsidian Canvas or custom canvas tools.",
+    "description": "Export verified bug or test-suite findings: (1) Markdown report (.md), (2) structured graph (.canvas.json) for custom canvas tools, (3) JSON Canvas file (.canvas) that Obsidian opens directly. Writes only the data passed in (missing optional fields become 'N/A'); fails if 'testCases' is empty.",
     "inputSchema": {
       "type": "object",
       "required": [
         "title",
-        "route"
+        "route",
+        "testCases"
       ],
       "properties": {
         "testId": {
@@ -294,6 +305,14 @@ const TOOLS = [
         "rootCause": {
           "type": "string"
         },
+        "blastRadius": {
+          "type": "string",
+          "description": "Which users/flows are affected by the defect."
+        },
+        "mitigation": {
+          "type": "string",
+          "description": "Fix or defensive strategy applied at the root cause."
+        },
         "regressionTestFile": {
           "type": "string"
         },
@@ -337,7 +356,7 @@ const TOOLS = [
   },
   {
     name: 'debug_start_server',
-    description: 'Start a development server with Node inspect mode (--inspect) in background, freeing target inspect port first.',
+    description: 'Start a development server with Node inspect mode (--inspect=127.0.0.1:<port>, localhost only) in background, freeing target inspect port first. Prefer a direct node/tsx command: with npm/pnpm/yarn scripts the package manager itself takes the inspect port and the app runs without an inspector (the result reports this as a warning).',
     inputSchema: {
       type: 'object',
       required: ['command', 'inspectPort'],
@@ -463,10 +482,10 @@ async function handleToolCall(name, args) {
         await killPid(pid);
       }
 
-      // 2. Set environment with inspect flag
+      // 2. Set environment with inspect flag (bound to localhost: an inspector reachable from the network is remote code execution)
       const env = {
         ...process.env,
-        NODE_OPTIONS: `--inspect=0.0.0.0:${inspectPort} ${process.env.NODE_OPTIONS || ''}`.trim()
+        NODE_OPTIONS: `--inspect=127.0.0.1:${inspectPort} ${process.env.NODE_OPTIONS || ''}`.trim()
       };
 
       // 3. Spawn process
@@ -503,8 +522,18 @@ async function handleToolCall(name, args) {
 
       await new Promise(res => setTimeout(res, 1200));
 
+      const warnings = [];
+      const recentLogs = logs.join('');
+      if (/^\s*(npm|pnpm|yarn|npx)\b/i.test(args.command)) {
+        warnings.push(`Command runs through a package manager: NODE_OPTIONS is inherited by the package manager process, which takes inspect port ${inspectPort} first. Prefer "node --inspect=127.0.0.1:${inspectPort} <entry>" or "tsx --inspect=127.0.0.1:${inspectPort} <entry>".`);
+      }
+      if (/Starting inspector on .* failed: address already in use/i.test(recentLogs)) {
+        warnings.push(`A child process could not open the inspector (address already in use): the application is most likely running WITHOUT a debugger. debug_inspect_cdp would attach to the wrong process.`);
+      }
+
       return {
         status: 'STARTED',
+        warnings,
         app,
         pid: child.pid,
         inspectPort,
