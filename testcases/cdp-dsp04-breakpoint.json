@@ -1,0 +1,66 @@
+{
+  "target": {
+    "title": "src/main.ts",
+    "url": "file://C:_Users_NoNomt007_Documents_trustbase_trustbase-project_api_src_main.ts"
+  },
+  "skippedLibraryExceptions": 0,
+  "skippedFilteredExceptions": 0,
+  "breakpointsResolved": [
+    {
+      "file": "disputes/disputes.service.ts",
+      "match": "ALLOWED_OPEN_STATUSES.includes(orderStatus)",
+      "resolved": true,
+      "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/api/src/modules/disputes/disputes.service.ts",
+      "generatedLine": 1,
+      "generatedColumn": 3896
+    }
+  ],
+  "status": "PAUSED",
+  "reason": "other",
+  "exception": null,
+  "topFrame": {
+    "functionName": "openDispute",
+    "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/api/src/modules/disputes/disputes.service.ts",
+    "line": 1,
+    "column": 3918
+  },
+  "callStack": [
+    {
+      "functionName": "openDispute",
+      "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/api/src/modules/disputes/disputes.service.ts",
+      "line": 1,
+      "column": 3918
+    },
+    {
+      "functionName": "processTicksAndRejections",
+      "url": "node:internal/process/task_queues",
+      "line": 104,
+      "column": 5
+    }
+  ],
+  "evaluatedVariables": {
+    "orderStatus": {
+      "type": "string",
+      "value": "CHO_CK"
+    },
+    "order && order.status": {
+      "type": "string",
+      "value": "awaiting_payment"
+    },
+    "ALLOWED_OPEN_STATUSES": {
+      "type": "object",
+      "value": [
+        "CHO_CK",
+        "DANG_GIAO",
+        "DA_GIAO",
+        "delivered",
+        "funds_held",
+        "delivering"
+      ]
+    },
+    "input.category": {
+      "type": "string",
+      "value": "ITEM_NOT_AS_DESCRIBED"
+    }
+  }
+}

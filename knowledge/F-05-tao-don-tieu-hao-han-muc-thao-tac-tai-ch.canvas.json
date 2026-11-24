@@ -1,0 +1,138 @@
+{
+  "domain_id": "testops_tao_don_tieu_hao_han_muc_thao_tac_tai_ch",
+  "cluster_name": "[TEST SUITE] F-05: Tạo đơn tiêu hao hạn mức thao tác tài chính (chung bộ đếm rate limit)",
+  "cluster_theme": "rose",
+  "sub_title": "Pass Rate: 0.0% (0/1 Passed)",
+  "is_public_interface": true,
+  "nodes": [],
+  "sub_clusters": [
+    {
+      "sub_cluster_id": "sub_test_scenarios",
+      "name": "📋 Test Scenarios Matrix",
+      "theme": "indigo",
+      "nodes": [
+        {
+          "title": "EXP-01: Thăm dò: 5 lần tạo đơn rồi mở khiếu nại trong cùng phút",
+          "role": "test_case",
+          "badge_type": "test_case_failed",
+          "summary": "Kỳ vọng: giới hạn tạo đơn (10/phút) độc lập với thao tác tài chính (5/phút)",
+          "schematic_template": "pipeline_filter",
+          "schematic_data": {
+            "status": "failed",
+            "metric": "rl:financial:<user> = 5 -> POST /customer/disputes 429",
+            "items": [
+              {
+                "label": "Verdict: FAILED",
+                "status": "error"
+              },
+              {
+                "label": "Technique: Exploratory",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_browser_trace",
+      "name": "🎭 Browser & Network Trace (Playwright)",
+      "theme": "blue",
+      "nodes": [
+        {
+          "title": "Playwright: DOM Interaction (POST /customer/orders + POST /customer/disputes)",
+          "role": "browser_action",
+          "badge_type": "playwright_trace",
+          "summary": "customer2 gọi POST /customer/orders 5 lần, sau đó POST /customer/disputes",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Route: POST /customer/orders + POST /customer/disputes",
+                "status": "info"
+              },
+              {
+                "label": "Console Error: None",
+                "status": "ok"
+              },
+              {
+                "label": "Artifact: N/A",
+                "status": "info"
+              }
+            ]
+          }
+        },
+        {
+          "title": "API Intercept",
+          "role": "gateway",
+          "summary": "Intercepted backend HTTP response: POST /customer/disputes -> 429 Too many operations. Please wait a minute.",
+          "schematic_template": "circuit_breaker_backoff",
+          "schematic_data": {
+            "metric": "POST /customer/disputes -> 429 Too many operations. Please wait a minute.",
+            "items": [
+              {
+                "label": "Failed Request: POST /customer/disputes -> 429 Too many operations. Please wait a minute.",
+                "status": "error"
+              },
+              {
+                "label": "Endpoint: POST /customer/orders + POST /customer/disputes",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_defect_defense",
+      "name": "🔍 Root Cause Analysis & Regression Defense",
+      "theme": "rose",
+      "nodes": [
+        {
+          "title": "Root Cause: limiters.ts (Line 121)",
+          "role": "root_cause",
+          "badge_type": "root_cause_defect",
+          "summary": "Function orderCreateLimiter: orderCreateLimiter = createRateLimiter(FINANCIAL_OPS, {max: 10}) và financialOpsLimiter = createRateLimiter(FINANCIAL_OPS) dùng chung prefix 'rl:financial:' và khóa theo user nên đếm chung.",
+          "schematic_template": "table_row_lock",
+          "incident_dossier": {
+            "boi_canh_tai": "customer2 gọi POST /customer/orders 5 lần, sau đó POST /customer/disputes at POST /customer/orders + POST /customer/disputes",
+            "nguyen_nhan_goc_re": "orderCreateLimiter = createRateLimiter(FINANCIAL_OPS, {max: 10}) và financialOpsLimiter = createRateLimiter(FINANCIAL_OPS) dùng chung prefix 'rl:financial:' và khóa theo user nên đếm chung.",
+            "ban_kinh_anh_huong": "Người mua đặt nhiều đơn liên tiếp bị chặn mở khiếu nại, hủy đơn, rút tiền tới 1 phút.",
+            "chien_luoc_phong_thu": "Tách prefix riêng cho limiter tạo đơn (ví dụ rl:orders:create-user:)."
+          },
+          "incident_cases": [
+            {
+              "id": "defect_f_05",
+              "title": "Tạo đơn tiêu hao hạn mức thao tác tài chính (chung bộ đếm rate limit)",
+              "traffic_profile": "E2E Playwright simulation",
+              "root_cause_analysis": "orderCreateLimiter = createRateLimiter(FINANCIAL_OPS, {max: 10}) và financialOpsLimiter = createRateLimiter(FINANCIAL_OPS) dùng chung prefix 'rl:financial:' và khóa theo user nên đếm chung.",
+              "blast_radius": "Người mua đặt nhiều đơn liên tiếp bị chặn mở khiếu nại, hủy đơn, rút tiền tới 1 phút.",
+              "cascading_failure_path": [
+                "1. [User Action]: customer2 gọi POST /customer/orders 5 lần, sau đó POST /customer/disputes",
+                "2. [HTTP Fail]: POST /customer/disputes -> 429 Too many operations. Please wait a minute.",
+                "3. [Frontend Error]: N/A",
+                "4. [Backend Fault]: trustbase-project/api/src/shared/rate-limit/limiters.ts:121 (Function: orderCreateLimiter)"
+              ],
+              "mitigation_strategy": "Tách prefix riêng cho limiter tạo đơn (ví dụ rl:orders:create-user:)."
+            }
+          ]
+        },
+        {
+          "title": "Regression Defense Suite",
+          "role": "defense_test",
+          "badge_type": "regression_shield",
+          "summary": "Regression test: (chưa có, đề xuất bổ sung)",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Test File: (chưa có, đề xuất bổ sung)",
+                "status": "ok"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

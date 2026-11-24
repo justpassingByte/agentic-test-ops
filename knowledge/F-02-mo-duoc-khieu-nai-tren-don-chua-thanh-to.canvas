@@ -1,0 +1,112 @@
+{
+  "nodes": [
+    {
+      "id": "g0",
+      "type": "group",
+      "label": "📋 Test Scenarios Matrix",
+      "x": 0,
+      "y": 0,
+      "width": 420,
+      "height": 350,
+      "color": "6"
+    },
+    {
+      "id": "n0_0",
+      "type": "text",
+      "text": "### TC_TB_DSP_04: Mở khiếu nại trên đơn chưa thanh toán\n\nKỳ vọng: HTTP 4xx; không tạo khiếu nại\n\n**đơn trạng thái awaiting_payment: HTTP 201 SUCCESS Operation successful**\n\n- Verdict: FAILED\n- Technique: State Transition (chuyển không hợp lệ)",
+      "x": 20,
+      "y": 60,
+      "width": 380,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": "🎭 Browser & Network Trace (Playwright)",
+      "x": 480,
+      "y": 0,
+      "width": 420,
+      "height": 640,
+      "color": "5"
+    },
+    {
+      "id": "n1_0",
+      "type": "text",
+      "text": "### Playwright: DOM Interaction (POST /customer/disputes)\n\ncustomer1 tạo đơn (awaiting_payment) rồi POST /customer/disputes, category ITEM_NOT_AS_DESCRIBED\n\n- Route: POST /customer/disputes\n- Console Error: None\n- Artifact: N/A",
+      "x": 500,
+      "y": 60,
+      "width": 380,
+      "height": 260
+    },
+    {
+      "id": "n1_1",
+      "type": "text",
+      "text": "### API Intercept\n\nIntercepted backend HTTP response: POST /customer/disputes -> 201 SUCCESS trên đơn awaiting_payment\n\n**POST /customer/disputes -> 201 SUCCESS trên đơn awaiting_payment**\n\n- Failed Request: POST /customer/disputes -> 201 SUCCESS trên đơn awaiting_payment\n- Endpoint: POST /customer/disputes",
+      "x": 500,
+      "y": 350,
+      "width": 380,
+      "height": 260
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": "🔍 Root Cause Analysis & Regression Defense",
+      "x": 960,
+      "y": 0,
+      "width": 420,
+      "height": 640,
+      "color": "1"
+    },
+    {
+      "id": "n2_0",
+      "type": "text",
+      "text": "### Root Cause: postgres-backbone.adapter.ts (Line 17)\n\nFunction DB_TO_NATIVE_STATUS: awaiting_payment và funds_held cùng được ánh xạ sang 'CHO_CK'; 'CHO_CK' nằm trong ALLOWED_OPEN_STATUSES (disputes.service.ts:31) nên openDispute (dòng 154) chấp nhận đơn chưa thanh toán. CDP breakpoint: order.status=awaiting_payment, orderStatus=CHO_CK.\n\n- Context: customer1 tạo đơn (awaiting_payment) rồi POST /customer/disputes, category ITEM_NOT_AS_DESCRIBED at POST /customer/disputes\n- Root cause: awaiting_payment và funds_held cùng được ánh xạ sang 'CHO_CK'; 'CHO_CK' nằm trong ALLOWED_OPEN_STATUSES (disputes.service.ts:31) nên openDispute (dòng 154) chấp nhận đơn chưa thanh toán. CDP breakpoint: order.status=awaiting_payment, orderStatus=CHO_CK.\n- Blast radius: Mọi đơn đang chờ chuyển khoản; khiếu nại không được phản hồi trong 48h dẫn tới phán quyết hoàn tiền (seller-studio-rules.md).",
+      "x": 980,
+      "y": 60,
+      "width": 380,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "n2_1",
+      "type": "text",
+      "text": "### Regression Defense Suite\n\nRegression test: tests/trustbase/trustbase.test.mjs (TC_TB_DSP_04)\n\n- Test File: trustbase.test.mjs (TC_TB_DSP_04)",
+      "x": 980,
+      "y": 350,
+      "width": 380,
+      "height": 260,
+      "color": "4"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1_1",
+      "fromNode": "n1_0",
+      "fromSide": "bottom",
+      "toNode": "n1_1",
+      "toSide": "top"
+    },
+    {
+      "id": "e2_1",
+      "fromNode": "n2_0",
+      "fromSide": "bottom",
+      "toNode": "n2_1",
+      "toSide": "top"
+    },
+    {
+      "id": "c1",
+      "fromNode": "n0_0",
+      "fromSide": "right",
+      "toNode": "n1_0",
+      "toSide": "left"
+    },
+    {
+      "id": "c2",
+      "fromNode": "n1_0",
+      "fromSide": "right",
+      "toNode": "n2_0",
+      "toSide": "left"
+    }
+  ]
+}

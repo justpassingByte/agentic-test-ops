@@ -1,0 +1,668 @@
+{
+  "runId": "2026-11-24T04-45-08-698Z",
+  "api": "http://localhost:4201",
+  "finishedAt": "2026-11-24T04:47:13.984Z",
+  "summary": {
+    "total": 30,
+    "pass": 16,
+    "fail": 3,
+    "blocked": 11
+  },
+  "serverErrors": [
+    {
+      "caseId": "TC_TB_ORD_01",
+      "method": "POST",
+      "path": "/customer/orders",
+      "body": {
+        "listingId": "2bc81dfd-a584-4e69-9e27-6be5469b3417",
+        "quantity": 1,
+        "checkoutMode": "direct"
+      },
+      "status": 500,
+      "response": "{\"status\":false,\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\",\"data\":null,\"requestId\":\"8f81672b-0b9c-4d1b-9342-a2b7d1aef284\"}"
+    },
+    {
+      "caseId": "TC_TB_ORD_05",
+      "method": "POST",
+      "path": "/customer/orders",
+      "body": {
+        "listingId": "bb7bc9f3-b1c3-4c6a-9d0f-07e1eeee3c89",
+        "quantity": 1,
+        "checkoutMode": "direct"
+      },
+      "status": 500,
+      "response": "{\"status\":false,\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\",\"data\":null,\"requestId\":\"76fd9476-a9e5-4c69-a177-ec1219a40494\"}"
+    },
+    {
+      "caseId": "TC_TB_ORD_05",
+      "method": "POST",
+      "path": "/customer/orders",
+      "body": {
+        "listingId": "bb7bc9f3-b1c3-4c6a-9d0f-07e1eeee3c89",
+        "quantity": 1,
+        "checkoutMode": "direct"
+      },
+      "status": 500,
+      "response": "{\"status\":false,\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\",\"data\":null,\"requestId\":\"39e0f798-40e8-44f8-8b46-012789b8e4e6\"}"
+    },
+    {
+      "method": "POST",
+      "path": "/customer/orders",
+      "body": {
+        "listingId": "2bc81dfd-a584-4e69-9e27-6be5469b3417",
+        "quantity": 1,
+        "checkoutMode": "direct"
+      },
+      "status": 500,
+      "response": "{\"status\":false,\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\",\"data\":null,\"requestId\":\"bbf482e0-4108-4d05-a7d7-7c20bac7bfa7\"}"
+    },
+    {
+      "method": "POST",
+      "path": "/customer/orders",
+      "body": {
+        "listingId": "2bc81dfd-a584-4e69-9e27-6be5469b3417",
+        "quantity": 1,
+        "checkoutMode": "direct"
+      },
+      "status": 500,
+      "response": "{\"status\":false,\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\",\"data\":null,\"requestId\":\"0c317a7a-6c28-4087-8859-7bfbbcb29c0a\"}"
+    },
+    {
+      "method": "POST",
+      "path": "/customer/orders",
+      "body": {
+        "listingId": "2bc81dfd-a584-4e69-9e27-6be5469b3417",
+        "quantity": 1,
+        "checkoutMode": "direct"
+      },
+      "status": 500,
+      "response": "{\"status\":false,\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\",\"data\":null,\"requestId\":\"24dca8a5-7581-495a-bcae-c53cc9e408b2\"}"
+    },
+    {
+      "method": "POST",
+      "path": "/customer/orders",
+      "body": {
+        "listingId": "2bc81dfd-a584-4e69-9e27-6be5469b3417",
+        "quantity": 1,
+        "checkoutMode": "direct"
+      },
+      "status": 500,
+      "response": "{\"status\":false,\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\",\"data\":null,\"requestId\":\"d6d9499e-180c-4ca9-9e05-52e8c2dad628\"}"
+    },
+    {
+      "method": "POST",
+      "path": "/customer/orders",
+      "body": {
+        "listingId": "2bc81dfd-a584-4e69-9e27-6be5469b3417",
+        "quantity": 1,
+        "checkoutMode": "direct"
+      },
+      "status": 500,
+      "response": "{\"status\":false,\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\",\"data\":null,\"requestId\":\"a0553661-1b85-405c-8fb0-deaea80d9eb3\"}"
+    }
+  ],
+  "results": [
+    {
+      "id": "TC_TB_AUTH_01",
+      "flow": "FLOW-01: Auth",
+      "technique": "Happy path + BVA (min)",
+      "title": "Đăng ký tài khoản mới với email miền được phép, mật khẩu đúng 8 ký tự",
+      "expected": "HTTP 2xx, tài khoản được tạo ở trạng thái chờ xác thực OTP email",
+      "source": "api/src/modules/users/users.schemas.ts (password min 8); shared/email-domain-policy.ts",
+      "actual": "HTTP 202 SUCCESS Operation successful",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/auth/register",
+          "status": 202,
+          "code": "SUCCESS",
+          "ms": 150
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_AUTH_02",
+      "flow": "FLOW-01: Auth",
+      "technique": "BVA (min-1)",
+      "title": "Đăng ký với mật khẩu 7 ký tự",
+      "expected": "HTTP 400 (lỗi validate), không tạo tài khoản",
+      "source": "users.schemas.ts: password z.string().min(8).max(128)",
+      "actual": "password 7 ký tự: HTTP 400 VALIDATION_FAILED",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/auth/register",
+          "status": 400,
+          "code": "VALIDATION_FAILED",
+          "ms": 6
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_AUTH_03",
+      "flow": "FLOW-01: Auth",
+      "technique": "EP (lớp không hợp lệ)",
+      "title": "Đăng ký với email miền ngoài danh sách cho phép",
+      "expected": "HTTP 4xx kèm thông báo 'Chỉ nhận email Gmail, Yahoo hoặc Hotmail/Outlook.'",
+      "source": "shared/email-domain-policy.ts (ALLOWED_EMAIL_DOMAINS)",
+      "actual": "HTTP 400 EMAIL_DOMAIN_NOT_ALLOWED Chỉ nhận email Gmail, Yahoo hoặc Hotmail/Outlook.",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/auth/register",
+          "status": 400,
+          "code": "EMAIL_DOMAIN_NOT_ALLOWED",
+          "ms": 147
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_AUTH_04",
+      "flow": "FLOW-01: Auth",
+      "technique": "BVA (ngưỡng rate limit)",
+      "title": "6 lần đăng nhập sai liên tiếp trong 60 giây",
+      "expected": "Lần 1-5: HTTP 401; lần 6: HTTP 429 Too Many Requests",
+      "source": "shared/rate-limit/tiers.ts AUTH_STRICT { windowMs: 60000, max: 5 }",
+      "actual": "Mã HTTP 6 lần: 401, 401, 401, 401, 401, 429",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/auth/login",
+          "status": 401,
+          "code": "BAD_CREDENTIALS",
+          "ms": 157
+        },
+        {
+          "method": "POST",
+          "path": "/auth/login",
+          "status": 401,
+          "code": "BAD_CREDENTIALS",
+          "ms": 133
+        },
+        {
+          "method": "POST",
+          "path": "/auth/login",
+          "status": 401,
+          "code": "BAD_CREDENTIALS",
+          "ms": 133
+        },
+        {
+          "method": "POST",
+          "path": "/auth/login",
+          "status": 401,
+          "code": "BAD_CREDENTIALS",
+          "ms": 142
+        },
+        {
+          "method": "POST",
+          "path": "/auth/login",
+          "status": 401,
+          "code": "BAD_CREDENTIALS",
+          "ms": 162
+        },
+        {
+          "method": "POST",
+          "path": "/auth/login",
+          "status": 429,
+          "code": "RATE_LIMIT_EXCEEDED",
+          "ms": 4
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_AUTH_05",
+      "flow": "FLOW-01: Auth",
+      "technique": "State Transition (phiên đã thu hồi)",
+      "title": "Dùng lại refresh token sau khi đăng xuất mọi thiết bị",
+      "expected": "Refresh bị từ chối (HTTP 401), không cấp access token mới",
+      "source": "modules/auth/auth.routes.ts (/logout-all, /refresh); docs/security/order-spam-2026-11-13.md (thu hồi refresh token)",
+      "actual": "logout-all HTTP 200; refresh bằng cookie cũ: HTTP 401 REFRESH_REVOKED",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/auth/logout-all",
+          "status": 200,
+          "code": "SUCCESS",
+          "ms": 8
+        },
+        {
+          "method": "POST",
+          "path": "/auth/refresh",
+          "status": 401,
+          "code": "REFRESH_REVOKED",
+          "ms": 9
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_CAT_01",
+      "flow": "FLOW-02: Catalog",
+      "technique": "Happy path",
+      "title": "Tìm kiếm từ khóa và sắp xếp giá tăng dần",
+      "expected": "HTTP 200; danh sách có giá không giảm dần (non-decreasing)",
+      "source": "libs/internal-contracts/src/listings.ts (sort enum: newest, price_asc, price_desc, popular, best_selling)",
+      "actual": "HTTP 200, 7 kết quả, giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+      "status": "FAIL",
+      "http": [
+        {
+          "method": "GET",
+          "path": "/catalog/listings?q=windows&sort=price_asc&limit=50",
+          "status": 200,
+          "code": "SUCCESS",
+          "ms": 47
+        }
+      ],
+      "error": "giá giảm tại vị trí 2: 500000 -> 59000"
+    },
+    {
+      "id": "TC_TB_CAT_02",
+      "flow": "FLOW-02: Catalog",
+      "technique": "BVA (max)",
+      "title": "Từ khóa dài đúng 200 ký tự",
+      "expected": "HTTP 200 (hợp lệ)",
+      "source": "internal-contracts listings.ts: q z.string().trim().max(200)",
+      "actual": "HTTP 200 SUCCESS",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "GET",
+          "path": "/catalog/listings?q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…",
+          "status": 200,
+          "code": "SUCCESS",
+          "ms": 44
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_CAT_03",
+      "flow": "FLOW-02: Catalog",
+      "technique": "BVA (max+1)",
+      "title": "Từ khóa dài 201 ký tự",
+      "expected": "HTTP 400 (lỗi validate)",
+      "source": "internal-contracts listings.ts: q max(200)",
+      "actual": "HTTP 400 VALIDATION_FAILED",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "GET",
+          "path": "/catalog/listings?q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa…",
+          "status": 400,
+          "code": "VALIDATION_FAILED",
+          "ms": 4
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_CAT_04",
+      "flow": "FLOW-02: Catalog",
+      "technique": "EP (giá trị enum không hợp lệ)",
+      "title": "Tham số sort ngoài danh sách cho phép",
+      "expected": "HTTP 400 (lỗi validate)",
+      "source": "internal-contracts listings.ts (sortSchema)",
+      "actual": "HTTP 400 VALIDATION_FAILED",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "GET",
+          "path": "/catalog/listings?sort=cheapest_first",
+          "status": 400,
+          "code": "VALIDATION_FAILED",
+          "ms": 3
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_CAT_05",
+      "flow": "FLOW-02: Catalog",
+      "technique": "Bảo mật (SQLi/XSS)",
+      "title": "Chuỗi SQL injection và XSS trong ô tìm kiếm (API và giao diện)",
+      "expected": "API không trả 5xx; SQLi không trả về toàn bộ catalog (total < total khi không lọc); trình duyệt không thực thi script (không có dialog/pageerror)",
+      "source": "OWASP Top 10 A03; docs/security/order-spam-2026-11-13.md (nội dung được escape/sanitize)",
+      "actual": "API: không lọc total=465; SQLi HTTP 200 total=3. (Phần giao diện XSS chạy bằng debug_browser_run, xem uiEvidence)",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "GET",
+          "path": "/catalog/listings?limit=1",
+          "status": 200,
+          "code": "SUCCESS",
+          "ms": 19
+        },
+        {
+          "method": "GET",
+          "path": "/catalog/listings?limit=1&q='%20OR%20'1'%3D'1'%20--",
+          "status": 200,
+          "code": "SUCCESS",
+          "ms": 33
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_ORD_01",
+      "flow": "FLOW-03: Order & Inventory",
+      "technique": "Happy path",
+      "title": "Tạo đơn số lượng 1 trên listing giao tự động",
+      "expected": "HTTP 2xx; đơn ở trạng thái awaiting_payment; kho khả dụng giảm đúng 1 (giữ chỗ)",
+      "source": "docs/digital-auto-delivery.md (reserve trong cùng transaction tạo đơn)",
+      "actual": "HTTP 500 INTERNAL_ERROR; trạng thái=null; kho 6 -> 6",
+      "status": "FAIL",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/customer/orders",
+          "status": 500,
+          "code": "INTERNAL_ERROR",
+          "ms": 45
+        }
+      ],
+      "error": "HTTP 500 Internal server error"
+    },
+    {
+      "id": "TC_TB_ORD_02",
+      "flow": "FLOW-03: Order & Inventory",
+      "technique": "BVA (min-1)",
+      "title": "Tạo đơn với quantity = 0",
+      "expected": "HTTP 400 (quantity phải là số nguyên dương), không giữ chỗ",
+      "source": "orders.schemas.ts: quantity z.number().int().positive()",
+      "actual": "HTTP 400 VALIDATION_FAILED; kho 6 -> 6",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/customer/orders",
+          "status": 400,
+          "code": "VALIDATION_FAILED",
+          "ms": 7
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_ORD_03",
+      "flow": "FLOW-03: Order & Inventory",
+      "technique": "BVA (max+1)",
+      "title": "Tạo đơn với quantity lớn hơn kho khả dụng 1 đơn vị",
+      "expected": "HTTP 4xx; không có mã nào bị giữ chỗ (kho vẫn N)",
+      "source": "docs/digital-auto-delivery.md (số lượng khả dụng lấy từ inventory ledger)",
+      "actual": "quantity=7: HTTP 400 LISTING_SOLD_OUT Insufficient stock; kho 6 -> 6",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/customer/orders",
+          "status": 400,
+          "code": "LISTING_SOLD_OUT",
+          "ms": 16
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_ORD_04",
+      "flow": "FLOW-03: Order & Inventory",
+      "technique": "State Transition",
+      "title": "Hủy đơn chưa thanh toán và hoàn trả giữ chỗ",
+      "expected": "Đơn chuyển cancelled; kho khả dụng tăng lại 1",
+      "source": "docs/digital-auto-delivery.md ('Cancelling ... releases its reservations and restores quantity')",
+      "actual": "Không có đơn từ ORD_01",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_ORD_05",
+      "flow": "FLOW-03: Order & Inventory",
+      "technique": "Đồng thời (race condition)",
+      "title": "Hai người mua đặt cùng lúc khi kho chỉ còn 1 mã",
+      "expected": "Đúng 1 đơn tạo thành công, đơn còn lại bị từ chối 4xx; kho không âm, không bán trùng",
+      "source": "docs/seller-studio-rules.md §3 (Atomic Reservation, loại trừ oversell); digital-auto-delivery.md",
+      "actual": "customer1 HTTP 500 INTERNAL_ERROR; customer2 HTTP 500 INTERNAL_ERROR; kho sau: available=1, reserved=0",
+      "status": "FAIL",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/customer/orders",
+          "status": 500,
+          "code": "INTERNAL_ERROR",
+          "ms": 30
+        },
+        {
+          "method": "POST",
+          "path": "/customer/orders",
+          "status": 500,
+          "code": "INTERNAL_ERROR",
+          "ms": 37
+        }
+      ],
+      "error": "0 đơn thành công\n\n0 !== 1\n"
+    },
+    {
+      "id": "TC_TB_VCH_01",
+      "flow": "FLOW-04: Voucher",
+      "technique": "Happy path",
+      "title": "Áp voucher giảm cố định 10.000 đ",
+      "expected": "HTTP 2xx; số tiền giảm 10.000 đ, tổng thanh toán 40.000 đ",
+      "source": "vouchers (discount_type fixed, discount_value)",
+      "actual": "Không tạo được đơn cho nhóm voucher: HTTP 500 INTERNAL_ERROR",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_VCH_02",
+      "flow": "FLOW-04: Voucher",
+      "technique": "BVA (đúng biên)",
+      "title": "Voucher có đơn tối thiểu bằng đúng giá trị đơn",
+      "expected": "Voucher được áp (điều kiện 'tối thiểu' là ≥)",
+      "source": "vouchers.min_order_vnd; mã lỗi VOUCHER_MIN_ORDER_NOT_MET trong vouchers.service.ts",
+      "actual": "Không tạo được đơn cho nhóm voucher: HTTP 500 INTERNAL_ERROR",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_VCH_03",
+      "flow": "FLOW-04: Voucher",
+      "technique": "BVA (biên+1)",
+      "title": "Voucher có đơn tối thiểu lớn hơn giá trị đơn 1 đồng",
+      "expected": "Bị từ chối với mã lỗi MIN_ORDER_NOT_MET / VOUCHER_MIN_ORDER_NOT_MET",
+      "source": "vouchers.service.ts",
+      "actual": "Không tạo được đơn cho nhóm voucher: HTTP 500 INTERNAL_ERROR",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_VCH_04",
+      "flow": "FLOW-04: Voucher",
+      "technique": "EP (voucher hết hạn)",
+      "title": "Áp voucher đã hết hạn",
+      "expected": "Bị từ chối với mã lỗi VOUCHER_EXPIRED",
+      "source": "vouchers.service.ts (VOUCHER_EXPIRED)",
+      "actual": "Không tạo được đơn cho nhóm voucher: HTTP 500 INTERNAL_ERROR",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_VCH_05",
+      "flow": "FLOW-04: Voucher",
+      "technique": "BVA (giới hạn lượt/người = 1)",
+      "title": "Dùng voucher giới hạn 1 lượt/người lần thứ hai",
+      "expected": "Lần thứ hai bị từ chối (USER_LIMIT_EXCEEDED hoặc tương đương)",
+      "source": "vouchers.per_user_limit; vouchers.service.ts (USER_LIMIT_EXCEEDED)",
+      "actual": "Không tạo được đơn cho nhóm voucher: HTTP 500 INTERNAL_ERROR",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_PAY_01",
+      "flow": "FLOW-05: Payout & Fee",
+      "technique": "Happy path",
+      "title": "Ước tính phí sàn và tiền thực nhận",
+      "expected": "HTTP 200; phí + thực nhận = gross; 0 ≤ thực nhận ≤ gross",
+      "source": "orders.schemas.ts payoutEstimateBody; system_settings fee_tax",
+      "actual": "HTTP 200; gross=1000000, hoa hồng=70000 (0.07), thuế giữ lại=0, thực nhận=930000",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/customer/orders/payout-estimate",
+          "status": 200,
+          "code": "PAYOUT_ESTIMATED",
+          "ms": 19
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_PAY_02",
+      "flow": "FLOW-05: Payout & Fee",
+      "technique": "BVA (max: 18 chữ số)",
+      "title": "Ước tính với gross 18 chữ số",
+      "expected": "HTTP 200; tính đúng bằng BigInt (phí + thực nhận = gross, không mất chính xác)",
+      "source": "payoutEstimateBody: grossVnd regex ^\\d+$ max(18)",
+      "actual": "HTTP 200 PAYOUT_ESTIMATED; gross=999999999999999999, hoa hồng=70000000000000000, thuế=0, thực nhận=929999999999999999",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/customer/orders/payout-estimate",
+          "status": 200,
+          "code": "PAYOUT_ESTIMATED",
+          "ms": 51
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_PAY_03",
+      "flow": "FLOW-05: Payout & Fee",
+      "technique": "BVA (max+1: 19 chữ số)",
+      "title": "Ước tính với gross 19 chữ số",
+      "expected": "HTTP 400 (lỗi validate)",
+      "source": "payoutEstimateBody: grossVnd max(18)",
+      "actual": "HTTP 400 VALIDATION_FAILED",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/customer/orders/payout-estimate",
+          "status": 400,
+          "code": "VALIDATION_FAILED",
+          "ms": 6
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_PAY_04",
+      "flow": "FLOW-05: Payout & Fee",
+      "technique": "EP (hạng người bán không tồn tại)",
+      "title": "Ước tính với sellerRank không có trong hệ thống",
+      "expected": "Không trả 5xx và không trả NaN: hoặc HTTP 4xx, hoặc HTTP 200 với phí là số hợp lệ",
+      "source": "payoutEstimateBody: sellerRank string 1-32; hạng hợp lệ bronze/silver/gold/diamond trong fee_tax",
+      "actual": "HTTP 200 PAYOUT_ESTIMATED; hoa hồng=40000 (0.04), thực nhận=960000, sellerRank trả về=platinum",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "POST",
+          "path": "/customer/orders/payout-estimate",
+          "status": 200,
+          "code": "PAYOUT_ESTIMATED",
+          "ms": 6
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_PAY_05",
+      "flow": "FLOW-05: Payout & Fee",
+      "technique": "BVA (dưới ngưỡng rút tối thiểu)",
+      "title": "Yêu cầu rút tiền khi số dư khả dụng dưới 50.000 đ",
+      "expected": "HTTP 4xx, không tạo yêu cầu rút",
+      "source": "system_settings order_policy payout:min_amount_vnd = 50000",
+      "actual": "Số dư khả dụng 0 đ; HTTP 400 VALIDATION_FAILED Không có khoản tiền nào khả dụng để rút; số yêu cầu rút 0 -> 0",
+      "status": "PASS",
+      "http": [
+        {
+          "method": "GET",
+          "path": "/customer/seller/earnings/summary",
+          "status": 200,
+          "code": "EARNINGS_SUMMARY_FETCHED",
+          "ms": 23
+        },
+        {
+          "method": "GET",
+          "path": "/customer/seller/payout-requests",
+          "status": 200,
+          "code": "PAYOUT_REQUESTS_FETCHED",
+          "ms": 10
+        },
+        {
+          "method": "POST",
+          "path": "/customer/seller/payouts/request",
+          "status": 400,
+          "code": "VALIDATION_FAILED",
+          "ms": 22
+        },
+        {
+          "method": "GET",
+          "path": "/customer/seller/payout-requests",
+          "status": 200,
+          "code": "PAYOUT_REQUESTS_FETCHED",
+          "ms": 7
+        }
+      ]
+    },
+    {
+      "id": "TC_TB_DSP_01",
+      "flow": "FLOW-06: Dispute",
+      "technique": "Happy path + BVA (min)",
+      "title": "Mở khiếu nại với lý do đúng 20 ký tự",
+      "expected": "HTTP 2xx; khiếu nại được tạo; tiền đơn bị đóng băng (đơn không chuyển completed)",
+      "source": "libs/internal-contracts/src/disputes.ts (reason min 20); docs/admin-rules.md §3",
+      "actual": "Không có đơn D (đơn đã thanh toán từ VCH_05)",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_DSP_02",
+      "flow": "FLOW-06: Dispute",
+      "technique": "BVA (min-1)",
+      "title": "Mở khiếu nại với lý do 19 ký tự",
+      "expected": "HTTP 400 (lỗi validate), không tạo khiếu nại",
+      "source": "disputes.ts: reason z.string().trim().min(20)",
+      "actual": "Không có đơn D (đơn đã thanh toán từ VCH_05)",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_DSP_03",
+      "flow": "FLOW-06: Dispute",
+      "technique": "Phân quyền (IDOR)",
+      "title": "Người mua khác mở khiếu nại trên đơn của customer1",
+      "expected": "HTTP 403 hoặc 404; không tạo khiếu nại",
+      "source": "Nguyên tắc kiểm soát truy cập (OWASP A01); chỉ người mua/bán của đơn được thao tác",
+      "actual": "Không có đơn D",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_DSP_04",
+      "flow": "FLOW-06: Dispute",
+      "technique": "State Transition (chuyển không hợp lệ)",
+      "title": "Mở khiếu nại trên đơn chưa thanh toán",
+      "expected": "HTTP 4xx; không tạo khiếu nại",
+      "source": "docs/admin-rules.md §2-3 (khiếu nại áp dụng sau khi giao hàng)",
+      "actual": "Không có đơn chưa thanh toán (W từ VCH_05)",
+      "status": "BLOCKED",
+      "http": []
+    },
+    {
+      "id": "TC_TB_DSP_05",
+      "flow": "FLOW-06: Dispute",
+      "technique": "State Transition (trùng lặp)",
+      "title": "Mở khiếu nại thứ hai khi khiếu nại đầu còn mở",
+      "expected": "HTTP 4xx (409); không tạo bản ghi khiếu nại trùng",
+      "source": "docs/admin-rules.md §3; disputes /by-order/:orderId (một khiếu nại mở cho mỗi đơn)",
+      "actual": "Không có đơn D",
+      "status": "BLOCKED",
+      "http": []
+    }
+  ]
+}

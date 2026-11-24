@@ -1,0 +1,72 @@
+{
+  "target": {
+    "title": "src/main.ts",
+    "url": "file://C:_Users_NoNomt007_Documents_trustbase_trustbase-project_api_src_main.ts"
+  },
+  "skippedLibraryExceptions": 0,
+  "skippedFilteredExceptions": 3,
+  "status": "PAUSED",
+  "reason": "promiseRejection",
+  "exception": {
+    "type": "object",
+    "description": "error: column orders.commission_rate_ppm does not exist\n    at parseErrorMessage (C:\\Users\\NoNomt007\\Documents\\trustbase\\trustbase-project\\node_modules\\.pnpm\\pg-protocol@1.15.0\\node_modules\\pg-protocol\\src\\parser.ts:394:9)\n    at Parser.handlePacket (C:\\Users\\NoNomt007\\Documents\\trustbase\\trustbase-project\\node_modules\\.pnpm\\pg-protocol@1.15.0\\node_modules\\pg-protocol\\src\\parser.ts:212:19)\n    at Parser.parse (C:\\Users\\NoNomt007\\Documents\\trustbase\\trustbase-project\\node_modules\\.pnpm\\pg-protocol@1.15.0\\node_modules\\pg-protocol\\src\\parser.ts:105:30)\n    at Socket.<anonymous> (C:\\Users\\NoNomt007\\Documents\\trustbase\\trustbase-project\\node_modules\\.pnpm\\pg-protocol@1.15.0\\node_modules\\pg-protocol\\src\\index.ts:7:48)\n    at Socket.emit (node:events:514:28)\n    at addChunk (node:internal/streams/readable:568:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:519:3)\n    at Readable.push (node:internal/streams/readable:399:5)\n    at TCP.onStreamRead (node:internal/stream_base_commons:189:23)",
+    "className": "DatabaseError"
+  },
+  "topFrame": {
+    "functionName": "query.callback",
+    "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/node_modules/.pnpm/pg@8.22.0/node_modules/pg/lib/client.js",
+    "line": 648,
+    "column": 49
+  },
+  "callStack": [
+    {
+      "functionName": "query.callback",
+      "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/node_modules/.pnpm/pg@8.22.0/node_modules/pg/lib/client.js",
+      "line": 648,
+      "column": 49
+    },
+    {
+      "functionName": "handleError",
+      "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/node_modules/.pnpm/pg@8.22.0/node_modules/pg/lib/query.js",
+      "line": 131,
+      "column": 19
+    },
+    {
+      "functionName": "_handleErrorMessage",
+      "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/node_modules/.pnpm/pg@8.22.0/node_modules/pg/lib/client.js",
+      "line": 433,
+      "column": 17
+    },
+    {
+      "functionName": "emit",
+      "url": "node:events",
+      "line": 514,
+      "column": 28
+    },
+    {
+      "functionName": "(anonymous)",
+      "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/node_modules/.pnpm/pg@8.22.0/node_modules/pg/lib/connection.js",
+      "line": 136,
+      "column": 12
+    },
+    {
+      "functionName": "parse",
+      "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/node_modules/.pnpm/pg-protocol@1.15.0/node_modules/pg-protocol/dist/parser.js",
+      "line": 38,
+      "column": 17
+    },
+    {
+      "functionName": "(anonymous)",
+      "url": "file:///C:/Users/NoNomt007/Documents/trustbase/trustbase-project/node_modules/.pnpm/pg-protocol@1.15.0/node_modules/pg-protocol/dist/index.js",
+      "line": 12,
+      "column": 42
+    },
+    {
+      "functionName": "emit",
+      "url": "node:events",
+      "line": 514,
+      "column": 28
+    }
+  ],
+  "evaluatedVariables": {}
+}

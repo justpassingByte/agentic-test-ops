@@ -1,0 +1,34 @@
+{
+ "bugId": "F-01",
+ "title": "Tham số sort bị bỏ qua khi tìm kiếm có từ khóa",
+ "route": "GET /catalog/listings?q=&sort=price_asc",
+ "severity": "MEDIUM",
+ "testCases": [
+  {
+   "id": "TC_TB_CAT_01",
+   "title": "Tìm kiếm từ khóa và sắp xếp giá tăng dần",
+   "status": "failed",
+   "metric": "HTTP 200, 7 kết quả, giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+   "summary": "Kỳ vọng: HTTP 200; danh sách có giá không giảm dần (non-decreasing)",
+   "technique": "Happy path"
+  }
+ ],
+ "testingTechniques": [
+  "Happy path",
+  "White-box code trace"
+ ],
+ "actionDescription": "GET /catalog/listings?q=windows&sort=price_asc&limit=50",
+ "symptoms": {
+  "failedRequest": "HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000"
+ },
+ "sourceLocation": {
+  "file": "trustbase-project/api/src/modules/listings/listings.repo.ts",
+  "line": 413,
+  "function": "findMany"
+ },
+ "rootCause": "Khi có q, orderBy chỉ dùng ts_rank_cd (độ liên quan) và bỏ qua opts.sort; contract API vẫn nhận sort cùng q mà không báo lỗi.",
+ "mitigation": "Ưu tiên ORDER_BY[opts.sort] khi client truyền sort, dùng ts_rank_cd làm tiêu chí phụ hoặc khi không có sort.",
+ "blastRadius": "Mọi tìm kiếm có từ khóa kèm sắp xếp giá/bán chạy trên marketplace.",
+ "regressionTestFile": "tests/trustbase/trustbase.test.mjs (TC_TB_CAT_01)",
+ "syncToCanvasDir": false
+}

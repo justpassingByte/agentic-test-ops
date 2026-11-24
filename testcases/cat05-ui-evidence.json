@@ -1,0 +1,109 @@
+{
+  "status": "FAILED",
+  "targetUrl": "http://localhost:4200/vi/marketplace",
+  "finalUrl": "http://localhost:4200/vi/marketplace",
+  "actionsExecuted": 5,
+  "consoleErrors": [
+    {
+      "type": "error",
+      "text": "%c%s%c (node:23772) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.\n(Use `node --trace-deprecation ...` to show where the warning was created) background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Server  ",
+      "location": {
+        "url": "http://localhost:4200/_next/static/chunks/1gel_next_dist_17ff8bc._.js",
+        "line": 3318,
+        "column": 31,
+        "lineNumber": 3318,
+        "columnNumber": 31
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "location": {
+        "url": "http://localhost:4201/auth/me",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "location": {
+        "url": "http://localhost:4201/auth/refresh",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "location": {
+        "url": "http://localhost:4201/auth/refresh",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "location": {
+        "url": "http://localhost:4201/catalog/categories",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "location": {
+        "url": "http://localhost:4201/catalog/categories",
+        "line": 0,
+        "column": 0,
+        "lineNumber": 0,
+        "columnNumber": 0
+      }
+    }
+  ],
+  "pageErrors": [],
+  "failedRequests": [
+    {
+      "url": "http://localhost:4201/auth/me",
+      "status": 401,
+      "statusText": "Unauthorized",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:4201/auth/refresh",
+      "status": 401,
+      "statusText": "Unauthorized",
+      "method": "POST"
+    },
+    {
+      "url": "http://localhost:4201/auth/refresh",
+      "status": 401,
+      "statusText": "Unauthorized",
+      "method": "POST"
+    },
+    {
+      "url": "http://localhost:4201/catalog/categories",
+      "status": 500,
+      "statusText": "Internal Server Error",
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:4201/catalog/categories",
+      "status": 500,
+      "statusText": "Internal Server Error",
+      "method": "GET"
+    }
+  ],
+  "screenshotPath": "screenshots\\cat05_xss_ui.png",
+  "summary": "Browser scenario encountered: 6 console warning/error(s), 0 page exception(s), 5 failed HTTP request(s)."
+}

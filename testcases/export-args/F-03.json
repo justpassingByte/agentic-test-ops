@@ -1,0 +1,34 @@
+{
+ "bugId": "F-03",
+ "title": "Người ngoài dò được trạng thái khiếu nại của đơn người khác",
+ "route": "POST /customer/disputes",
+ "severity": "MEDIUM",
+ "testCases": [
+  {
+   "id": "TC_TB_DSP_03",
+   "title": "Người mua khác mở khiếu nại trên đơn của customer1",
+   "status": "failed",
+   "metric": "customer2 mở khiếu nại trên đơn của customer1: HTTP 409 DISPUTE_ALREADY_OPEN",
+   "summary": "Kỳ vọng: HTTP 403 hoặc 404; không tạo khiếu nại",
+   "technique": "Phân quyền (IDOR)"
+  }
+ ],
+ "testingTechniques": [
+  "Phân quyền (IDOR)",
+  "White-box code trace"
+ ],
+ "actionDescription": "customer2 gửi POST /customer/disputes với orderId của customer1",
+ "symptoms": {
+  "failedRequest": "Đơn chưa có khiếu nại -> 403 (run5); đơn đã có khiếu nại -> 409 DISPUTE_ALREADY_OPEN (run6, run7)"
+ },
+ "sourceLocation": {
+  "file": "trustbase-project/api/src/modules/disputes/disputes.service.ts",
+  "line": 142,
+  "function": "openDispute"
+ },
+ "rootCause": "findOpenByOrderId (dòng 142) và kiểm tra trạng thái đơn (148-156) chạy trước kiểm tra quyền PT-03 (dòng 167); phản hồi khác nhau tiết lộ trạng thái đơn cho người không liên quan.",
+ "mitigation": "Đưa kiểm tra buyer/seller (PT-03) lên đầu openDispute, trả 403/404 thống nhất.",
+ "blastRadius": "Mọi orderId bị lộ (đường dẫn, ảnh chụp, chia sẻ).",
+ "regressionTestFile": "tests/trustbase/trustbase.test.mjs (TC_TB_DSP_03)",
+ "syncToCanvasDir": false
+}

@@ -1,0 +1,34 @@
+{
+ "bugId": "F-05",
+ "title": "Tạo đơn tiêu hao hạn mức thao tác tài chính (chung bộ đếm rate limit)",
+ "route": "POST /customer/orders + POST /customer/disputes",
+ "severity": "MEDIUM",
+ "testCases": [
+  {
+   "id": "EXP-01",
+   "title": "Thăm dò: 5 lần tạo đơn rồi mở khiếu nại trong cùng phút",
+   "status": "failed",
+   "metric": "rl:financial:<user> = 5 -> POST /customer/disputes 429",
+   "summary": "Kỳ vọng: giới hạn tạo đơn (10/phút) độc lập với thao tác tài chính (5/phút)",
+   "technique": "Exploratory"
+  }
+ ],
+ "testingTechniques": [
+  "Exploratory testing",
+  "White-box code trace"
+ ],
+ "actionDescription": "customer2 gọi POST /customer/orders 5 lần, sau đó POST /customer/disputes",
+ "symptoms": {
+  "failedRequest": "POST /customer/disputes -> 429 Too many operations. Please wait a minute."
+ },
+ "sourceLocation": {
+  "file": "trustbase-project/api/src/shared/rate-limit/limiters.ts",
+  "line": 121,
+  "function": "orderCreateLimiter"
+ },
+ "rootCause": "orderCreateLimiter = createRateLimiter(FINANCIAL_OPS, {max: 10}) và financialOpsLimiter = createRateLimiter(FINANCIAL_OPS) dùng chung prefix 'rl:financial:' và khóa theo user nên đếm chung.",
+ "mitigation": "Tách prefix riêng cho limiter tạo đơn (ví dụ rl:orders:create-user:).",
+ "blastRadius": "Người mua đặt nhiều đơn liên tiếp bị chặn mở khiếu nại, hủy đơn, rút tiền tới 1 phút.",
+ "regressionTestFile": "(chưa có, đề xuất bổ sung)",
+ "syncToCanvasDir": false
+}

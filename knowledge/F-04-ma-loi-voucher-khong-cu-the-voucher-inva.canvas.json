@@ -1,0 +1,159 @@
+{
+  "domain_id": "testops_ma_loi_voucher_khong_cu_the_voucher_inva",
+  "cluster_name": "[TEST SUITE] F-04: Mã lỗi voucher không cụ thể (VOUCHER_INVALID chung)",
+  "cluster_theme": "rose",
+  "sub_title": "Pass Rate: 0.0% (0/2 Passed)",
+  "is_public_interface": true,
+  "nodes": [],
+  "sub_clusters": [
+    {
+      "sub_cluster_id": "sub_test_scenarios",
+      "name": "📋 Test Scenarios Matrix",
+      "theme": "indigo",
+      "nodes": [
+        {
+          "title": "TC_TB_VCH_03: Voucher có đơn tối thiểu lớn hơn giá trị đơn 1 đồng",
+          "role": "test_case",
+          "badge_type": "test_case_failed",
+          "summary": "Kỳ vọng: Bị từ chối với mã lỗi MIN_ORDER_NOT_MET / VOUCHER_MIN_ORDER_NOT_MET",
+          "schematic_template": "pipeline_filter",
+          "schematic_data": {
+            "status": "failed",
+            "metric": "HTTP 400 VOUCHER_INVALID Đơn hàng tối thiểu 50.001đ để áp dụng voucher này",
+            "items": [
+              {
+                "label": "Verdict: FAILED",
+                "status": "error"
+              },
+              {
+                "label": "Technique: BVA (biên+1)",
+                "status": "info"
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC_TB_VCH_04: Áp voucher đã hết hạn",
+          "role": "test_case",
+          "badge_type": "test_case_failed",
+          "summary": "Kỳ vọng: Bị từ chối với mã lỗi VOUCHER_EXPIRED",
+          "schematic_template": "pipeline_filter",
+          "schematic_data": {
+            "status": "failed",
+            "metric": "HTTP 400 VOUCHER_INVALID Voucher đã hết hạn sử dụng",
+            "items": [
+              {
+                "label": "Verdict: FAILED",
+                "status": "error"
+              },
+              {
+                "label": "Technique: EP (voucher hết hạn)",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_browser_trace",
+      "name": "🎭 Browser & Network Trace (Playwright)",
+      "theme": "blue",
+      "nodes": [
+        {
+          "title": "Playwright: DOM Interaction (POST /customer/orders (voucherCode))",
+          "role": "browser_action",
+          "badge_type": "playwright_trace",
+          "summary": "Tạo đơn 50.000 đ kèm voucher TBQA_MIN50001 / TBQA_EXPIRED",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Route: POST /customer/orders (voucherCode)",
+                "status": "info"
+              },
+              {
+                "label": "Console Error: None",
+                "status": "ok"
+              },
+              {
+                "label": "Artifact: N/A",
+                "status": "info"
+              }
+            ]
+          }
+        },
+        {
+          "title": "API Intercept",
+          "role": "gateway",
+          "summary": "Intercepted backend HTTP response: 400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)",
+          "schematic_template": "circuit_breaker_backoff",
+          "schematic_data": {
+            "metric": "400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)",
+            "items": [
+              {
+                "label": "Failed Request: 400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)",
+                "status": "error"
+              },
+              {
+                "label": "Endpoint: POST /customer/orders (voucherCode)",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_defect_defense",
+      "name": "🔍 Root Cause Analysis & Regression Defense",
+      "theme": "rose",
+      "nodes": [
+        {
+          "title": "Root Cause: N/A",
+          "role": "root_cause",
+          "badge_type": "root_cause_defect",
+          "summary": "Service nội bộ có mã cụ thể (VOUCHER_MIN_ORDER_NOT_MET, VOUCHER_EXPIRED) nhưng luồng tạo đơn trả mã chung; client chỉ phân biệt được qua chuỗi thông báo.",
+          "schematic_template": "table_row_lock",
+          "incident_dossier": {
+            "boi_canh_tai": "Tạo đơn 50.000 đ kèm voucher TBQA_MIN50001 / TBQA_EXPIRED at POST /customer/orders (voucherCode)",
+            "nguyen_nhan_goc_re": "Service nội bộ có mã cụ thể (VOUCHER_MIN_ORDER_NOT_MET, VOUCHER_EXPIRED) nhưng luồng tạo đơn trả mã chung; client chỉ phân biệt được qua chuỗi thông báo.",
+            "ban_kinh_anh_huong": "Client tích hợp cần xử lý riêng từng lý do từ chối voucher.",
+            "chien_luoc_phong_thu": "Trả mã lỗi cụ thể trong trường code (hoặc details.reason)."
+          },
+          "incident_cases": [
+            {
+              "id": "defect_f_04",
+              "title": "Mã lỗi voucher không cụ thể (VOUCHER_INVALID chung)",
+              "traffic_profile": "E2E Playwright simulation",
+              "root_cause_analysis": "Service nội bộ có mã cụ thể (VOUCHER_MIN_ORDER_NOT_MET, VOUCHER_EXPIRED) nhưng luồng tạo đơn trả mã chung; client chỉ phân biệt được qua chuỗi thông báo.",
+              "blast_radius": "Client tích hợp cần xử lý riêng từng lý do từ chối voucher.",
+              "cascading_failure_path": [
+                "1. [User Action]: Tạo đơn 50.000 đ kèm voucher TBQA_MIN50001 / TBQA_EXPIRED",
+                "2. [HTTP Fail]: 400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)",
+                "3. [Frontend Error]: N/A",
+                "4. [Backend Fault]: N/A"
+              ],
+              "mitigation_strategy": "Trả mã lỗi cụ thể trong trường code (hoặc details.reason)."
+            }
+          ]
+        },
+        {
+          "title": "Regression Defense Suite",
+          "role": "defense_test",
+          "badge_type": "regression_shield",
+          "summary": "Regression test: tests/trustbase/trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Test File: trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)",
+                "status": "ok"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

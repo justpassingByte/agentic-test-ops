@@ -1,0 +1,323 @@
+{
+  "domain_id": "sweep_trustbase_local_run7",
+  "cluster_name": "[SWEEP] 2026-11-24: 3/6 Flows Passed (50.0%)",
+  "cluster_theme": "rose",
+  "sub_title": "6 flows | 3 failed",
+  "is_public_interface": true,
+  "nodes": [],
+  "sub_clusters": [
+    {
+      "sub_cluster_id": "sub_executive_summary",
+      "name": "📊 Sweep Overview & KPIs",
+      "theme": "amber",
+      "nodes": [
+        {
+          "title": "Sweep: 2026-11-24",
+          "role": "gateway",
+          "badge_type": "test_case_failed",
+          "summary": "6 business flows. Pass rate: 50.0%. 3 failed flow(s).",
+          "schematic_template": "circuit_breaker_backoff",
+          "schematic_data": {
+            "metric": "Pass Rate: 50.0%",
+            "items": [
+              {
+                "label": "Flows: 3/6 Passed",
+                "status": "warn"
+              },
+              {
+                "label": "Test Cases: 25/30",
+                "status": "info"
+              },
+              {
+                "label": "CDP heap evidence: attached",
+                "status": "ok"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_flow_01",
+      "name": "✅ [FLOW-01] Auth",
+      "theme": "emerald",
+      "nodes": [
+        {
+          "title": "FLOW-01: Auth",
+          "role": "test_case",
+          "badge_type": "test_case_passed",
+          "summary": "AUTH_01: PASS; AUTH_02: PASS; AUTH_03: PASS; AUTH_04: PASS; AUTH_05: PASS",
+          "schematic_template": "pipeline_filter",
+          "schematic_data": {
+            "metric": "Avg Latency: 82ms",
+            "items": [
+              {
+                "label": "Test Cases: 5/5 Passed",
+                "status": "ok"
+              },
+              {
+                "label": "Route: /auth/*",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_flow_02",
+      "name": "❌ [FLOW-02] Catalog",
+      "theme": "rose",
+      "nodes": [
+        {
+          "title": "Playwright Trace: Catalog",
+          "role": "browser_action",
+          "badge_type": "playwright_trace",
+          "summary": "Failure observed at /catalog/listings: HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Route: /catalog/listings",
+                "status": "info"
+              },
+              {
+                "label": "Error: N/A",
+                "status": "info"
+              },
+              {
+                "label": "Request: HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+                "status": "error"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Root Cause: listings.repo.ts:413",
+          "role": "root_cause",
+          "badge_type": "root_cause_defect",
+          "summary": "F-01 (MEDIUM): Khi có q, orderBy chỉ dùng ts_rank_cd (độ liên quan) và bỏ qua opts.sort; contract API vẫn nhận sort cùng q mà không báo lỗi.",
+          "schematic_template": "table_row_lock",
+          "incident_dossier": {
+            "boi_canh_tai": "Flow FLOW-02 at /catalog/listings",
+            "nguyen_nhan_goc_re": "F-01 (MEDIUM): Khi có q, orderBy chỉ dùng ts_rank_cd (độ liên quan) và bỏ qua opts.sort; contract API vẫn nhận sort cùng q mà không báo lỗi.",
+            "ban_kinh_anh_huong": "Business Flow Catalog",
+            "chien_luoc_phong_thu": "Ưu tiên ORDER_BY[opts.sort] khi client truyền sort, dùng ts_rank_cd làm tiêu chí phụ hoặc khi không có sort."
+          }
+        },
+        {
+          "title": "Regression Test: trustbase.test.mjs (TC_TB_CAT_01)",
+          "role": "defense_test",
+          "badge_type": "regression_shield",
+          "summary": "Regression test tests/trustbase/trustbase.test.mjs (TC_TB_CAT_01)",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Test File: trustbase.test.mjs (TC_TB_CAT_01)",
+                "status": "ok"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_flow_03",
+      "name": "✅ [FLOW-03] Order & Inventory",
+      "theme": "emerald",
+      "nodes": [
+        {
+          "title": "FLOW-03: Order & Inventory",
+          "role": "test_case",
+          "badge_type": "test_case_passed",
+          "summary": "ORD_01: PASS; ORD_02: PASS; ORD_03: PASS; ORD_04: PASS; ORD_05: PASS",
+          "schematic_template": "pipeline_filter",
+          "schematic_data": {
+            "metric": "Avg Latency: 49ms",
+            "items": [
+              {
+                "label": "Test Cases: 5/5 Passed",
+                "status": "ok"
+              },
+              {
+                "label": "Route: /customer/orders",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_flow_04",
+      "name": "❌ [FLOW-04] Voucher",
+      "theme": "rose",
+      "nodes": [
+        {
+          "title": "Playwright Trace: Voucher",
+          "role": "browser_action",
+          "badge_type": "playwright_trace",
+          "summary": "Failure observed at /customer/orders (voucherCode): 400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Route: /customer/orders (voucherCode)",
+                "status": "info"
+              },
+              {
+                "label": "Error: N/A",
+                "status": "info"
+              },
+              {
+                "label": "Request: 400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)",
+                "status": "error"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Root Cause: N/A",
+          "role": "root_cause",
+          "badge_type": "root_cause_defect",
+          "summary": "F-04 (LOW): Service nội bộ có mã cụ thể (VOUCHER_MIN_ORDER_NOT_MET, VOUCHER_EXPIRED) nhưng luồng tạo đơn trả mã chung; client chỉ phân biệt được qua chuỗi thông báo.",
+          "schematic_template": "table_row_lock",
+          "incident_dossier": {
+            "boi_canh_tai": "Flow FLOW-04 at /customer/orders (voucherCode)",
+            "nguyen_nhan_goc_re": "F-04 (LOW): Service nội bộ có mã cụ thể (VOUCHER_MIN_ORDER_NOT_MET, VOUCHER_EXPIRED) nhưng luồng tạo đơn trả mã chung; client chỉ phân biệt được qua chuỗi thông báo.",
+            "ban_kinh_anh_huong": "Business Flow Voucher",
+            "chien_luoc_phong_thu": "Trả mã lỗi cụ thể trong trường code (hoặc details.reason)."
+          }
+        },
+        {
+          "title": "Regression Test: trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)",
+          "role": "defense_test",
+          "badge_type": "regression_shield",
+          "summary": "Regression test tests/trustbase/trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Test File: trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)",
+                "status": "ok"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_flow_05",
+      "name": "✅ [FLOW-05] Payout & Fee",
+      "theme": "emerald",
+      "nodes": [
+        {
+          "title": "FLOW-05: Payout & Fee",
+          "role": "test_case",
+          "badge_type": "test_case_passed",
+          "summary": "PAY_01: PASS; PAY_02: PASS; PAY_03: PASS; PAY_04: PASS; PAY_05: PASS",
+          "schematic_template": "pipeline_filter",
+          "schematic_data": {
+            "metric": "Avg Latency: 11ms",
+            "items": [
+              {
+                "label": "Test Cases: 5/5 Passed",
+                "status": "ok"
+              },
+              {
+                "label": "Route: /customer/orders/payout-estimate, /customer/seller/payouts/request",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_flow_06",
+      "name": "❌ [FLOW-06] Dispute",
+      "theme": "rose",
+      "nodes": [
+        {
+          "title": "Playwright Trace: Dispute",
+          "role": "browser_action",
+          "badge_type": "playwright_trace",
+          "summary": "Failure observed at /customer/disputes: POST /customer/disputes -> 201 SUCCESS trên đơn awaiting_payment",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Route: /customer/disputes",
+                "status": "info"
+              },
+              {
+                "label": "Error: N/A",
+                "status": "info"
+              },
+              {
+                "label": "Request: POST /customer/disputes -> 201 SUCCESS trên đơn awaiting_payment",
+                "status": "error"
+              }
+            ]
+          }
+        },
+        {
+          "title": "CDP Heap: DB_TO_NATIVE_STATUS",
+          "role": "gateway",
+          "summary": "Variables evaluated on the paused call frame via CDP: {\"orderStatus\":\"CHO_CK\",\"order && order.status\":\"awaiting_payment\",\"ALLOWED_OPEN_STATUSES\":[\"CHO_CK\",\"DANG_GIAO\",\"DA_GIAO\",\"delivered\",\"funds_held\",\"delivering\"],\"input.category\":\"ITEM_NOT_AS_DESCRIBED\"}",
+          "schematic_template": "table_row_lock",
+          "schematic_data": {
+            "metric": "Captured via CDP",
+            "items": [
+              {
+                "label": "orderStatus: CHO_CK",
+                "status": "warn"
+              },
+              {
+                "label": "order && order.status: awaiting_payment",
+                "status": "warn"
+              },
+              {
+                "label": "ALLOWED_OPEN_STATUSES: [\"CHO_CK\",\"DANG_GIAO\",\"DA_GIAO\",\"delivered\",\"funds_held\",\"delivering\"]",
+                "status": "warn"
+              },
+              {
+                "label": "input.category: ITEM_NOT_AS_DESCRIBED",
+                "status": "warn"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Root Cause: postgres-backbone.adapter.ts:17",
+          "role": "root_cause",
+          "badge_type": "root_cause_defect",
+          "summary": "F-02 (HIGH): awaiting_payment và funds_held cùng được ánh xạ sang 'CHO_CK'; 'CHO_CK' nằm trong ALLOWED_OPEN_STATUSES (disputes.service.ts:31) nên openDispute (dòng 154) chấp nhận đơn chưa thanh toán. CDP breakpoint: order.status=awaiting_payment, orderStatus=CHO_CK. | F-03 (MEDIUM): findOpenByOrderId (dòng 142) và kiểm tra trạng thái đơn (148-156) chạy trước kiểm tra quyền PT-03 (dòng 167); phản hồi khác nhau tiết lộ trạng thái đơn cho người không liên quan.",
+          "schematic_template": "table_row_lock",
+          "incident_dossier": {
+            "boi_canh_tai": "Flow FLOW-06 at /customer/disputes",
+            "nguyen_nhan_goc_re": "F-02 (HIGH): awaiting_payment và funds_held cùng được ánh xạ sang 'CHO_CK'; 'CHO_CK' nằm trong ALLOWED_OPEN_STATUSES (disputes.service.ts:31) nên openDispute (dòng 154) chấp nhận đơn chưa thanh toán. CDP breakpoint: order.status=awaiting_payment, orderStatus=CHO_CK. | F-03 (MEDIUM): findOpenByOrderId (dòng 142) và kiểm tra trạng thái đơn (148-156) chạy trước kiểm tra quyền PT-03 (dòng 167); phản hồi khác nhau tiết lộ trạng thái đơn cho người không liên quan.",
+            "ban_kinh_anh_huong": "Business Flow Dispute",
+            "chien_luoc_phong_thu": "Kiểm tra order.status thật (chỉ funds_held/delivering/delivered) hoặc tách mã native riêng cho awaiting_payment. | Đưa kiểm tra buyer/seller (PT-03) lên đầu openDispute, trả 403/404 thống nhất."
+          }
+        },
+        {
+          "title": "Regression Test: trustbase.test.mjs (TC_TB_DSP_04)",
+          "role": "defense_test",
+          "badge_type": "regression_shield",
+          "summary": "Regression test tests/trustbase/trustbase.test.mjs (TC_TB_DSP_04)",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Test File: trustbase.test.mjs (TC_TB_DSP_04)",
+                "status": "ok"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

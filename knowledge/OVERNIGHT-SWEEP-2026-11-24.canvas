@@ -1,0 +1,303 @@
+{
+  "nodes": [
+    {
+      "id": "g0",
+      "type": "group",
+      "label": "📊 Sweep Overview & KPIs",
+      "x": 0,
+      "y": 0,
+      "width": 420,
+      "height": 350,
+      "color": "3"
+    },
+    {
+      "id": "n0_0",
+      "type": "text",
+      "text": "### Sweep: 2026-11-24\n\n6 business flows. Pass rate: 50.0%. 3 failed flow(s).\n\n**Pass Rate: 50.0%**\n\n- Flows: 3/6 Passed\n- Test Cases: 25/30\n- CDP heap evidence: attached",
+      "x": 20,
+      "y": 60,
+      "width": 380,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": "✅ [FLOW-01] Auth",
+      "x": 480,
+      "y": 0,
+      "width": 420,
+      "height": 350,
+      "color": "4"
+    },
+    {
+      "id": "n1_0",
+      "type": "text",
+      "text": "### FLOW-01: Auth\n\nAUTH_01: PASS; AUTH_02: PASS; AUTH_03: PASS; AUTH_04: PASS; AUTH_05: PASS\n\n**Avg Latency: 82ms**\n\n- Test Cases: 5/5 Passed\n- Route: /auth/*",
+      "x": 500,
+      "y": 60,
+      "width": 380,
+      "height": 260,
+      "color": "4"
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": "❌ [FLOW-02] Catalog",
+      "x": 960,
+      "y": 0,
+      "width": 420,
+      "height": 930,
+      "color": "1"
+    },
+    {
+      "id": "n2_0",
+      "type": "text",
+      "text": "### Playwright Trace: Catalog\n\nFailure observed at /catalog/listings: HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000\n\n- Route: /catalog/listings\n- Error: N/A\n- Request: HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+      "x": 980,
+      "y": 60,
+      "width": 380,
+      "height": 260
+    },
+    {
+      "id": "n2_1",
+      "type": "text",
+      "text": "### Root Cause: listings.repo.ts:413\n\nF-01 (MEDIUM): Khi có q, orderBy chỉ dùng ts_rank_cd (độ liên quan) và bỏ qua opts.sort; contract API vẫn nhận sort cùng q mà không báo lỗi.\n\n- Context: Flow FLOW-02 at /catalog/listings\n- Root cause: F-01 (MEDIUM): Khi có q, orderBy chỉ dùng ts_rank_cd (độ liên quan) và bỏ qua opts.sort; contract API vẫn nhận sort cùng q mà không báo lỗi.\n- Blast radius: Business Flow Catalog",
+      "x": 980,
+      "y": 350,
+      "width": 380,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "n2_2",
+      "type": "text",
+      "text": "### Regression Test: trustbase.test.mjs (TC_TB_CAT_01)\n\nRegression test tests/trustbase/trustbase.test.mjs (TC_TB_CAT_01)\n\n- Test File: trustbase.test.mjs (TC_TB_CAT_01)",
+      "x": 980,
+      "y": 640,
+      "width": 380,
+      "height": 260,
+      "color": "4"
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "label": "✅ [FLOW-03] Order & Inventory",
+      "x": 1440,
+      "y": 0,
+      "width": 420,
+      "height": 350,
+      "color": "4"
+    },
+    {
+      "id": "n3_0",
+      "type": "text",
+      "text": "### FLOW-03: Order & Inventory\n\nORD_01: PASS; ORD_02: PASS; ORD_03: PASS; ORD_04: PASS; ORD_05: PASS\n\n**Avg Latency: 49ms**\n\n- Test Cases: 5/5 Passed\n- Route: /customer/orders",
+      "x": 1460,
+      "y": 60,
+      "width": 380,
+      "height": 260,
+      "color": "4"
+    },
+    {
+      "id": "g4",
+      "type": "group",
+      "label": "❌ [FLOW-04] Voucher",
+      "x": 1920,
+      "y": 0,
+      "width": 420,
+      "height": 930,
+      "color": "1"
+    },
+    {
+      "id": "n4_0",
+      "type": "text",
+      "text": "### Playwright Trace: Voucher\n\nFailure observed at /customer/orders (voucherCode): 400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)\n\n- Route: /customer/orders (voucherCode)\n- Error: N/A\n- Request: 400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)",
+      "x": 1940,
+      "y": 60,
+      "width": 380,
+      "height": 260
+    },
+    {
+      "id": "n4_1",
+      "type": "text",
+      "text": "### Root Cause: N/A\n\nF-04 (LOW): Service nội bộ có mã cụ thể (VOUCHER_MIN_ORDER_NOT_MET, VOUCHER_EXPIRED) nhưng luồng tạo đơn trả mã chung; client chỉ phân biệt được qua chuỗi thông báo.\n\n- Context: Flow FLOW-04 at /customer/orders (voucherCode)\n- Root cause: F-04 (LOW): Service nội bộ có mã cụ thể (VOUCHER_MIN_ORDER_NOT_MET, VOUCHER_EXPIRED) nhưng luồng tạo đơn trả mã chung; client chỉ phân biệt được qua chuỗi thông báo.\n- Blast radius: Business Flow Voucher",
+      "x": 1940,
+      "y": 350,
+      "width": 380,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "n4_2",
+      "type": "text",
+      "text": "### Regression Test: trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)\n\nRegression test tests/trustbase/trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)\n\n- Test File: trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)",
+      "x": 1940,
+      "y": 640,
+      "width": 380,
+      "height": 260,
+      "color": "4"
+    },
+    {
+      "id": "g5",
+      "type": "group",
+      "label": "✅ [FLOW-05] Payout & Fee",
+      "x": 2400,
+      "y": 0,
+      "width": 420,
+      "height": 350,
+      "color": "4"
+    },
+    {
+      "id": "n5_0",
+      "type": "text",
+      "text": "### FLOW-05: Payout & Fee\n\nPAY_01: PASS; PAY_02: PASS; PAY_03: PASS; PAY_04: PASS; PAY_05: PASS\n\n**Avg Latency: 11ms**\n\n- Test Cases: 5/5 Passed\n- Route: /customer/orders/payout-estimate, /customer/seller/payouts/request",
+      "x": 2420,
+      "y": 60,
+      "width": 380,
+      "height": 260,
+      "color": "4"
+    },
+    {
+      "id": "g6",
+      "type": "group",
+      "label": "❌ [FLOW-06] Dispute",
+      "x": 2880,
+      "y": 0,
+      "width": 420,
+      "height": 1220,
+      "color": "1"
+    },
+    {
+      "id": "n6_0",
+      "type": "text",
+      "text": "### Playwright Trace: Dispute\n\nFailure observed at /customer/disputes: POST /customer/disputes -> 201 SUCCESS trên đơn awaiting_payment\n\n- Route: /customer/disputes\n- Error: N/A\n- Request: POST /customer/disputes -> 201 SUCCESS trên đơn awaiting_payment",
+      "x": 2900,
+      "y": 60,
+      "width": 380,
+      "height": 260
+    },
+    {
+      "id": "n6_1",
+      "type": "text",
+      "text": "### CDP Heap: DB_TO_NATIVE_STATUS\n\nVariables evaluated on the paused call frame via CDP: {\"orderStatus\":\"CHO_CK\",\"order && order.status\":\"awaiting_payment\",\"ALLOWED_OPEN_STATUSES\":[\"CHO_CK\",\"DANG_GIAO\",\"DA_GIAO\",\"delivered\",\"funds_held\",\"delivering\"],\"input.category\":\"ITEM_NOT_AS_DESCRIBED\"}\n\n**Captured via CDP**\n\n- orderStatus: CHO_CK\n- order && order.status: awaiting_payment\n- ALLOWED_OPEN_STATUSES: [\"CHO_CK\",\"DANG_GIAO\",\"DA_GIAO\",\"delivered\",\"funds_held\",\"delivering\"]\n- input.category: ITEM_NOT_AS_DESCRIBED",
+      "x": 2900,
+      "y": 350,
+      "width": 380,
+      "height": 260
+    },
+    {
+      "id": "n6_2",
+      "type": "text",
+      "text": "### Root Cause: postgres-backbone.adapter.ts:17\n\nF-02 (HIGH): awaiting_payment và funds_held cùng được ánh xạ sang 'CHO_CK'; 'CHO_CK' nằm trong ALLOWED_OPEN_STATUSES (disputes.service.ts:31) nên openDispute (dòng 154) chấp nhận đơn chưa thanh toán. CDP breakpoint: order.status=awaiting_payment, orderStatus=CHO_CK. | F-03 (MEDIUM): findOpenByOrderId (dòng 142) và kiểm tra trạng thái đơn (148-156) chạy trước kiểm tra quyền PT-03 (dòng 167); phản hồi khác nhau tiết lộ trạng thái đơn cho người không liên quan.\n\n- Context: Flow FLOW-06 at /customer/disputes\n- Root cause: F-02 (HIGH): awaiting_payment và funds_held cùng được ánh xạ sang 'CHO_CK'; 'CHO_CK' nằm trong ALLOWED_OPEN_STATUSES (disputes.service.ts:31) nên openDispute (dòng 154) chấp nhận đơn chưa thanh toán. CDP breakpoint: order.status=awaiting_payment, orderStatus=CHO_CK. | F-03 (MEDIUM): findOpenByOrderId (dòng 142) và kiểm tra trạng thái đơn (148-156) chạy trước kiểm tra quyền PT-03 (dòng 167); phản hồi khác nhau tiết lộ trạng thái đơn cho người không liên quan.\n- Blast radius: Business Flow Dispute",
+      "x": 2900,
+      "y": 640,
+      "width": 380,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "n6_3",
+      "type": "text",
+      "text": "### Regression Test: trustbase.test.mjs (TC_TB_DSP_04)\n\nRegression test tests/trustbase/trustbase.test.mjs (TC_TB_DSP_04)\n\n- Test File: trustbase.test.mjs (TC_TB_DSP_04)",
+      "x": 2900,
+      "y": 930,
+      "width": 380,
+      "height": 260,
+      "color": "4"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e2_1",
+      "fromNode": "n2_0",
+      "fromSide": "bottom",
+      "toNode": "n2_1",
+      "toSide": "top"
+    },
+    {
+      "id": "e2_2",
+      "fromNode": "n2_1",
+      "fromSide": "bottom",
+      "toNode": "n2_2",
+      "toSide": "top"
+    },
+    {
+      "id": "e4_1",
+      "fromNode": "n4_0",
+      "fromSide": "bottom",
+      "toNode": "n4_1",
+      "toSide": "top"
+    },
+    {
+      "id": "e4_2",
+      "fromNode": "n4_1",
+      "fromSide": "bottom",
+      "toNode": "n4_2",
+      "toSide": "top"
+    },
+    {
+      "id": "e6_1",
+      "fromNode": "n6_0",
+      "fromSide": "bottom",
+      "toNode": "n6_1",
+      "toSide": "top"
+    },
+    {
+      "id": "e6_2",
+      "fromNode": "n6_1",
+      "fromSide": "bottom",
+      "toNode": "n6_2",
+      "toSide": "top"
+    },
+    {
+      "id": "e6_3",
+      "fromNode": "n6_2",
+      "fromSide": "bottom",
+      "toNode": "n6_3",
+      "toSide": "top"
+    },
+    {
+      "id": "c1",
+      "fromNode": "n0_0",
+      "fromSide": "right",
+      "toNode": "n1_0",
+      "toSide": "left"
+    },
+    {
+      "id": "c2",
+      "fromNode": "n0_0",
+      "fromSide": "right",
+      "toNode": "n2_0",
+      "toSide": "left"
+    },
+    {
+      "id": "c3",
+      "fromNode": "n0_0",
+      "fromSide": "right",
+      "toNode": "n3_0",
+      "toSide": "left"
+    },
+    {
+      "id": "c4",
+      "fromNode": "n0_0",
+      "fromSide": "right",
+      "toNode": "n4_0",
+      "toSide": "left"
+    },
+    {
+      "id": "c5",
+      "fromNode": "n0_0",
+      "fromSide": "right",
+      "toNode": "n5_0",
+      "toSide": "left"
+    },
+    {
+      "id": "c6",
+      "fromNode": "n0_0",
+      "fromSide": "right",
+      "toNode": "n6_0",
+      "toSide": "left"
+    }
+  ]
+}

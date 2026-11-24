@@ -1,0 +1,151 @@
+{
+ "sweepId": "TRUSTBASE-LOCAL-RUN7",
+ "date": "2026-11-24",
+ "flows": [
+  {
+   "flowId": "FLOW-01",
+   "name": "Auth",
+   "route": "/auth/*",
+   "status": "passed",
+   "totalCases": 5,
+   "passedCases": 5,
+   "avgLatencyMs": 82,
+   "summary": "AUTH_01: PASS; AUTH_02: PASS; AUTH_03: PASS; AUTH_04: PASS; AUTH_05: PASS",
+   "testingTechniques": [
+    "BVA (min-1)",
+    "BVA (ngưỡng rate limit)",
+    "EP (lớp không hợp lệ)",
+    "Happy path + BVA (min)",
+    "State Transition (phiên đã thu hồi)"
+   ]
+  },
+  {
+   "flowId": "FLOW-02",
+   "name": "Catalog",
+   "route": "/catalog/listings",
+   "status": "failed",
+   "totalCases": 5,
+   "passedCases": 4,
+   "avgLatencyMs": 28,
+   "summary": "CAT_01: FAIL; CAT_02: PASS; CAT_03: PASS; CAT_04: PASS; CAT_05: PASS",
+   "testingTechniques": [
+    "BVA (max)",
+    "BVA (max+1)",
+    "Bảo mật (SQLi/XSS)",
+    "EP (giá trị enum không hợp lệ)",
+    "Happy path"
+   ],
+   "defect": {
+    "failedRequest": "HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+    "sourceLocation": {
+     "file": "trustbase-project/api/src/modules/listings/listings.repo.ts",
+     "line": 413,
+     "function": "findMany"
+    },
+    "rootCause": "F-01 (MEDIUM): Khi có q, orderBy chỉ dùng ts_rank_cd (độ liên quan) và bỏ qua opts.sort; contract API vẫn nhận sort cùng q mà không báo lỗi.",
+    "mitigation": "Ưu tiên ORDER_BY[opts.sort] khi client truyền sort, dùng ts_rank_cd làm tiêu chí phụ hoặc khi không có sort.",
+    "regressionTest": "tests/trustbase/trustbase.test.mjs (TC_TB_CAT_01)"
+   }
+  },
+  {
+   "flowId": "FLOW-03",
+   "name": "Order & Inventory",
+   "route": "/customer/orders",
+   "status": "passed",
+   "totalCases": 5,
+   "passedCases": 5,
+   "avgLatencyMs": 49,
+   "summary": "ORD_01: PASS; ORD_02: PASS; ORD_03: PASS; ORD_04: PASS; ORD_05: PASS",
+   "testingTechniques": [
+    "BVA (max+1)",
+    "BVA (min-1)",
+    "Happy path",
+    "State Transition",
+    "Đồng thời (race condition)"
+   ]
+  },
+  {
+   "flowId": "FLOW-04",
+   "name": "Voucher",
+   "route": "/customer/orders (voucherCode)",
+   "status": "failed",
+   "totalCases": 5,
+   "passedCases": 3,
+   "avgLatencyMs": 60,
+   "summary": "VCH_01: PASS; VCH_02: PASS; VCH_03: FAIL; VCH_04: FAIL; VCH_05: PASS",
+   "testingTechniques": [
+    "BVA (biên+1)",
+    "BVA (giới hạn lượt/người = 1)",
+    "BVA (đúng biên)",
+    "EP (voucher hết hạn)",
+    "Happy path"
+   ],
+   "defect": {
+    "failedRequest": "400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)",
+    "sourceLocation": null,
+    "rootCause": "F-04 (LOW): Service nội bộ có mã cụ thể (VOUCHER_MIN_ORDER_NOT_MET, VOUCHER_EXPIRED) nhưng luồng tạo đơn trả mã chung; client chỉ phân biệt được qua chuỗi thông báo.",
+    "mitigation": "Trả mã lỗi cụ thể trong trường code (hoặc details.reason).",
+    "regressionTest": "tests/trustbase/trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)"
+   }
+  },
+  {
+   "flowId": "FLOW-05",
+   "name": "Payout & Fee",
+   "route": "/customer/orders/payout-estimate, /customer/seller/payouts/request",
+   "status": "passed",
+   "totalCases": 5,
+   "passedCases": 5,
+   "avgLatencyMs": 11,
+   "summary": "PAY_01: PASS; PAY_02: PASS; PAY_03: PASS; PAY_04: PASS; PAY_05: PASS",
+   "testingTechniques": [
+    "BVA (dưới ngưỡng rút tối thiểu)",
+    "BVA (max+1: 19 chữ số)",
+    "BVA (max: 18 chữ số)",
+    "EP (hạng người bán không tồn tại)",
+    "Happy path"
+   ]
+  },
+  {
+   "flowId": "FLOW-06",
+   "name": "Dispute",
+   "route": "/customer/disputes",
+   "status": "failed",
+   "totalCases": 5,
+   "passedCases": 3,
+   "avgLatencyMs": 23,
+   "summary": "DSP_01: PASS; DSP_02: PASS; DSP_03: FAIL; DSP_04: FAIL; DSP_05: PASS",
+   "testingTechniques": [
+    "BVA (min-1)",
+    "Happy path + BVA (min)",
+    "Phân quyền (IDOR)",
+    "State Transition (chuyển không hợp lệ)",
+    "State Transition (trùng lặp)"
+   ],
+   "defect": {
+    "failedRequest": "POST /customer/disputes -> 201 SUCCESS trên đơn awaiting_payment",
+    "sourceLocation": {
+     "file": "trustbase-project/api/src/modules/disputes/adapters/postgres-backbone.adapter.ts",
+     "line": 17,
+     "function": "DB_TO_NATIVE_STATUS"
+    },
+    "rootCause": "F-02 (HIGH): awaiting_payment và funds_held cùng được ánh xạ sang 'CHO_CK'; 'CHO_CK' nằm trong ALLOWED_OPEN_STATUSES (disputes.service.ts:31) nên openDispute (dòng 154) chấp nhận đơn chưa thanh toán. CDP breakpoint: order.status=awaiting_payment, orderStatus=CHO_CK. | F-03 (MEDIUM): findOpenByOrderId (dòng 142) và kiểm tra trạng thái đơn (148-156) chạy trước kiểm tra quyền PT-03 (dòng 167); phản hồi khác nhau tiết lộ trạng thái đơn cho người không liên quan.",
+    "mitigation": "Kiểm tra order.status thật (chỉ funds_held/delivering/delivered) hoặc tách mã native riêng cho awaiting_payment. | Đưa kiểm tra buyer/seller (PT-03) lên đầu openDispute, trả 403/404 thống nhất.",
+    "regressionTest": "tests/trustbase/trustbase.test.mjs (TC_TB_DSP_04)",
+    "cdpHeapInspection": {
+     "orderStatus": "CHO_CK",
+     "order && order.status": "awaiting_payment",
+     "ALLOWED_OPEN_STATUSES": [
+      "CHO_CK",
+      "DANG_GIAO",
+      "DA_GIAO",
+      "delivered",
+      "funds_held",
+      "delivering"
+     ],
+     "input.category": "ITEM_NOT_AS_DESCRIBED"
+    }
+   }
+  }
+ ],
+ "syncToCanvasDir": false
+}

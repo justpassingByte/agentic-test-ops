@@ -1,0 +1,138 @@
+{
+  "domain_id": "testops_nguoi_ngoai_do_duoc_trang_thai_khieu_nai",
+  "cluster_name": "[TEST SUITE] F-03: Người ngoài dò được trạng thái khiếu nại của đơn người khác",
+  "cluster_theme": "rose",
+  "sub_title": "Pass Rate: 0.0% (0/1 Passed)",
+  "is_public_interface": true,
+  "nodes": [],
+  "sub_clusters": [
+    {
+      "sub_cluster_id": "sub_test_scenarios",
+      "name": "📋 Test Scenarios Matrix",
+      "theme": "indigo",
+      "nodes": [
+        {
+          "title": "TC_TB_DSP_03: Người mua khác mở khiếu nại trên đơn của customer1",
+          "role": "test_case",
+          "badge_type": "test_case_failed",
+          "summary": "Kỳ vọng: HTTP 403 hoặc 404; không tạo khiếu nại",
+          "schematic_template": "pipeline_filter",
+          "schematic_data": {
+            "status": "failed",
+            "metric": "customer2 mở khiếu nại trên đơn của customer1: HTTP 409 DISPUTE_ALREADY_OPEN",
+            "items": [
+              {
+                "label": "Verdict: FAILED",
+                "status": "error"
+              },
+              {
+                "label": "Technique: Phân quyền (IDOR)",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_browser_trace",
+      "name": "🎭 Browser & Network Trace (Playwright)",
+      "theme": "blue",
+      "nodes": [
+        {
+          "title": "Playwright: DOM Interaction (POST /customer/disputes)",
+          "role": "browser_action",
+          "badge_type": "playwright_trace",
+          "summary": "customer2 gửi POST /customer/disputes với orderId của customer1",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Route: POST /customer/disputes",
+                "status": "info"
+              },
+              {
+                "label": "Console Error: None",
+                "status": "ok"
+              },
+              {
+                "label": "Artifact: N/A",
+                "status": "info"
+              }
+            ]
+          }
+        },
+        {
+          "title": "API Intercept",
+          "role": "gateway",
+          "summary": "Intercepted backend HTTP response: Đơn chưa có khiếu nại -> 403 (run5); đơn đã có khiếu nại -> 409 DISPUTE_ALREADY_OPEN (run6, run7)",
+          "schematic_template": "circuit_breaker_backoff",
+          "schematic_data": {
+            "metric": "Đơn chưa có khiếu nại -> 403 (run5); đơn đã có khiếu nại -> 409 DISPUTE_ALREADY_OPEN (run6, run7)",
+            "items": [
+              {
+                "label": "Failed Request: Đơn chưa có khiếu nại -> 403 (run5); đơn đã có khiếu nại -> 409 DISPUTE_ALREADY_OPEN (run6, run7)",
+                "status": "error"
+              },
+              {
+                "label": "Endpoint: POST /customer/disputes",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_defect_defense",
+      "name": "🔍 Root Cause Analysis & Regression Defense",
+      "theme": "rose",
+      "nodes": [
+        {
+          "title": "Root Cause: disputes.service.ts (Line 142)",
+          "role": "root_cause",
+          "badge_type": "root_cause_defect",
+          "summary": "Function openDispute: findOpenByOrderId (dòng 142) và kiểm tra trạng thái đơn (148-156) chạy trước kiểm tra quyền PT-03 (dòng 167); phản hồi khác nhau tiết lộ trạng thái đơn cho người không liên quan.",
+          "schematic_template": "table_row_lock",
+          "incident_dossier": {
+            "boi_canh_tai": "customer2 gửi POST /customer/disputes với orderId của customer1 at POST /customer/disputes",
+            "nguyen_nhan_goc_re": "findOpenByOrderId (dòng 142) và kiểm tra trạng thái đơn (148-156) chạy trước kiểm tra quyền PT-03 (dòng 167); phản hồi khác nhau tiết lộ trạng thái đơn cho người không liên quan.",
+            "ban_kinh_anh_huong": "Mọi orderId bị lộ (đường dẫn, ảnh chụp, chia sẻ).",
+            "chien_luoc_phong_thu": "Đưa kiểm tra buyer/seller (PT-03) lên đầu openDispute, trả 403/404 thống nhất."
+          },
+          "incident_cases": [
+            {
+              "id": "defect_f_03",
+              "title": "Người ngoài dò được trạng thái khiếu nại của đơn người khác",
+              "traffic_profile": "E2E Playwright simulation",
+              "root_cause_analysis": "findOpenByOrderId (dòng 142) và kiểm tra trạng thái đơn (148-156) chạy trước kiểm tra quyền PT-03 (dòng 167); phản hồi khác nhau tiết lộ trạng thái đơn cho người không liên quan.",
+              "blast_radius": "Mọi orderId bị lộ (đường dẫn, ảnh chụp, chia sẻ).",
+              "cascading_failure_path": [
+                "1. [User Action]: customer2 gửi POST /customer/disputes với orderId của customer1",
+                "2. [HTTP Fail]: Đơn chưa có khiếu nại -> 403 (run5); đơn đã có khiếu nại -> 409 DISPUTE_ALREADY_OPEN (run6, run7)",
+                "3. [Frontend Error]: N/A",
+                "4. [Backend Fault]: trustbase-project/api/src/modules/disputes/disputes.service.ts:142 (Function: openDispute)"
+              ],
+              "mitigation_strategy": "Đưa kiểm tra buyer/seller (PT-03) lên đầu openDispute, trả 403/404 thống nhất."
+            }
+          ]
+        },
+        {
+          "title": "Regression Defense Suite",
+          "role": "defense_test",
+          "badge_type": "regression_shield",
+          "summary": "Regression test: tests/trustbase/trustbase.test.mjs (TC_TB_DSP_03)",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Test File: trustbase.test.mjs (TC_TB_DSP_03)",
+                "status": "ok"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "domain_id": "testops_tham_so_sort_bi_bo_qua_khi_tim_kiem_co_t",
+  "cluster_name": "[TEST SUITE] F-01: Tham số sort bị bỏ qua khi tìm kiếm có từ khóa",
+  "cluster_theme": "rose",
+  "sub_title": "Pass Rate: 0.0% (0/1 Passed)",
+  "is_public_interface": true,
+  "nodes": [],
+  "sub_clusters": [
+    {
+      "sub_cluster_id": "sub_test_scenarios",
+      "name": "📋 Test Scenarios Matrix",
+      "theme": "indigo",
+      "nodes": [
+        {
+          "title": "TC_TB_CAT_01: Tìm kiếm từ khóa và sắp xếp giá tăng dần",
+          "role": "test_case",
+          "badge_type": "test_case_failed",
+          "summary": "Kỳ vọng: HTTP 200; danh sách có giá không giảm dần (non-decreasing)",
+          "schematic_template": "pipeline_filter",
+          "schematic_data": {
+            "status": "failed",
+            "metric": "HTTP 200, 7 kết quả, giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+            "items": [
+              {
+                "label": "Verdict: FAILED",
+                "status": "error"
+              },
+              {
+                "label": "Technique: Happy path",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_browser_trace",
+      "name": "🎭 Browser & Network Trace (Playwright)",
+      "theme": "blue",
+      "nodes": [
+        {
+          "title": "Playwright: DOM Interaction (GET /catalog/listings?q=&sort=price_asc)",
+          "role": "browser_action",
+          "badge_type": "playwright_trace",
+          "summary": "GET /catalog/listings?q=windows&sort=price_asc&limit=50",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Route: GET /catalog/listings?q=&sort=price_asc",
+                "status": "info"
+              },
+              {
+                "label": "Console Error: None",
+                "status": "ok"
+              },
+              {
+                "label": "Artifact: N/A",
+                "status": "info"
+              }
+            ]
+          }
+        },
+        {
+          "title": "API Intercept",
+          "role": "gateway",
+          "summary": "Intercepted backend HTTP response: HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+          "schematic_template": "circuit_breaker_backoff",
+          "schematic_data": {
+            "metric": "HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+            "items": [
+              {
+                "label": "Failed Request: HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+                "status": "error"
+              },
+              {
+                "label": "Endpoint: GET /catalog/listings?q=&sort=price_asc",
+                "status": "info"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "sub_cluster_id": "sub_defect_defense",
+      "name": "🔍 Root Cause Analysis & Regression Defense",
+      "theme": "rose",
+      "nodes": [
+        {
+          "title": "Root Cause: listings.repo.ts (Line 413)",
+          "role": "root_cause",
+          "badge_type": "root_cause_defect",
+          "summary": "Function findMany: Khi có q, orderBy chỉ dùng ts_rank_cd (độ liên quan) và bỏ qua opts.sort; contract API vẫn nhận sort cùng q mà không báo lỗi.",
+          "schematic_template": "table_row_lock",
+          "incident_dossier": {
+            "boi_canh_tai": "GET /catalog/listings?q=windows&sort=price_asc&limit=50 at GET /catalog/listings?q=&sort=price_asc",
+            "nguyen_nhan_goc_re": "Khi có q, orderBy chỉ dùng ts_rank_cd (độ liên quan) và bỏ qua opts.sort; contract API vẫn nhận sort cùng q mà không báo lỗi.",
+            "ban_kinh_anh_huong": "Mọi tìm kiếm có từ khóa kèm sắp xếp giá/bán chạy trên marketplace.",
+            "chien_luoc_phong_thu": "Ưu tiên ORDER_BY[opts.sort] khi client truyền sort, dùng ts_rank_cd làm tiêu chí phụ hoặc khi không có sort."
+          },
+          "incident_cases": [
+            {
+              "id": "defect_f_01",
+              "title": "Tham số sort bị bỏ qua khi tìm kiếm có từ khóa",
+              "traffic_profile": "E2E Playwright simulation",
+              "root_cause_analysis": "Khi có q, orderBy chỉ dùng ts_rank_cd (độ liên quan) và bỏ qua opts.sort; contract API vẫn nhận sort cùng q mà không báo lỗi.",
+              "blast_radius": "Mọi tìm kiếm có từ khóa kèm sắp xếp giá/bán chạy trên marketplace.",
+              "cascading_failure_path": [
+                "1. [User Action]: GET /catalog/listings?q=windows&sort=price_asc&limit=50",
+                "2. [HTTP Fail]: HTTP 200 nhưng giá không tăng dần: giá: 60000, 500000, 59000, 85000, 729000, 60000, 159000",
+                "3. [Frontend Error]: N/A",
+                "4. [Backend Fault]: trustbase-project/api/src/modules/listings/listings.repo.ts:413 (Function: findMany)"
+              ],
+              "mitigation_strategy": "Ưu tiên ORDER_BY[opts.sort] khi client truyền sort, dùng ts_rank_cd làm tiêu chí phụ hoặc khi không có sort."
+            }
+          ]
+        },
+        {
+          "title": "Regression Defense Suite",
+          "role": "defense_test",
+          "badge_type": "regression_shield",
+          "summary": "Regression test: tests/trustbase/trustbase.test.mjs (TC_TB_CAT_01)",
+          "schematic_template": "default",
+          "schematic_data": {
+            "items": [
+              {
+                "label": "Test File: trustbase.test.mjs (TC_TB_CAT_01)",
+                "status": "ok"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

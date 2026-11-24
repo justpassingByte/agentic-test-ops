@@ -1,0 +1,37 @@
+{
+ "bugId": "F-04",
+ "title": "Mã lỗi voucher không cụ thể (VOUCHER_INVALID chung)",
+ "route": "POST /customer/orders (voucherCode)",
+ "severity": "LOW",
+ "testCases": [
+  {
+   "id": "TC_TB_VCH_03",
+   "title": "Voucher có đơn tối thiểu lớn hơn giá trị đơn 1 đồng",
+   "status": "failed",
+   "metric": "HTTP 400 VOUCHER_INVALID Đơn hàng tối thiểu 50.001đ để áp dụng voucher này",
+   "summary": "Kỳ vọng: Bị từ chối với mã lỗi MIN_ORDER_NOT_MET / VOUCHER_MIN_ORDER_NOT_MET",
+   "technique": "BVA (biên+1)"
+  },
+  {
+   "id": "TC_TB_VCH_04",
+   "title": "Áp voucher đã hết hạn",
+   "status": "failed",
+   "metric": "HTTP 400 VOUCHER_INVALID Voucher đã hết hạn sử dụng",
+   "summary": "Kỳ vọng: Bị từ chối với mã lỗi VOUCHER_EXPIRED",
+   "technique": "EP (voucher hết hạn)"
+  }
+ ],
+ "testingTechniques": [
+  "BVA",
+  "EP"
+ ],
+ "actionDescription": "Tạo đơn 50.000 đ kèm voucher TBQA_MIN50001 / TBQA_EXPIRED",
+ "symptoms": {
+  "failedRequest": "400 VOUCHER_INVALID cho cả hai lý do (thông báo tiếng Việt đúng nghiệp vụ)"
+ },
+ "rootCause": "Service nội bộ có mã cụ thể (VOUCHER_MIN_ORDER_NOT_MET, VOUCHER_EXPIRED) nhưng luồng tạo đơn trả mã chung; client chỉ phân biệt được qua chuỗi thông báo.",
+ "mitigation": "Trả mã lỗi cụ thể trong trường code (hoặc details.reason).",
+ "blastRadius": "Client tích hợp cần xử lý riêng từng lý do từ chối voucher.",
+ "regressionTestFile": "tests/trustbase/trustbase.test.mjs (TC_TB_VCH_03, TC_TB_VCH_04)",
+ "syncToCanvasDir": false
+}
