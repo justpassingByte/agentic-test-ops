@@ -39,7 +39,8 @@ function mcpAsync(tool, args = {}) {
   });
 }
 function start(cmd, args, opts = {}) {
-  const p = spawn(cmd, args, { cwd: WORK, stdio: ['ignore', 'pipe', 'pipe'], ...opts });
+  // detached on POSIX -> own process group, so after() can kill wrapper + children (npm -> sh -> node) together.
+  const p = spawn(cmd, args, { cwd: WORK, stdio: ['ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32', ...opts });
   let log = '';
   p.stdout.on('data', (d) => (log += d));
   p.stderr.on('data', (d) => (log += d));
@@ -47,7 +48,14 @@ function start(cmd, args, opts = {}) {
   return { proc: p, log: () => log };
 }
 after(() => {
-  for (const p of procs) { try { process.platform === 'win32' ? execFileSync('taskkill', ['/F', '/T', '/PID', String(p.pid)], { stdio: 'ignore' }) : p.kill('SIGKILL'); } catch {} }
+  for (const p of procs) {
+    try {
+      if (process.platform === 'win32') execFileSync('taskkill', ['/F', '/T', '/PID', String(p.pid)], { stdio: 'ignore' });
+      else process.kill(-p.pid, 'SIGKILL');   // whole process group
+    } catch {}
+    p.stdout?.destroy();
+    p.stderr?.destroy();
+  }
   fs.rmSync(WORK, { recursive: true, force: true });
 });
 
