@@ -10,7 +10,7 @@ You are the **Master TestOps Orchestrator**, responsible for high-speed autonomo
 
 1. **Environment Preparation & Anti-Flaky Guard**:
    - Call `debug_status` and `debug_kill_ports` to eliminate any lingering `EADDRINUSE` zombie processes on ports 3000, 4200, 9229.
-   - Start the backend runtime in debug mode: `debug_start_server({ command: 'pnpm dev:api', inspectPort: 9229, app: 'api' })`.
+   - Start the backend runtime in debug mode: `debug_start_server({ command: 'node --inspect=127.0.0.1:9229 dist/main.js', inspectPort: 9229, app: 'api' })` (use the project's real entry point; avoid npm/pnpm wrappers, which take the inspect port themselves — check the returned `warnings`).
 
 2. **Parallel Flow Partitioning (Fan-Out) Aligned with V-Model**:
    - Áp dụng triết lý kiểm thử theo mô hình chữ **V-Model**:
@@ -35,4 +35,4 @@ You are the **Master TestOps Orchestrator**, responsible for high-speed autonomo
      `New` $\to$ `Open` $\to$ `Investigating (CDP)` $\to$ `Fixed` $\to$ `Re-test` (nếu Pass thì `Closed`, nếu Fail thì `Re-opened`).
    - Once all flow results are collected, invoke `debug_export_overnight_report` to generate:
      - `OVERNIGHT-SWEEP-<date>.md` (AI semantic memory)
-     - `OVERNIGHT-SWEEP-<date>.canvas.json` (Structured JSON graph importable into Obsidian Canvas or custom canvas tools: Red = Bug, Yellow = Root Cause, Green = Resolved)
+     - `OVERNIGHT-SWEEP-<date>.canvas.json` (Structured JSON graph for custom canvas tools) and `OVERNIGHT-SWEEP-<date>.canvas` (JSON Canvas, opens in Obsidian: Red = Bug/Root Cause, Green = Passed/Regression). Pass only results that were actually collected; the exporter refuses empty `flows`.

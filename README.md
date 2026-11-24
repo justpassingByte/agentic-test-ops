@@ -29,6 +29,8 @@
 Plugin được đóng gói theo chuẩn **100% Zero-Impact (Model Context Protocol - `stdio`)**: bạn **không cần cài đặt thêm bất kỳ thư viện nào vào mã nguồn (`src`) của dự án cần kiểm thử**. Chỉ cần thiết lập plugin này ở ngoài, gắn vào AI Host (Antigravity IDE, Gemini CLI, Claude Code) và trỏ vào URL / thư mục `src` bất kỳ.
 
 ### Bước 1: Cài đặt môi trường MCP & Playwright (Chỉ làm 1 lần trên máy)
+> Yêu cầu **Node.js ≥ 22** (CDP client dùng `WebSocket` tích hợp sẵn của Node; trên Node 20 công cụ `debug_inspect_cdp` sẽ báo lỗi).
+
 Mở terminal tại thư mục `agentic-test-ops/mcp`:
 - **Windows (PowerShell)**:
   ```powershell
@@ -72,8 +74,10 @@ Chọn 1 trong các cách sau tùy công cụ AI bạn dùng khi mở thư mục
 
 ### Bước 3: Bật Backend của `src` mục tiêu & Ra lệnh Prompt cho AI Agent
 1. Nếu dự án `src` dùng Database/Redis, bật hạ tầng trước.
-2. Cho phép Backend Node.js mở debug port `--inspect=0.0.0.0:9229` để dùng được tính năng soi biến RAM qua CDP:
-   - Tự bật trong `src`: `NODE_OPTIONS="--inspect=0.0.0.0:9229" pnpm dev:api`
+2. Cho phép Backend Node.js mở debug port `--inspect=127.0.0.1:9229` để dùng được tính năng soi biến RAM qua CDP:
+   - Tự bật trong `src` bằng lệnh `node`/`tsx` **cuối cùng**: `node --inspect=127.0.0.1:9229 dist/main.js` (hoặc `tsx --inspect=127.0.0.1:9229 src/main.ts`).
+   - ⚠️ **Không** đặt `NODE_OPTIONS=--inspect` lên `npm run` / `pnpm dev`: `NODE_OPTIONS` được truyền cho mọi tiến trình Node con, nên chính `npm`/`pnpm` chiếm cổng 9229 trước, còn app thật báo `address already in use` và chạy **không có debugger**.
+   - Luôn bind `127.0.0.1`, không dùng `0.0.0.0`: inspector mở ra mạng LAN đồng nghĩa với cho phép thực thi mã từ xa.
    - **Hoặc** giao cho AI Agent tự dọn cổng và bật server qua `debug_status` -> `debug_kill_ports` -> `debug_start_server`.
    - *(Nếu `src` viết bằng Python / Java / Go / PHP: các công cụ Black-Box Playwright, chụp ảnh, quay video tùy chọn, xuất báo cáo `.md`/`.canvas.json` và chạy test vẫn hoạt động bình thường; riêng `debug_inspect_cdp` soi Heap RAM chỉ áp dụng cho Node.js/V8).*
 3. Gõ thẳng Prompt vào khung chat khi đang mở `<duong-dan-src-bat-ky>`:
@@ -89,7 +93,7 @@ Chọn 1 trong các cách sau tùy công cụ AI bạn dùng khi mở thư mục
 ### Bước 4: Xem Ảnh, Video Tùy Chọn & Dữ Liệu Có Cấu Trúc
 - **Ảnh chụp màn hình thực tế:** Kiểm tra tại `screenshots/*.png` (chụp đúng trạng thái DOM/HTTP thật lúc test hoặc khi lỗi).
 - **Video quay trình duyệt (tùy chọn):** Khi chạy kịch bản hỗ trợ cờ `--record-video` (hoặc `RECORD_VIDEO=1`), Playwright `recordVideo` xuất file `.webm` vào `videos/`.
-- **Dữ liệu có cấu trúc:** Đọc hồ sơ lỗi chi tiết trong `knowledge/*.md` và đưa file đồ thị `knowledge/*.canvas.json` vào **Obsidian Canvas** hoặc công cụ canvas tùy chọn (tự động đồng bộ nếu đặt biến `CANVAS_RAG_DIR`).
+- **Dữ liệu có cấu trúc:** Đọc hồ sơ lỗi chi tiết trong `knowledge/*.md` và mở file `knowledge/*.canvas` (chuẩn JSON Canvas) trực tiếp bằng **Obsidian Canvas**; file `knowledge/*.canvas.json` là đồ thị có cấu trúc cho công cụ canvas tùy chọn (tự động đồng bộ cả hai nếu đặt biến `CANVAS_RAG_DIR`).
 
 ---
 
@@ -201,7 +205,7 @@ flowchart LR
 ### 4.2. Quy Trình Phân Tích Sự Cố (Full-Stack RCA Loop 4 Bước)
 
 1. **Triệu chứng (Symptom):** Playwright chạy `debug_browser_run` (hỗ trợ `headless: false` để xem trực tiếp và `slowMo`), bắt `page.on('response')` (>= 400), `page.on('console')`, `page.on('pageerror')` và tự chụp ảnh bằng chứng lưu vào `screenshots/`.
-2. **Truy vết & Chụp RAM (Trace):** Khi API văng lỗi 500, `debug_inspect_cdp` truy vấn `http://127.0.0.1:9229/json/list`, kết nối WebSocket mở `Debugger.setPauseOnExceptions({ state: 'uncaught' })` và gọi `Debugger.evaluateOnCallFrame` đọc giá trị biến sống trên Heap RAM cùng `file:line:col` của backend rồi tự `Debugger.resume`.
+2. **Truy vết & Chụp RAM (Trace):** Khi API văng lỗi 500, `debug_inspect_cdp` truy vấn `http://127.0.0.1:9229/json/list`, kết nối WebSocket mở `Debugger.setPauseOnExceptions({ state: 'all' })` (mặc định `all` vì Express/NestJS bắt lỗi rồi trả 500, nên chế độ `uncaught` không dừng; exception phát sinh trong `node_modules` được tự bỏ qua) và gọi `Debugger.evaluateOnCallFrame` đọc giá trị biến sống trên Heap RAM cùng `file:line:col` của backend rồi tự `Debugger.resume`.
 3. **Chứng minh (Proof):** Kỹ sư có thể nhấn **F5** trên VS Code (`vscode/launch.json`) để gắn trực tiếp vào cùng phiên backend, hoặc Agent chạy test cô lập qua `debug_run_test`.
 4. **Hồi quy & Xuất dữ liệu (Defense & Export):** Agent viết Regression Test chuẩn Phủ câu lệnh/Phủ nhánh vào `tests/` và gọi `debug_export_rag_report` / `debug_export_overnight_report` để lưu hồ sơ sự cố.
 
@@ -242,7 +246,7 @@ flowchart TD
 - **Non-blocking Triage:** Một worker gặp HTTP 500 thì `cdp-investigator` bắt RAM trong nền, các worker còn lại vẫn tiếp tục chạy.
 
 ### 5.2. Các Chế Độ Tương Tác Ban Ngày
-- **Chế độ 1 — Dọn cổng & Khởi động Server Debug:** `debug_status` -> `debug_kill_ports` -> `debug_start_server` (`NODE_OPTIONS="--inspect=0.0.0.0:9229"`).
+- **Chế độ 1 — Dọn cổng & Khởi động Server Debug:** `debug_status` -> `debug_kill_ports` -> `debug_start_server` (`--inspect=127.0.0.1:9229`).
 - **Chế độ 2 — Kiểm thử UI trực tiếp trên Chrome:** `debug_browser_run` với `headless: false`, `slowMo: 400` để theo dõi trực quan từng thao tác click, điền form và log network.
 - **Chế độ 3 — Soi RAM Bug 500 đơn lẻ:** `debug_inspect_cdp` bắt Callstack + giá trị biến Heap khi văng lỗi mà không cần `console.log`.
 - **Chế độ 4 — Human-in-the-loop VS Code F5:** Đặt Breakpoint trong `src` và nhấn **F5** (*"Attach to Node Inspect"*).
@@ -258,7 +262,7 @@ Hệ thống không ép buộc sử dụng một phần mềm xem đồ thị c�
 | **1. Ảnh chụp màn hình thực tế (`.png`)** | `screenshots/*.png`<br>*(tự tạo khi `debug_browser_run` lỗi/lệnh `screenshot` hoặc từ kịch bản E2E)* | Ghi lại đúng trạng thái DOM/UI thực tế tại từng bước hoặc thời điểm lỗi (ví dụ đơn hàng VietQR, thông báo khóa eKYC) để đối chiếu với HTTP log. |
 | **2. Video quay trình duyệt tùy chọn (`.webm`)** | `videos/*.webm`<br>*(bật qua cờ `--record-video` hoặc `RECORD_VIDEO=1` trong `record_multi_role_detailed_demo.mjs` sử dụng Playwright `recordVideo`)* | Khi cần quay lại toàn bộ thao tác trực quan trên cửa sổ Chrome thật để xem lại hoặc làm video báo cáo. *(Mặc định tắt nếu chỉ cần ảnh & log nhẹ).* |
 | **3. Báo cáo Markdown có cấu trúc (`.md`)** | `knowledge/<ID>-<slug>.md`<br>*(tạo bởi `debug_export_rag_report` / `debug_export_overnight_report`)* | Tổng hợp Test Matrix (EP/BVA/Decision Table/FSM), Console Error, Failed HTTP Request, `sourceLocation` (`file:line`), biến RAM từ CDP, nguyên nhân gốc RCA và đường dẫn file test hồi quy. AI dùng lại làm Semantic Memory. |
-| **4. Dữ liệu đồ thị JSON có cấu trúc (`.canvas.json`)** | `knowledge/<ID>-<slug>.canvas.json`<br>*(tùy chọn tự sync nếu cấu hình biến `CANVAS_RAG_DIR` hoặc tham số `canvasRagDir`)* | Chứa cấu trúc Nodes/Edges/Sub-Clusters (Test Matrix -> Browser Trace -> CDP Root Cause & Regression) ở dạng JSON sạch; có thể **import trực tiếp vào Obsidian Canvas** hoặc bất kỳ công cụ vẽ canvas/dashboard nào tùy chọn. |
+| **4. Dữ liệu đồ thị JSON có cấu trúc (`.canvas.json` + `.canvas`)** | `knowledge/<ID>-<slug>.canvas.json`<br>`knowledge/<ID>-<slug>.canvas`<br>*(tùy chọn tự sync nếu cấu hình biến `CANVAS_RAG_DIR` hoặc tham số `canvasRagDir`)* | Chứa cấu trúc Nodes/Edges/Sub-Clusters (Test Matrix -> Browser Trace -> CDP Root Cause & Regression) ở dạng JSON sạch cho công cụ canvas/dashboard tùy chọn; kèm file `.canvas` chuẩn JSON Canvas 1.0 mở **trực tiếp bằng Obsidian Canvas**. Exporter chỉ ghi dữ liệu được truyền vào, không tự sinh kết quả mẫu. |
 
 ---
 
@@ -270,12 +274,12 @@ agentic-test-ops/
 │   └── plugin.json                        # Khai báo định danh Plugin cho Claude Code / Host
 ├── .github/
 │   └── workflows/
-│       └── agentic-testops-ci.yml         # CI/CD GitHub Actions kiểm định MCP Server & Playwright
+│       └── agentic-testops-ci.yml         # CI: self-test 9 công cụ MCP (CDP, browser, exporter) trên Node 22/24
 ├── mcp/
 │   ├── server.mjs                         # Máy chủ MCP JSON-RPC 2.0 stdio (9 công cụ)
 │   ├── cdp-client.mjs                     # Engine kết nối WebSocket tới Node Inspect CDP
 │   ├── rag-exporter.mjs                   # Module xuất Markdown (.md) & dữ liệu JSON (.canvas.json)
-│   ├── package.json                       # Khai báo dependencies (playwright, @modelcontextprotocol/sdk)
+│   ├── package.json                       # Dependency duy nhất: playwright (JSON-RPC tự viết, không dùng MCP SDK; Node ≥ 22)
 │   ├── setup-browser.ps1                  # Cài đặt Chromium (Windows PowerShell)
 │   └── setup-browser.sh                   # Cài đặt Chromium (Linux / macOS)
 ├── agents/
@@ -289,9 +293,19 @@ agentic-test-ops/
 ├── skills/
 │   ├── debug-rca/SKILL.md                 # Kỹ năng chẩn đoán lỗi 4 bước
 │   └── overnight-sweep/SKILL.md           # Giao thức điều phối quét nhiều luồng qua đêm
+├── .mcp.json                              # Khai báo MCP server cho Claude Code (nạp debug-controller)
+├── scripts/
+│   └── mcp-call.mjs                       # Client MCP stdio: gọi 1 tool thật từ dòng lệnh (--list để liệt kê)
 ├── tests/
-│   └── repro_voucher_bug.spec.ts          # Ví dụ Regression Test cô lập kiểm định lỗi
-├── knowledge/                             # Mẫu kết quả báo cáo .md và .canvas.json
+│   ├── self/tools.test.mjs                # Self-test công cụ qua giao thức MCP (chạy trong CI)
+│   └── trustbase/trustbase.test.mjs       # 30 ca kiểm thử TrustBase (6 luồng), chạy bằng debug_run_test
+├── testcases/
+│   ├── trustbase_testcases.json           # Thiết kế 30 ca: kỹ thuật, kết quả mong đợi, nguồn đặc tả (chốt trước khi chạy)
+│   ├── trustbase-fixtures.sql             # Fixture cho DB local
+│   ├── reset-local-env.sh                 # Áp fixture + xóa bộ đếm rate limit (chỉ container local)
+│   ├── cdp-*.json                         # Bằng chứng debug_inspect_cdp (exception, breakpoint)
+│   └── results/                           # Kết quả từng lần chạy; run7-final.json là kết quả chính thức
+├── knowledge/                             # Báo cáo .md/.canvas.json/.canvas xuất ra từ lần chạy thật
 ├── screenshots/                           # Thư mục lưu ảnh chụp thực tế không giả lập
 ├── vscode/
 │   ├── launch.json                        # Cấu hình nhấn F5 Attach Node Inspect
@@ -313,17 +327,38 @@ agentic-test-ops/
 |---|---|---|
 | **`debug_status`** | `ports[]` | Quét các cổng mạng (`4200`, `4201`, `4203`, `9229`...) để phát hiện xung đột hoặc tiến trình zombie. |
 | **`debug_kill_ports`** | `ports[]` | Force-kill tiến trình đang chiếm cổng, dập tắt lỗi `EADDRINUSE`. |
-| **`debug_start_server`** | `command`, `inspectPort`, `cwd`, `app` | Dọn cổng kẹt và khởi chạy backend với `NODE_OPTIONS="--inspect=0.0.0.0:<port>"`. |
+| **`debug_start_server`** | `command`, `inspectPort`, `cwd`, `app` | Dọn cổng kẹt và khởi chạy backend với `NODE_OPTIONS="--inspect=127.0.0.1:<port>"`; trả cảnh báo nếu lệnh chạy qua npm/pnpm hoặc app không mở được inspector. |
 | **`debug_stop_server`** | `app` | Ngắt tiến trình backend đã mở để dọn dẹp môi trường. |
 | **`debug_browser_run`** | `url`, `actions[]`, `contextId`, `headless`, `slowMo`, `timeoutMs` | Chạy Playwright Chromium (ẩn hoặc mở cửa sổ `headless: false`), bắt Console Error, Page Error, HTTP >= 400 và tự lưu ảnh lỗi vào `screenshots/`. |
-| **`debug_inspect_cdp`** | `inspectPort`, `pauseOnExceptions`, `expressions[]`, `timeoutMs` | Kết nối WebSocket CDP (`ws://127.0.0.1:<port>`), đóng băng tiến trình khi văng exception để đọc biến sống trên Heap RAM và Callstack. |
+| **`debug_inspect_cdp`** | `inspectPort`, `pauseOnExceptions` (mặc định `all`), `expressions[]`, `breakpoints[]`, `targetFilter`, `timeoutMs` | Kết nối WebSocket CDP (`ws://127.0.0.1:<port>`), đóng băng tiến trình khi văng exception để đọc biến sống trên Heap RAM và Callstack. |
 | **`debug_run_test`** | `command`, `cwd`, `timeoutMs` | Chạy file kiểm thử đơn vị / hồi quy cô lập và lấy kết quả Pass/Fail kèm log chi tiết. |
-| **`debug_export_rag_report`** | `testId`/`bugId`, `title`, `route`, `testCases[]`, `testingTechniques[]`, `coverageMetrics`, `cdpHeapInspection`, `symptoms`, `sourceLocation`, `rootCause`, `canvasRagDir`, `syncToCanvasDir` | Xuất báo cáo sự cố đơn luồng dạng `.md` + dữ liệu đồ thị JSON có cấu trúc `.canvas.json` (tùy chọn sync sang `CANVAS_RAG_DIR` / `canvasRagDir` cho Obsidian Canvas hoặc công cụ tùy chọn). |
+| **`debug_export_rag_report`** | `testId`/`bugId`, `title`, `route`, `testCases[]`, `testingTechniques[]`, `coverageMetrics`, `cdpHeapInspection`, `symptoms`, `sourceLocation`, `rootCause`, `canvasRagDir`, `syncToCanvasDir` | Xuất báo cáo sự cố đơn luồng dạng `.md` + `.canvas.json` + `.canvas` (Obsidian); bắt buộc có `testCases[]` (tùy chọn sync sang `CANVAS_RAG_DIR` / `canvasRagDir` cho Obsidian Canvas hoặc công cụ tùy chọn). |
 | **`debug_export_overnight_report`** | `sweepId`, `date`, `flows[]`, `canvasRagDir` | Tổng hợp kết quả nhiều luồng, kèm Heap RAM từ CDP, xuất `OVERNIGHT-SWEEP-<date>.md` và `.canvas.json`. |
 
 ---
 
 ## 8. Demo Thực Nghiệm TrustBase & Khung Đề Cương Đồ Án
+
+### 8.0. Kết Quả Thực Nghiệm Thật (24/11/2026)
+
+- **SUT:** TrustBase chạy local (API `--inspect=127.0.0.1:9229`, PostgreSQL 18 + Redis 7 bằng Docker), dữ liệu là bản sao dump production 18/11/2026 đã áp đủ migration; email ở chế độ console, thanh toán mock.
+- **Thiết kế:** 30 ca / 6 luồng (Auth, Catalog, Order & Inventory, Voucher, Payout & Fee, Dispute), mỗi luồng 1 happy path + 4 edge case (BVA, EP, FSM, đồng thời, IDOR, SQLi/XSS). Kết quả mong đợi lấy từ đặc tả và cấu hình TrustBase, chốt trước khi chạy: [`testcases/trustbase_testcases.json`](testcases/trustbase_testcases.json).
+- **Thực thi:** qua công cụ MCP `debug_run_test` (phần giao diện XSS qua `debug_browser_run`); lần chạy chính thức `run7-final`: **25/30 đạt (83,3%)**, 0 lỗi 5xx. Các lần chạy trước (gỡ lỗi môi trường, fixture, thiết kế) được lưu trong `testcases/results/`.
+- **Lỗi phát hiện** (hồ sơ trong `knowledge/`, xuất bằng `debug_export_rag_report` / `debug_export_overnight_report`):
+
+| Mã | Lỗi | Mức độ |
+|---|---|---|
+| F-01 | Tham số `sort` bị bỏ qua khi tìm kiếm có từ khóa | Medium |
+| F-02 | Mở được khiếu nại trên đơn chưa thanh toán (CDP breakpoint: `awaiting_payment` → `CHO_CK`) | High |
+| F-03 | Người ngoài dò được trạng thái khiếu nại của đơn người khác (kiểm quyền sau kiểm trạng thái) | Medium |
+| F-04 | Mã lỗi voucher chung `VOUCHER_INVALID` thay vì mã cụ thể | Low |
+| F-05 | Tạo đơn dùng chung bộ đếm rate limit với thao tác tài chính → bị chặn mở khiếu nại | Medium |
+
+Chạy lại trên máy có TrustBase local:
+```powershell
+bash testcases/reset-local-env.sh
+node scripts/mcp-call.mjs debug_run_test '{"command":"node --test --test-concurrency=1 tests/trustbase/trustbase.test.mjs","timeoutMs":1500000}'
+```
 
 ### 8.1. Chạy Demo Trực Quan Trên Nền Tảng TrustBase
 > Yêu cầu: Hệ thống TrustBase đang chạy (`localhost:4200` Customer/Seller Web, `localhost:4201` API, `localhost:4203` Admin Console).

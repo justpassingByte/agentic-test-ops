@@ -156,7 +156,7 @@ async function runVerifiedMultiRoleE2E() {
     );
     await page.waitForTimeout(1200);
 
-    // Fill required fields cleanly using allowed email domain so DEF-002 does not block happy path
+    // Fill required fields cleanly using allowed email domain so the email-domain allowlist does not block the happy path
     const nameInput = page.locator('input[name="fullName"], input#fullName').first();
     if (await nameInput.count() > 0 && !(await nameInput.inputValue())) {
       await nameInput.fill('Nguyen Huu Thang');

@@ -14,7 +14,7 @@ A high-speed, parallelized overnight test orchestration protocol for web applica
 ### Phase 1: Environment Sanity (Zero Zombie Ports)
 1. Query active listening ports: `debug_status({ ports: [3000, 4200, 4201, 8080, 9229, 9230] })`.
 2. Terminate any orphaned or zombie processes: `debug_kill_ports({ ports: [9229, 9230] })`.
-3. Launch the backend runtime with inspect enabled: `debug_start_server({ command: 'pnpm dev:api', inspectPort: 9229, app: 'api' })`.
+3. Launch the backend runtime with inspect enabled: `debug_start_server({ command: 'node --inspect=127.0.0.1:9229 <entry>', inspectPort: 9229, app: 'api' })` — use a direct node/tsx command; with npm/pnpm the package manager takes the inspect port (check `warnings`).
 
 ### Phase 2: Parallel Partitioning (Fan-Out) with Standardized Test Matrix
 Partition the test matrix into 3 concurrent worker pipelines, applying formal test design techniques:
@@ -29,7 +29,7 @@ Dispatch each worker with an isolated `contextId` parameter in `debug_browser_ru
 
 ### Phase 3: In-Memory Exception Interception & White-Box Analysis
 When any worker detects an HTTP 500:
-1. Trigger `debug_inspect_cdp({ inspectPort: 9229, pauseOnExceptions: 'uncaught', expressions: ['sellerRank', 'order.isNegotiated'] })`.
+1. Start `debug_inspect_cdp({ inspectPort: 9229, pauseOnExceptions: 'all', expressions: ['sellerRank', 'order.isNegotiated'] })` BEFORE replaying the failing request (framework-handled 500s are caught exceptions, so 'uncaught' would not pause).
 2. Extract the exact callframe (`file:line`) and in-memory variable values directly from the heap.
 3. Keep other workers running in parallel without stopping the suite.
 4. Synthesize an isolated unit/integration regression test targeting Phủ cấp 1 (Statement Coverage) & Phủ cấp 2 (Branch Coverage) for the affected backend logic.
@@ -37,4 +37,5 @@ When any worker detects an HTTP 500:
 ### Phase 4: Synthesis & Reporting (Fan-In)
 Call `debug_export_overnight_report` to generate structured evidence alongside `screenshots/` (and optional `--record-video` recordings):
 - `knowledge/OVERNIGHT-SWEEP-<date>.md` (Defect Dossier with SQA Metrics)
-- `knowledge/OVERNIGHT-SWEEP-<date>.canvas.json` (Structured JSON graph for Obsidian Canvas or custom canvas tools, optionally synced via `CANVAS_RAG_DIR`)
+- `knowledge/OVERNIGHT-SWEEP-<date>.canvas.json` (structured graph for custom canvas tools) and `knowledge/OVERNIGHT-SWEEP-<date>.canvas` (JSON Canvas, opens in Obsidian), optionally synced via `CANVAS_RAG_DIR`
+- Pass only the results actually collected: the exporter refuses an empty `flows` array and never fills in sample data.

@@ -22,7 +22,7 @@ Agentic TestOps được đóng gói theo chuẩn **Model Context Protocol (MCP)
 |---|---|
 | `mcp/server.mjs` | MCP Server cung cấp **9 công cụ**: quản lý cổng (`debug_status`, `debug_kill_ports`), bật/tắt server kèm `--inspect` (`debug_start_server`, `debug_stop_server`), chạy Playwright (`debug_browser_run` hỗ trợ `contextId`, `headless`, `slowMo`), soi RAM qua CDP (`debug_inspect_cdp`), chạy test cô lập (`debug_run_test`), xuất báo cáo & dữ liệu có cấu trúc (`debug_export_rag_report`, `debug_export_overnight_report`). |
 | `mcp/cdp-client.mjs` | Client kết nối trực tiếp tới WebSocket `ws://127.0.0.1:<inspectPort>` của Node.js `--inspect`, bật `Debugger.setPauseOnExceptions`, đóng băng luồng khi văng Uncaught Exception, gọi `Debugger.evaluateOnCallFrame` để đọc giá trị biến trên Heap RAM và bóc tách Callstack rồi tự `Debugger.resume`. |
-| `mcp/rag-exporter.mjs` | Xuất dữ liệu có cấu trúc trong `knowledge/`: **Markdown Defect Dossier (`.md`)** cho con người & AI RAG và **Structured JSON Graph (`.canvas.json`)** có thể nạp vào **Obsidian Canvas** hoặc công cụ canvas tùy chọn (hỗ trợ biến môi trường `CANVAS_RAG_DIR`). |
+| `mcp/rag-exporter.mjs` | Xuất dữ liệu có cấu trúc trong `knowledge/`: **Markdown Defect Dossier (`.md`)** cho con người & AI RAG và **Structured JSON Graph (`.canvas.json`)** cho công cụ canvas tùy chọn, kèm file **JSON Canvas (`.canvas`)** mở trực tiếp bằng **Obsidian Canvas**. Exporter chỉ ghi dữ liệu được truyền vào và báo lỗi nếu thiếu `testCases`/`flows` (hỗ trợ biến môi trường `CANVAS_RAG_DIR`). |
 | `agents/`, `skills/`, `commands/` | Bộ hướng dẫn điều phối cho AI Agent (`orchestrator`, `flow-worker`, `cdp-investigator`, `debugger`, `/debug`, `/overnight`), quy định chặt kỹ thuật thiết kế test và quy trình RCA 4 bước. |
 | `vscode/` | Cấu hình `launch.json` và `tasks.json` cho phép lập trình viên nhấn **F5** trên VS Code để nhảy thẳng vào tiến trình đang mở `--inspect=9229/9230` (Human-in-the-loop). |
 
@@ -81,6 +81,8 @@ Plugin hoạt động hoàn toàn độc lập (**Zero-Impact**), bạn **không
 
 ### Bước 1: Cài đặt Agentic TestOps (chỉ làm 1 lần trên máy)
 
+> Yêu cầu **Node.js ≥ 22** (CDP client dùng `WebSocket` tích hợp sẵn của Node; trên Node 20 công cụ `debug_inspect_cdp` sẽ báo lỗi).
+
 ```powershell
 # 1. Clone repo (hoặc giữ ở thư mục riêng ngoài dự án cần test)
 git clone https://github.com/justpassingByte/agentic-test-ops.git
@@ -112,7 +114,7 @@ npm install
      }
    }
    ```
-   *(Tùy chọn: có thể thêm `"env": { "CANVAS_RAG_DIR": "<thu-muc-obsidian-hoac-canvas-tuy-chon>" }` nếu muốn tự đồng bộ file `.canvas.json` sang Obsidian Canvas hoặc công cụ canvas khác).*
+   *(Tùy chọn: có thể thêm `"env": { "CANVAS_RAG_DIR": "<thu-muc-obsidian-hoac-canvas-tuy-chon>" }` nếu muốn tự đồng bộ file `.canvas` (Obsidian) và `.canvas.json` sang vault Obsidian hoặc công cụ canvas khác).*
 
 #### Lựa chọn B — Claude Code
 ```bash
@@ -128,13 +130,15 @@ Copy 2 file `vscode/launch.json` và `vscode/tasks.json` vào `<duong-dan-src-ba
 ### Bước 3: Chuẩn bị `src` mục tiêu trước khi ra lệnh test
 
 1. Nếu `src` dùng DB/Cache (Docker Compose, Postgres, Redis), hãy bật hạ tầng trước.
-2. Cho phép Backend Node.js mở cổng `--inspect=0.0.0.0:9229` (để Agent dùng được kỹ thuật **Grey-Box / CDP Heap Trace**):
-   - Bạn có thể tự bật backend trong `<target-src>` với biến môi trường:
+2. Cho phép Backend Node.js mở cổng `--inspect=127.0.0.1:9229` (để Agent dùng được kỹ thuật **Grey-Box / CDP Heap Trace**):
+   - Đặt `--inspect` vào **lệnh `node`/`tsx` cuối cùng** trong `<target-src>`:
      ```powershell
-     $env:NODE_OPTIONS="--inspect=0.0.0.0:9229"
-     pnpm dev:api
+     node --inspect=127.0.0.1:9229 dist/main.js
+     # hoặc khi dev bằng TypeScript:
+     npx tsx --inspect=127.0.0.1:9229 src/main.ts
      ```
-   - **Hoặc** để Agent tự bật hộ qua `debug_start_server({ command: 'pnpm dev:api', inspectPort: 9229, cwd: 'C:/path/to/src' })` (tool tự dọn cổng kẹt trước khi chạy).
+   - ⚠️ **Không** dùng `$env:NODE_OPTIONS="--inspect=..."` rồi `pnpm dev`: `NODE_OPTIONS` truyền cho mọi tiến trình Node con, nên chính `pnpm`/`npm` chiếm cổng 9229 trước, còn app thật báo `address already in use` và chạy **không có debugger** (đã kiểm chứng). Luôn bind `127.0.0.1`, không dùng `0.0.0.0`.
+   - **Hoặc** để Agent tự bật hộ qua `debug_start_server({ command: 'node --inspect=127.0.0.1:9229 dist/main.js', inspectPort: 9229, cwd: 'C:/path/to/src' })` (tool tự dọn cổng kẹt trước khi chạy và trả `warnings` nếu phát hiện tình huống trên).
 3. Nếu `src` là Python / Java / Go / PHP (không phải Node.js): Tầng 1 (`debug_browser_run` — Black-Box UI/Network/Console/Screenshots) + Tầng 4–6 (`debug_export_rag_report`, `debug_run_test`, sinh Regression Test) vẫn hoạt động **100% bình thường**; chỉ riêng `debug_inspect_cdp` gắn heap RAM là dành riêng cho Node.js/V8 runtime (`--inspect`).
 
 ---
@@ -169,7 +173,7 @@ Chạy các test case bằng `debug_browser_run` / `debug_run_test` và xuất b
 Khi thực hiện thao tác [mô tả thao tác hoặc route bị lỗi] tại [URL], hệ thống bị lỗi [HTTP 500 / treo UI].
 Hãy thực thi đúng quy trình RCA 4 bước:
 1. Dùng `debug_browser_run` tái hiện lỗi trên trình duyệt để lấy `failedRequests`, `consoleErrors` và ảnh chụp lỗi trong `screenshots/`.
-2. Kiểm tra Backend đang mở cổng `--inspect` (9229) chưa; gắn `debug_inspect_cdp` với `pauseOnExceptions: 'uncaught'` và danh sách biểu thức nghi vấn `expressions: [...]` rồi kích hoạt lại request lỗi để bắt Callstack (`file:line`) và giá trị biến sống trên RAM Heap.
+2. Kiểm tra Backend đang mở cổng `--inspect` (9229) chưa; gắn `debug_inspect_cdp` (mặc định `pauseOnExceptions: 'all'`, vì lỗi 500 của Express/NestJS là exception đã được bắt) **trước**, rồi mới kích hoạt request lỗi; truyền danh sách biểu thức nghi vấn `expressions: [...]` rồi kích hoạt lại request lỗi để bắt Callstack (`file:line`) và giá trị biến sống trên RAM Heap.
 3. Truy ngược về mã nguồn tại file mà CDP chỉ điểm để xác định nguyên nhân gốc (Root Cause), không vá ngọn.
 4. Viết 1 Regression Test cô lập trong `tests/` tái hiện lỗi này, chạy xác minh bằng `debug_run_test`, và gọi `debug_export_rag_report` xuất hồ sơ `.md` + `.canvas.json` vào `knowledge/`.
 ```
@@ -201,7 +205,7 @@ Hệ thống hỗ trợ xuất **3 nhóm kết quả rõ ràng, kiểm chứng �
 |---|---|---|
 | **Ảnh chụp màn hình thực tế** | `screenshots/*.png` | Mỗi khi chạy demo hoặc `debug_browser_run` gặp lỗi/lệnh `screenshot`, Playwright chụp nguyên khung DOM/VietQR/thông báo lỗi. Luôn đối chiếu ảnh với log HTTP để đảm bảo không lệch trạng thái. |
 | **Video quay trình duyệt tùy chọn** | `videos/*.webm` | Truyền `--record-video` (hoặc `RECORD_VIDEO=1`) khi chạy `record_multi_role_detailed_demo.mjs` để Playwright `recordVideo` quay trực tiếp thao tác Chrome thật. |
-| **Dữ liệu có cấu trúc (Markdown & JSON Canvas)** | `knowledge/*.md`<br>`knowledge/*.canvas.json` | `.md` lưu Matrix test case, Console/Network error, `file:line`, Heap RAM; `.canvas.json` chứa graph có cấu trúc để đưa vào **Obsidian Canvas** hoặc bất kỳ công cụ canvas nào tùy chọn (tự sync qua `CANVAS_RAG_DIR` nếu cấu hình). |
+| **Dữ liệu có cấu trúc (Markdown & JSON Canvas)** | `knowledge/*.md`<br>`knowledge/*.canvas.json` | `.md` lưu Matrix test case, Console/Network error, `file:line`, Heap RAM; `.canvas` mở trực tiếp bằng **Obsidian Canvas**; `.canvas.json` chứa graph có cấu trúc cho công cụ canvas tùy chọn (tự sync qua `CANVAS_RAG_DIR` nếu cấu hình). |
 | **Demo trực quan trên Chrome (TrustBase)** | `CHAY_DEMO_AGENTIC_TESTOPS.bat` & `XUAT_BANG_CHUNG_TESTOPS.bat` | Bật `TrustBase` ở 3 cổng `4200`, `4201`, `4203` rồi chạy file `.bat`. Script mở Google Chrome thật (`headless: false`), **kiểm tra chặt chẽ URL, HTTP status và DOM** trước khi gắn overlay xanh; nếu kẹt eKYC hay sai mật khẩu Admin sẽ dừng và chụp ảnh lỗi `screenshots/error_*.png` thay vì báo ảo. *(Nếu muốn quay thêm `.webm`, truyền cờ `--record-video` vào `record_multi_role_detailed_demo.mjs`)*. |
 
 ---
@@ -213,10 +217,13 @@ Hệ thống hỗ trợ xuất **3 nhóm kết quả rõ ràng, kiểm chứng �
 2. **`listen EADDRINUSE` khi bật server `src`:**
    - Yêu cầu Agent gọi `debug_status` và `debug_kill_ports({ ports: [4200, 4201, 4203, 9229] })` hoặc chạy VS Code Task *"Kill Debug Ports"*.
 3. **`debug_inspect_cdp` báo không tìm thấy target ở cổng `9229`:**
-   - Kiểm tra Backend có thực sự được khởi chạy bằng `NODE_OPTIONS="--inspect=0.0.0.0:9229"` (hoặc `--inspect=9229`) không, và thử mở `http://127.0.0.1:9229/json/list` xem có JSON trả về không.
+   - Kiểm tra Backend có thực sự được khởi chạy bằng `--inspect=127.0.0.1:9229` không, và thử mở `http://127.0.0.1:9229/json/list` xem có JSON trả về không.
+   - Nếu `/json/list` trả về tiêu đề `npm-cli.js` / `pnpm` hoặc log backend có dòng `Starting inspector ... failed: address already in use`: cổng đang bị trình quản lý gói chiếm. Chuyển `--inspect` vào lệnh `node`/`tsx` cuối cùng (xem Bước 3).
+   - Nếu báo `requires Node.js >= 22 (global WebSocket)`: nâng cấp Node.js của máy chạy MCP server lên ≥ 22.
+   - Nếu trả `CLEAN_NO_EXCEPTION` dù API trả 500: kiểm tra đã gọi `debug_inspect_cdp` **trước** khi kích hoạt request, và không đặt `pauseOnExceptions: 'uncaught'`.
 4. **Demo E2E báo lỗi khóa KYC hoặc Admin Login thất bại:**
    - Kiểm tra trạng thái dữ liệu seed trong PostgreSQL:
-     - Nếu `seller1` bị khóa eKYC trên `TrustBase`, hãy duyệt eKYC cho gian hàng qua Admin Console hoặc trong database `onboarding_progress` (hoặc dùng chính kết quả khóa KYC đó để minh họa Defect `DEF-001`!).
+     - Nếu `seller1` bị khóa eKYC trên `TrustBase`, hãy duyệt eKYC cho gian hàng qua Admin Console hoặc trong database `onboarding_progress`.
      - Kiểm tra mật khẩu `admin@trustbase.local` (script E2E hỗ trợ biến môi trường `TRUSTBASE_ADMIN_PASSWORD` nếu mật khẩu DB khác mặc định).
 5. **Muốn tự đồng bộ file `.canvas.json` sang Obsidian Vault hoặc thư mục Canvas tùy chọn:**
    - Đặt biến môi trường `CANVAS_RAG_DIR=<duong-dan-thu-muc-dich>` hoặc truyền trực tiếp tham số `canvasRagDir` khi gọi `debug_export_rag_report` / `debug_export_overnight_report`.

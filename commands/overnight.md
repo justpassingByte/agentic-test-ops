@@ -8,7 +8,7 @@ $ARGUMENTS
 
 1. Activate the `orchestrator` subagent.
 2. Clean up lingering port conflicts using `debug_status` and `debug_kill_ports`.
-3. Launch the backend runtime in debug mode using `debug_start_server({ command: 'pnpm dev:api', inspectPort: 9229, app: 'api' })`.
+3. Launch the backend runtime in debug mode using `debug_start_server({ command: 'node --inspect=127.0.0.1:9229 <entry>', inspectPort: 9229, app: 'api' })` (direct node/tsx command, not npm/pnpm; check `warnings`).
 4. Partition application flows across 3 parallel `flow-worker` subagents using isolated `contextId` values ('worker-1', 'worker-2', 'worker-3').
 5. If any worker encounters an HTTP 500 or UI crash:
    - Dispatch the `cdp-investigator` subagent to attach to `ws://127.0.0.1:9229`.
