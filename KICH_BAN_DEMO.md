@@ -119,11 +119,31 @@ Quay vài lần, giữ bản đẹp nhất; giữa hai lần chạy lại lệnh
    opts.q === 'windows'
    ```
    Nhấn Enter. Đây là **breakpoint có điều kiện**: trang marketplace tự gọi nhiều danh sách khác khi tải, điều kiện này bảo VS Code chỉ dừng ở đúng request tìm "windows".
-3. Gắn debugger: `Ctrl+Shift+P` → gõ **Debug: Attach to Node Process** → chọn tiến trình có `src/main.ts` (API ở T2). Thanh trạng thái chuyển màu cam là đã gắn.
+3. Gắn debugger **theo cổng 9229** (chắc chắn hơn chọn tiến trình trong danh sách, vì `npx tsx` tạo nhiều tiến trình node và rất dễ chọn nhầm):
+   - **Một lần duy nhất:** `Ctrl+Shift+P` → **Preferences: Open User Settings (JSON)**, thêm khối sau vào trong dấu `{ }` ngoài cùng (đây là cài đặt cá nhân của VS Code, không sửa repo TrustBase):
+     ```json
+     "launch": {
+       "version": "0.2.0",
+       "configurations": [
+         {
+           "name": "Attach TrustBase API (9229)",
+           "type": "node",
+           "request": "attach",
+           "address": "127.0.0.1",
+           "port": 9229,
+           "sourceMaps": true,
+           "skipFiles": ["<node_internals>/**"]
+         }
+       ]
+     }
+     ```
+   - Mở **Run and Debug** (`Ctrl+Shift+D`), chọn **Attach TrustBase API (9229)** trong ô chọn ở trên cùng, bấm **F5**. Thanh trạng thái chuyển màu cam là đã gắn.
    - Không dùng cấu hình "🐛 API: Attach to Process" có sẵn của TrustBase: nó trỏ cổng 9237, còn API đang mở debugger ở 9229.
 4. Gửi request **như người dùng thật**: mở trình duyệt, vào `http://localhost:4200/vi/marketplace?q=windows&sort=price_asc` (hoặc tải lại trang).
-5. VS Code **dừng tại dòng 412** (dòng tô vàng). Quay khung **Variables**: mở `opts` thấy `q: "windows"`, `sort: "price_asc"`. Có thể rê chuột lên `opts.sort` ở dòng 415 cho người xem thấy giá trị ngay trong code.
-6. Bấm **F10 (Step Over)** một lần nếu muốn cho thấy nhánh `opts.q ? ...` được chọn; hoặc bấm **F5 (Continue)** → trang hiện danh sách giá lộn xộn.
+5. VS Code **dừng tại dòng 412** (dòng tô vàng). Trong lúc dừng, **toàn bộ API đứng chờ** (trang web quay vòng tải): đó là bình thường. Quay khung **Variables**: mở `opts` thấy `q: "windows"`, `sort: "price_asc"`. Rê chuột lên `opts.q` ở dòng 413 và `opts.sort` ở dòng 415 cho người xem thấy giá trị ngay trong code.
+   - Cách đọc: dòng 413 là điều kiện `opts.q ? ... : ...`. `opts.q` đang là `"windows"` (khác rỗng) nên **nhánh dòng 414 (`ts_rank_cd`, sắp theo độ liên quan) được chọn**, còn nhánh dòng 415 (`ORDER_BY[opts.sort]`, dùng `price_asc`) **bị bỏ qua**. Đây là lỗi.
+   - Nếu `opts.q` là `undefined` thì VS Code đang dừng ở một lời gọi danh sách khác (trang tự tải): kiểm tra lại điều kiện breakpoint ở bước 2, hoặc bấm F5 cho chạy tiếp tới lần dừng có `q = "windows"`.
+6. Bấm **F5 (Continue)** → API chạy tiếp, trang hiện danh sách giá lộn xộn.
 7. Bấm **Shift+F5** để ngắt debugger. **Bắt buộc** nếu còn cho agent chạy lại: cổng 9229 chỉ nhận một debugger.
 
 **Lời thoại:** "Agent chỉ ra dòng 412. Lập trình viên đặt breakpoint có điều kiện ở đó, gắn debugger vào chính server đang chạy, rồi thao tác trên giao diện như người dùng. Debugger dừng đúng chỗ và cho thấy cùng giá trị agent đã đọc: `sort = price_asc` có tới server nhưng bị nhánh `opts.q` bỏ qua. AI khoanh vùng, con người xác minh."
