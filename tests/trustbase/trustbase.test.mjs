@@ -426,8 +426,15 @@ tc('TC_TB_DSP_03', async (rec) => {
 });
 
 tc('TC_TB_DSP_04', async (rec) => {
-  if (!S.orderW) throw blocked('Không có đơn chưa thanh toán (W từ VCH_05)');
+  // Full run: reuse the unpaid order W from VCH_05. Run alone (--test-name-pattern): create one here.
+  if (!S.orderW) {
+    await setAvailable(L1, 1, 'L1');
+    const w = await createOrder(rec, 'customer1', L1, 1);
+    if (w.status >= 300 || !orderId(w)) throw blocked(`Không tạo được đơn chưa thanh toán: HTTP ${w.status} ${w.json?.code}`);
+    S.orderW = orderId(w);
+  }
   const o = await getOrder(rec, 'customer1', S.orderW);
+  if (orderStatus(o) !== 'awaiting_payment') throw blocked(`Tiền điều kiện không thỏa: đơn đang ${orderStatus(o)}, không phải awaiting_payment`);
   const r = await openDispute(rec, 'customer1', S.orderW, reasonOf(30));
   rec.actual = `đơn trạng thái ${orderStatus(o)}: HTTP ${r.status} ${r.json?.code || ''} ${r.json?.message || ''}`;
   assert.ok(r.status >= 400 && r.status < 500, `HTTP ${r.status}`);

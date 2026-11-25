@@ -120,17 +120,8 @@ Verification = làm đúng theo đặc tả (review, unit, integration, system t
 
 ---
 
-## 6. Kịch bản demo (5 phút)
+## 6. Kịch bản demo
 
-```powershell
-node scripts/mcp-call.mjs --list
-```
-```powershell
-bash testcases/reset-local-env.sh
-```
-```powershell
-node scripts/mcp-call.mjs debug_run_test '{"command":"node --test --test-concurrency=1 tests/trustbase/trustbase.test.mjs","timeoutMs":1500000}'
-```
-Sau đó mở `knowledge/F-02-*.md` và file `.canvas` tương ứng trong Obsidian, rồi `testcases/cdp-dsp04-breakpoint.json` để chỉ giá trị biến trên RAM.
+Xem [KICH_BAN_DEMO.md](KICH_BAN_DEMO.md): chuẩn bị môi trường, 5 cảnh khoảng 4 phút (chạy 1 ca DSP_04 qua `debug_run_test` → FAIL, CDP breakpoint đọc biến trên RAM, báo cáo Obsidian), lời thoại và cách xử lý sự cố.
 
-Dự phòng nếu demo hỏng: kết quả đã lưu ở `testcases/results/run7-final.json`.
+Dự phòng nếu demo hỏng: kết quả đã lưu ở `testcases/results/run7-final.json` và `testcases/cdp-dsp04-breakpoint.json`.
