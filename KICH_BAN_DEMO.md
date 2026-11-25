@@ -35,14 +35,24 @@ Mở sẵn thêm: VS Code (agent sẽ tự mở file trong đó), Obsidian với
 
 ## 2. Quay
 
-### 2.1. Mở đầu: ca kiểm thử từ đâu ra (~15 giây)
+### 2.1. Mở đầu: ca kiểm thử từ đâu ra (~30 giây)
 
-Mở `C:\Users\NoNomt007\agentic-test-ops\testcases\trustbase_testcases.json` trong VS Code, tìm (`Ctrl+F`) `TC_TB_DSP_04`, chỉ vào 3 dòng:
-- `"technique"`: *State Transition (chuyển không hợp lệ)*
+**Sự thật cần nói rõ:** bộ 30 ca được **AI agent (Claude trong Claude Code) sinh ra ngày 24/11** theo yêu cầu của nhóm. Nhóm đặt mục tiêu và nguyên tắc, agent đọc tài liệu và mã nguồn của TrustBase rồi soạn ca, nhóm duyệt.
+
+| | Nội dung |
+|---|---|
+| **Agent dựa trên gì (đầu vào)** | (1) Đặc tả nghiệp vụ trong `docs/` của TrustBase: `admin-rules.md` (vòng đời đơn, khiếu nại), `seller-studio-rules.md`, `digital-auto-delivery.md`, `security/order-spam-2026-11-13.md`; (2) contract API (schema zod): `users.schemas.ts`, `orders.schemas.ts`, `disputes.ts`, `listings.ts`; (3) cấu hình thật trong bảng `system_settings` (ví dụ rút tối thiểu 50.000 đ) và ngưỡng rate limit trong `tiers.ts` |
+| **Nguyên lý** | V-Model: **thiết kế trước, chạy sau**, kết quả mong đợi chốt trước lần chạy đầu (lần sửa thiết kế duy nhất được ghi lại trong `designRevisions`); **oracle lấy từ đặc tả, không lấy từ code** (tránh test "đúng theo chính nó"); mỗi luồng 1 happy path + 4 edge case; mỗi ca ghi nguồn đặc tả (`source`) theo trường của IEEE 829 |
+| **Kỹ thuật** | BVA (biên min−1/min/max/max+1, ví dụ mật khẩu 7/8 ký tự, voucher lệch 1 đồng), EP lớp không hợp lệ theo giả định đơn lỗi (Weak Robust), **State Transition** (chuyển trạng thái không hợp lệ), kiểm thử đồng thời, phân quyền (IDOR), bảo mật (SQLi/XSS) |
+
+**Riêng ca `TC_TB_DSP_04`:** agent đọc `docs/admin-rules.md` §2–3 (khiếu nại chỉ áp dụng sau khi thanh toán/giao hàng), đối chiếu với máy trạng thái của đơn (`order_status`: `awaiting_payment` → `funds_held` → `delivering` → `delivered`...), rồi áp kỹ thuật **State Transition**: thử một chuyển trạng thái **không hợp lệ** là mở khiếu nại khi đơn còn `awaiting_payment`. Kết quả mong đợi: bị từ chối 4xx.
+
+**Màn hình:** mở `C:\Users\NoNomt007\agentic-test-ops\testcases\trustbase_testcases.json` trong VS Code, tìm (`Ctrl+F`) `TC_TB_DSP_04`, chỉ vào 3 dòng:
+- `"technique"`: *State Transition (chuyển trạng thái không hợp lệ)*
 - `"expected"`: *HTTP 4xx; không tạo khiếu nại*
 - `"source"`: *docs/admin-rules.md §2-3 (khiếu nại áp dụng sau khi giao hàng)*
 
-**Lời thoại:** "Ca này nằm trong bộ hồi quy 30 ca, được thiết kế từ đặc tả của TrustBase và chốt kết quả mong đợi trước khi chạy. Bộ hồi quy báo nó fail. Giờ tôi giao cho agent tìm nguyên nhân."
+**Lời thoại:** "Bộ hồi quy 30 ca này do AI agent sinh ra từ đặc tả nghiệp vụ, contract API và cấu hình thật của TrustBase, theo nguyên tắc V-Model: thiết kế và chốt kết quả mong đợi trước khi chạy, oracle lấy từ đặc tả chứ không lấy từ code. Ca DSP_04 dùng kỹ thuật kiểm thử chuyển trạng thái: đặc tả nói khiếu nại chỉ áp dụng sau khi thanh toán, nên agent thử mở khiếu nại trên đơn chưa thanh toán, kỳ vọng bị từ chối. Bộ hồi quy báo ca này fail. Giờ tôi giao cho agent tìm nguyên nhân."
 
 ### 2.2. Giao việc cho agent: dán prompt ngắn này vào Claude Code (T4)
 

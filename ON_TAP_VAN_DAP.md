@@ -59,6 +59,14 @@ Không. Kết quả mong đợi được **chốt trong `testcases/trustbase_tes
 
 Mọi lần chạy đều lưu trong `testcases/results/`. Lần duy nhất có sửa thiết kế được ghi rõ trong `designRevisions`: **chỉ sửa bước thực hiện, giữ nguyên kết quả mong đợi**. VCH_03/04 vẫn FAIL vì nhóm không đổi kỳ vọng sau khi thấy kết quả.
 
+**Q1b. Ai thiết kế 30 ca kiểm thử? Sinh ra dựa trên gì, theo kỹ thuật nào?**
+- **Ai:** AI agent (Claude trong Claude Code) **sinh ra** ngày 24/11 theo yêu cầu của nhóm. Nhóm đặt mục tiêu và nguyên tắc (6 luồng, mỗi luồng 1 happy path + 4 edge case, kỳ vọng lấy từ đặc tả), agent soạn, nhóm duyệt. Đừng nói "nhóm tự viết tay" và đừng giấu việc dùng AI: đó chính là nội dung đề tài.
+- **Đầu vào:** đặc tả nghiệp vụ trong `docs/` của TrustBase, contract API (schema zod), cấu hình thật trong `system_settings`, ngưỡng rate limit trong `tiers.ts`. Agent cũng đọc route thật để biết tính năng nào tồn tại (ví dụ TrustBase không có giỏ hàng nên không thiết kế ca giỏ hàng).
+- **Nguyên lý:** V-Model (thiết kế trước, chạy sau, chốt kỳ vọng trước lần chạy đầu), oracle từ đặc tả chứ không từ code, mỗi ca ghi `source` theo trường của IEEE 829.
+- **Kỹ thuật:** BVA, EP lớp không hợp lệ (đơn lỗi), State Transition, đồng thời, IDOR, SQLi/XSS. Ví dụ DSP_04: đặc tả nói khiếu nại chỉ áp dụng sau khi thanh toán → thử chuyển trạng thái không hợp lệ `awaiting_payment` → mở khiếu nại, kỳ vọng 4xx.
+- **Bẫy:** *"AI sinh test thì ai kiểm tra AI?"* Trả lời: mỗi ca có `source` để người duyệt đối chiếu với đặc tả; kỳ vọng chốt trước khi chạy nên AI không thể sửa kỳ vọng theo kết quả; lỗi thiết kế phát hiện được (luồng voucher) đã được ghi lại công khai trong `designRevisions`.
+- **Việc nhóm nên làm trước buổi bảo vệ:** đọc qua 30 ca trong `testcases/trustbase_testcases.json` để trả lời được về bất kỳ ca nào.
+
 **Q2. Oracle (kết quả mong đợi) lấy từ đâu?**
 Từ đặc tả và cấu hình thật, **không lấy từ code**: `docs/admin-rules.md`, `seller-studio-rules.md`, `digital-auto-delivery.md`, contract zod (`users.schemas.ts`, `orders.schemas.ts`, `disputes.ts`), bảng `system_settings` (ví dụ `payout:min_amount_vnd = 50000`). Mỗi ca có trường `source`. Nếu suy kỳ vọng từ code thì test thành vòng lặp (code đúng theo chính nó).
 
