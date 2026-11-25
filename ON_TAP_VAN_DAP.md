@@ -122,6 +122,6 @@ Verification = làm đúng theo đặc tả (review, unit, integration, system t
 
 ## 6. Kịch bản demo
 
-Xem [KICH_BAN_DEMO.md](KICH_BAN_DEMO.md): chuẩn bị môi trường, 5 cảnh khoảng 4 phút (chạy 1 ca DSP_04 qua `debug_run_test` → FAIL, CDP breakpoint đọc biến trên RAM, báo cáo Obsidian), lời thoại và cách xử lý sự cố.
+Xem [KICH_BAN_DEMO.md](KICH_BAN_DEMO.md): chuẩn bị môi trường, một prompt để Claude Code tự chạy ca DSP_04 (debug_run_test → đọc code → debug_inspect_cdp với trigger → mở VS Code đúng dòng), cách show kết quả tổng 30 ca từ lần chạy ngày 24/11, phương án dự phòng và xử lý sự cố.
 
 Dự phòng nếu demo hỏng: kết quả đã lưu ở `testcases/results/run7-final.json` và `testcases/cdp-dsp04-breakpoint.json`.
