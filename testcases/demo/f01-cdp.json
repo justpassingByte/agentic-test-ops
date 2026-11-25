@@ -1,0 +1,13 @@
+{
+  "inspectPort": 9229,
+  "timeoutMs": 30000,
+  "pauseOnExceptions": "none",
+  "breakpoints": [
+    { "file": "listings/listings.repo.ts", "match": ".orderBy(" }
+  ],
+  "expressions": ["opts.q", "opts.sort", "opts.limit"],
+  "trigger": {
+    "command": "node -e \"fetch('http://localhost:4201/catalog/listings?q=windows&sort=price_asc&limit=8').then(r => r.json().then(j => console.log('HTTP ' + r.status + ', gia theo thu tu tra ve: ' + j.data.items.map(i => i.priceVnd).join(', '))))\"",
+    "timeoutMs": 30000
+  }
+}

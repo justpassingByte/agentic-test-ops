@@ -1,6 +1,6 @@
 # Kịch bản quay video demo — Agent tự chạy 1 flow trên TrustBase
 
-**Nội dung video:** bộ hồi quy 30 ca (thiết kế từ đặc tả TrustBase, kết quả mong đợi chốt trước khi chạy) báo ca `TC_TB_DSP_04` FAIL. Đưa cho Claude Code một **prompt ngắn chỉ nêu mục tiêu**. Agent tự chọn tool của MCP server `debug-controller`, chạy lại ca, đọc mã nguồn, gắn CDP bắt nguyên nhân trên RAM và kết luận. Sau đó show kết quả tổng 30 ca từ lần chạy chính thức ngày 24/11.
+**Nội dung video:** bộ hồi quy 30 ca (thiết kế từ đặc tả TrustBase, kết quả mong đợi chốt trước khi chạy) báo ca `TC_TB_DSP_04` FAIL. Đưa cho Claude Code một **prompt ngắn chỉ nêu mục tiêu**. Agent tự chọn tool của MCP server `debug-controller`, chạy lại ca, đọc mã nguồn, gắn CDP bắt nguyên nhân trên RAM và kết luận. Sau đó (tùy chọn) cảnh **dual trace** với lỗi F-01: trình duyệt thấy triệu chứng, CDP chỉ ra nguyên nhân (mục 2c). Cuối cùng show kết quả tổng 30 ca từ lần chạy chính thức ngày 24/11.
 
 ---
 
@@ -114,6 +114,53 @@ Prompt từng bước, chắc chắn hơn nhưng trông giống "chỉ đạo" a
 **Lời thoại gợi ý:** "Agent đã chỉ ra đúng dòng 154. Lập trình viên chỉ cần đặt breakpoint ở đó, gắn debugger vào chính server đang chạy, không phải khởi động lại, và thấy cùng giá trị trên RAM: đơn chưa thanh toán nhưng mang trạng thái `CHO_CK`."
 
 Cảnh này chưa được chạy thử trên TrustBase: nên tập một lần. Chấm đỏ phải **đặc**; nếu là chấm rỗng, VS Code chưa bám được source map (xem Phụ lục B).
+
+---
+
+## 2c. Dual trace với lỗi F-01: trình duyệt thấy triệu chứng, CDP chỉ ra nguyên nhân (~2 phút)
+
+> ⚠️ **Cảnh này CHƯA được chạy thử.** Tập trước khi quay; nếu trục trặc thì bỏ cảnh này, cảnh DSP_04 vẫn đủ.
+
+**Ý nghĩa:** thể hiện đúng tên đề tài, "Browser Trace + Source Trace". DSP_04 là lỗi API nên không cần trình duyệt; F-01 thì **người dùng nhìn thấy lỗi ngay trên giao diện**, còn Postman hay test API thuần không báo gì, vì server vẫn trả 200.
+
+| Bước | Tầng | Tool | Thấy gì |
+|---|---|---|---|
+| 1 | Browser trace (hộp đen) | `debug_browser_run` | Chrome mở trang tìm "windows", chọn giá tăng dần → **giá hiện lộn xộn** (ví dụ 60.000 → 500.000 → 59.000...); request `GET /catalog/listings?q=windows&sort=price_asc` trả **200** |
+| 2 | Source trace (hộp xám) | `debug_inspect_cdp` | Breakpoint ở câu `.orderBy(` trong `listings.repo.ts`: trên RAM `opts.q = "windows"`, `opts.sort = "price_asc"`. Server **có nhận** yêu cầu sắp xếp nhưng code dòng 413–415 hễ có `q` là chỉ sắp theo độ liên quan (`ts_rank_cd`) |
+
+**Mở đầu (~10 giây):** mở `testcases/trustbase_testcases.json`, tìm `TC_TB_CAT_01`: kỹ thuật happy path, kỳ vọng "giá không giảm dần", nguồn là contract API (`sort` là tham số hợp lệ của `/catalog/listings`).
+
+**Prompt cho agent** (Claude Code ở T4, sau khi đã chạy reset T3):
+
+> Người dùng báo: tìm "windows" trên marketplace và chọn sắp xếp giá tăng dần nhưng giá hiện lộn xộn. Dùng các tool debug-controller: mở trang http://localhost:4200/vi/marketplace?q=windows&sort=price_asc trên trình duyệt có hiện cửa sổ để xác nhận triệu chứng, rồi tìm nguyên nhân gốc trong backend (API cổng 4201, debugger cổng 9229), có bằng chứng giá trị biến đọc trên RAM.
+
+Agent dự kiến sẽ:
+1. gọi `debug_browser_run` với `headless: false` → Chrome bật lên, chụp ảnh, trả về request và mã 200;
+2. đọc `api/src/modules/listings/listings.repo.ts`, tìm chỗ dựng `ORDER BY`;
+3. gọi `debug_inspect_cdp` với breakpoint và `trigger` là một request tới `/catalog/listings?q=windows&sort=price_asc` → đọc được `opts.q`, `opts.sort`;
+4. kết luận: tham số `sort` bị bỏ qua khi có `q` (dòng 413–415).
+
+Nếu agent chỉ chạy trình duyệt rồi đọc code mà chưa gọi CDP, gõ thêm: *"Xác nhận bằng debug_inspect_cdp."*
+
+**Lệnh dự phòng** (chạy ở T3, nếu agent đi lệch):
+```powershell
+cd C:\Users\NoNomt007\agentic-test-ops; node scripts/mcp-call.mjs debug_browser_run '@testcases/demo/f01-browser.json'
+```
+Chrome hiện cửa sổ trang marketplace khoảng 5 giây và chụp ảnh vào `screenshots/`.
+```powershell
+cd C:\Users\NoNomt007\agentic-test-ops; node scripts/mcp-call.mjs debug_inspect_cdp '@testcases/demo/f01-cdp.json'
+```
+Trả về `status: "PAUSED"`, giá trị `opts.q` và `opts.sort` trên RAM, và `trigger.output` liệt kê giá theo thứ tự API trả về.
+```powershell
+cd C:\Users\NoNomt007\agentic-test-ops; node scripts/open-in-vscode.mjs C:/Users/NoNomt007/Documents/trustbase/trustbase-project/api/src/modules/listings/listings.repo.ts 'ts_rank_cd('
+```
+Mở VS Code tại dòng 414, ngay trong khối `opts.q ? ... : ORDER_BY[opts.sort]`.
+
+**Lời thoại gợi ý:** "Trình duyệt thấy triệu chứng: giao diện gửi đúng tham số sắp xếp, server trả 200, nhưng giá lộn xộn. Không có lỗi HTTP nào, nên test API thông thường sẽ bỏ sót. CDP vào bên trong backend: server có nhận `sort = price_asc`, nhưng code hễ có từ khóa là bỏ qua tham số này. Đây là Dual Trace: trình duyệt chỉ ra lỗi gì, CDP chỉ ra vì sao."
+
+**Có thể trục trặc** (vì chưa thử):
+- Giao diện có thể không lấy `q` và `sort` từ URL như mong đợi (khi đó gõ "windows" vào ô tìm kiếm và chọn sắp xếp bằng tay, hoặc để agent tự thao tác).
+- Breakpoint có thể dừng ở một lời gọi `findMany` khác do trang tự gửi (ví dụ danh sách mới nhất). Trong lệnh dự phòng, `trigger` chỉ gọi đúng một request có `q` nên tránh được chuyện này; với agent, nếu thấy `opts.q` rỗng thì nhắc nó dùng `trigger` gọi thẳng API.
 
 ---
 

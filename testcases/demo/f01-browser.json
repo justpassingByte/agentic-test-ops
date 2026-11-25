@@ -1,0 +1,10 @@
+{
+  "url": "http://localhost:4200/vi/marketplace?q=windows&sort=price_asc",
+  "headless": false,
+  "slowMo": 300,
+  "timeoutMs": 45000,
+  "actions": [
+    { "type": "wait", "ms": 5000 },
+    { "type": "screenshot" }
+  ]
+}
