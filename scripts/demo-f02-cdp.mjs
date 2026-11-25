@@ -12,6 +12,8 @@
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { openAtSnippet } from './open-in-vscode.mjs';
 
 const API = process.env.TRUSTBASE_API_URL || 'http://localhost:4201';
 if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(API)) throw new Error(`Refusing non-local API: ${API}`);
@@ -63,3 +65,15 @@ console.log(`\n[4] Kết quả debug_inspect_cdp: ${r.status} tại ${r.breakpoi
 for (const [k, v] of Object.entries(r.evaluatedVariables || {})) console.log(`    ${k.padEnd(24)} = ${JSON.stringify(v.value)}`);
 console.log('\n=> order.status thật là "awaiting_payment" nhưng được ánh xạ thành "CHO_CK", mà "CHO_CK" nằm trong danh sách');
 console.log('   ALLOWED_OPEN_STATUSES, nên khiếu nại trên đơn chưa thanh toán lọt qua (lỗi F-02, postgres-backbone.adapter.ts).\n');
+
+// [5] Open the exact code in VS Code: the paused statement, then the wrong status mapping (skip with --no-open).
+const bp = r.breakpointsResolved?.[0];
+if (!process.argv.includes('--no-open') && bp?.url) {
+  const service = fileURLToPath(bp.url);
+  const adapter = path.join(path.dirname(service), 'adapters', 'postgres-backbone.adapter.ts');
+  const a = openAtSnippet(service, bp.match);
+  console.log(`[5] Mở VS Code: ${path.basename(service)}:${a.line}  (câu lệnh CDP đã dừng)`);
+  await sleep(2500);
+  const b = openAtSnippet(adapter, "awaiting_payment: 'CHO_CK'");
+  console.log(`    Mở VS Code: ${path.basename(adapter)}:${b.line}  (dòng ánh xạ gây lỗi)\n`);
+}

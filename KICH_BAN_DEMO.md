@@ -2,37 +2,46 @@
 
 **Câu chuyện của video:** công cụ của nhóm (MCP server, 9 tool) → chạy 1 ca kiểm thử thật trên TrustBase → ca đó FAIL (lỗi F-02, mức High) → dùng CDP bắt tận tay nguyên nhân trên RAM → báo cáo được xuất tự động.
 
-Mọi lệnh dưới đây gõ trong **PowerShell** tại thư mục `agentic-test-ops`, trừ khi có ghi khác.
+Mọi lệnh gõ trong **PowerShell**. Cần 3 cửa sổ terminal:
+
+| Terminal | Thư mục | Dùng cho |
+|---|---|---|
+| **T1** | bất kỳ | Giữ WSL (Postgres, Redis) sống: bước 0.1, để nguyên không đụng |
+| **T2** | `C:\Users\NoNomt007\Documents\trustbase\trustbase-project\api` | Chạy API TrustBase: bước 0.2, để nguyên không đụng |
+| **T3** | `C:\Users\NoNomt007\agentic-test-ops` | **Tất cả lệnh còn lại** (bước 0.3 và mọi cảnh quay). Đây là cửa sổ đưa lên video |
+
+Mỗi khối lệnh dưới đây đã kèm sẵn `cd` tới đúng thư mục, nên copy nguyên khối là chạy được. `cls` là lệnh xóa trắng màn hình terminal; gõ trước mỗi cảnh cho khung hình sạch.
 
 ---
 
 ## 0. Chuẩn bị (không quay)
 
-1. **Terminal 1, giữ mở suốt buổi quay:** bật Postgres và Redis trong WSL và giữ WSL sống. Docker chạy trong WSL (không có Docker Desktop), nên đóng terminal này là WSL tự tắt và mất cổng 5432/6379.
+1. **T1, giữ mở suốt buổi quay:** bật Postgres và Redis trong WSL và giữ WSL sống. Docker chạy trong WSL (không có Docker Desktop), nên đóng terminal này là WSL tự tắt và mất cổng 5432/6379.
    ```powershell
    wsl -e sh -c "docker start trustbase-postgres trustbase-redis; sleep infinity"
    ```
-   Ở một terminal khác, kiểm tra cả hai phải `True` (nếu `False`, đợi vài giây rồi thử lại):
+   Ở T3, kiểm tra cả hai phải `True` (nếu `False`, đợi vài giây rồi thử lại):
    ```powershell
    Test-NetConnection localhost -Port 5432 -InformationLevel Quiet; Test-NetConnection localhost -Port 6379 -InformationLevel Quiet
    ```
-2. **Terminal 2, giữ mở suốt buổi quay:** bật API TrustBase kèm debugger. Bật **sau** bước 1; nếu bật khi chưa có DB thì tắt đi bật lại.
+2. **T2, giữ mở suốt buổi quay:** bật API TrustBase kèm debugger. Bật **sau** bước 1; nếu bật khi chưa có DB thì tắt đi bật lại.
    ```powershell
    cd $HOME\Documents\trustbase\trustbase-project\api; npx tsx --inspect=127.0.0.1:9229 --tsconfig tsconfig.json src/main.ts
    ```
    API mất khoảng **90 giây** để khởi động; đợi tới khi `http://localhost:4201/health` trả 200.
-3. Dọn môi trường test (áp fixture, xóa bộ đếm rate limit):
+3. Ở T3: dọn môi trường test (áp fixture, xóa bộ đếm rate limit):
    ```powershell
-   & "C:\Program Files\Git\bin\bash.exe" testcases/reset-local-env.sh
+   cd C:\Users\NoNomt007\agentic-test-ops; & "C:\Program Files\Git\bin\bash.exe" testcases/reset-local-env.sh
    ```
-4. Mở sẵn: VS Code tại repo; Obsidian mở thư mục `knowledge/` làm vault; một terminal PowerShell cỡ chữ lớn, đã `cls`.
+4. Mở sẵn: VS Code (cảnh 3 sẽ tự mở file TrustBase trong đó); Obsidian mở thư mục `knowledge/` làm vault; T3 tăng cỡ chữ, gõ `cls`.
 
 ---
 
 ## Cảnh 1 — Công cụ của nhóm (0:00 – 0:30)
 
+Chạy ở **T3**:
 ```powershell
-node scripts/mcp-call.mjs --list
+cd C:\Users\NoNomt007\agentic-test-ops; cls; node scripts/mcp-call.mjs --list
 ```
 **Màn hình:** `debug-controller 1.1.0: 9 tools` và danh sách 9 tool.
 
@@ -42,8 +51,9 @@ node scripts/mcp-call.mjs --list
 
 ## Cảnh 2 — Chạy 1 ca kiểm thử thật qua tool `debug_run_test` (0:30 – 1:15)
 
+Chạy ở **T3**:
 ```powershell
-node scripts/mcp-call.mjs debug_run_test '@testcases/demo/run-dsp04.json'
+cd C:\Users\NoNomt007\agentic-test-ops; cls; node scripts/mcp-call.mjs debug_run_test '@testcases/demo/run-dsp04.json'
 ```
 (Phải có nháy đơn: trong PowerShell, `@` đứng đầu là toán tử splatting.)
 
@@ -59,8 +69,9 @@ Mở `testcases/results/latest.json` trong VS Code, chỉ vào trường `actual
 
 Trước cảnh này (cắt khỏi video) chạy lại bước 0.3 để xóa bộ đếm rate limit đăng nhập. Script tự nạp thêm mã vào kho nếu cảnh 2 đã dùng hết.
 
+Chạy ở **T3**:
 ```powershell
-node scripts/demo-f02-cdp.mjs
+cd C:\Users\NoNomt007\agentic-test-ops; cls; node scripts/demo-f02-cdp.mjs
 ```
 **Màn hình:** script in từng bước:
 - `[1]` tạo đơn mới, trạng thái `awaiting_payment`;
@@ -73,9 +84,11 @@ node scripts/demo-f02-cdp.mjs
   ALLOWED_OPEN_STATUSES    = ["CHO_CK","DANG_GIAO","DA_GIAO","delivered","funds_held","delivering"]
   ```
 
-Rồi mở trong VS Code (thư mục TrustBase):
-- `api/src/modules/disputes/adapters/postgres-backbone.adapter.ts`, chỉ vào 2 dòng `awaiting_payment: 'CHO_CK'` và `funds_held: 'CHO_CK'`;
-- `api/src/modules/disputes/disputes.service.ts` dòng 31 (`ALLOWED_OPEN_STATUSES`).
+- `[5]` script **tự mở VS Code** (chuyển sang cửa sổ VS Code để quay):
+  1. `disputes.service.ts`, con trỏ đặt sẵn ở **dòng 154** `if (!ALLOWED_OPEN_STATUSES.includes(orderStatus))`, đúng câu mà CDP vừa dừng;
+  2. 2,5 giây sau mở `postgres-backbone.adapter.ts` ở **dòng 17** `awaiting_payment: 'CHO_CK',`; chỉ thêm dòng ngay dưới `funds_held: 'CHO_CK',`.
+
+  Cách tìm dòng: tool trả về đường dẫn file và đoạn mã đã dừng; script tìm đúng đoạn mã đó trong file `.ts` rồi gọi `code -g file:dòng:cột`. Muốn không tự mở thì thêm `--no-open`.
 
 **Lời thoại:** "Tool gắn vào backend qua Chrome DevTools Protocol, dừng đúng tại câu `ALLOWED_OPEN_STATUSES.includes(orderStatus)` và đọc biến trên RAM, không cần thêm `console.log`. Trạng thái thật là `awaiting_payment`, nhưng bị ánh xạ chung với `funds_held` thành `CHO_CK`, mà `CHO_CK` lại nằm trong danh sách được phép khiếu nại. Nguyên nhân gốc nằm ở bảng ánh xạ này."
 
