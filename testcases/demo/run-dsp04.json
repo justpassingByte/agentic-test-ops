@@ -1,4 +1,0 @@
-{
-  "command": "node --test --test-name-pattern=TC_TB_DSP_04 tests/trustbase/trustbase.test.mjs",
-  "timeoutMs": 120000
-}

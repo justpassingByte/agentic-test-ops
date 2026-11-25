@@ -130,6 +130,6 @@ Verification = làm đúng theo đặc tả (review, unit, integration, system t
 
 ## 6. Kịch bản demo
 
-Xem [KICH_BAN_DEMO.md](KICH_BAN_DEMO.md): chuẩn bị môi trường, một prompt để Claude Code tự chạy ca DSP_04 (debug_run_test → đọc code → debug_inspect_cdp với trigger → mở VS Code đúng dòng), cách show kết quả tổng 30 ca từ lần chạy ngày 24/11, phương án dự phòng và xử lý sự cố.
+Xem [KICH_BAN_DEMO.md](KICH_BAN_DEMO.md): demo **Dual Trace với lỗi F-01** (ca TC_TB_CAT_01): agent dùng debug_browser_run thấy giá lộn xộn dù HTTP 200 (Browser Trace), rồi debug_inspect_cdp đọc opts.q và opts.sort trên RAM (Source Trace); sau đó lập trình viên gắn debugger VS Code với breakpoint có điều kiện để xác minh (human-in-the-loop).
 
-Dự phòng nếu demo hỏng: kết quả đã lưu ở `testcases/results/run7-final.json` và `testcases/cdp-dsp04-breakpoint.json`.
+Dự phòng nếu demo hỏng: kết quả đã lưu ở `testcases/results/run7-final.json` (ca TC_TB_CAT_01) và `knowledge/F-01-*.md`.
