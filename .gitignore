@@ -24,3 +24,6 @@ Desktop.ini
 *.ntvs*
 *.njsproj
 .history/
+
+# Claude Code personal settings (local only)
+.claude/settings.local.json

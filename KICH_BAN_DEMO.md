@@ -1,6 +1,6 @@
 # Kịch bản quay video demo — Agent tự chạy 1 flow trên TrustBase
 
-**Nội dung video:** đưa cho Claude Code đúng **một prompt**. Agent tự dùng các tool của MCP server `debug-controller` để chạy ca `TC_TB_DSP_04`, thấy ca FAIL, tự đọc mã nguồn, tự gắn CDP bắt nguyên nhân trên RAM, kết luận và mở đúng dòng code trong VS Code. Sau đó show kết quả tổng 30 ca từ lần chạy chính thức ngày 24/11.
+**Nội dung video:** bộ hồi quy 30 ca (thiết kế từ đặc tả TrustBase, kết quả mong đợi chốt trước khi chạy) báo ca `TC_TB_DSP_04` FAIL. Đưa cho Claude Code một **prompt ngắn chỉ nêu mục tiêu**. Agent tự chọn tool của MCP server `debug-controller`, chạy lại ca, đọc mã nguồn, gắn CDP bắt nguyên nhân trên RAM và kết luận. Sau đó show kết quả tổng 30 ca từ lần chạy chính thức ngày 24/11.
 
 ---
 
@@ -23,31 +23,59 @@ cd C:\Users\NoNomt007\Documents\trustbase\trustbase-project\api; npx tsx --inspe
 cd C:\Users\NoNomt007\agentic-test-ops; & "C:\Program Files\Git\bin\bash.exe" testcases/reset-local-env.sh
 ```
 
-**Claude Code**: **mở mới** tại `C:\Users\NoNomt007\agentic-test-ops` (để MCP server nạp bản mới nhất), gõ `/mcp` để thấy `debug-controller` báo connected. Tập dượt một lần; khi được hỏi quyền dùng tool `debug-controller` thì chọn cho phép luôn, để lúc quay không bị hỏi lại.
+**Claude Code (T4)**: mở mới **trong thư mục TrustBase**, đúng như một lập trình viên đang làm việc trên dự án của mình (`debug-controller` đã đăng ký ở phạm vi user nên có mặt ở mọi thư mục, không cần thêm file nào vào TrustBase):
+```powershell
+cd C:\Users\NoNomt007\Documents\trustbase\trustbase-project; claude
+```
+Gõ `/mcp` để thấy `debug-controller` báo connected. Tập dượt 2–3 lần; khi được hỏi quyền dùng tool `debug-controller` thì chọn cho phép luôn, để lúc quay không bị hỏi lại.
 
 Mở sẵn thêm: VS Code (agent sẽ tự mở file trong đó), Obsidian với thư mục `knowledge/` làm vault.
 
 ---
 
-## 2. Quay: dán đúng một prompt này vào Claude Code
+## 2. Quay
 
-> Dùng các tool của MCP server debug-controller để điều tra ca kiểm thử TC_TB_DSP_04 trong tests/trustbase/trustbase.test.mjs.
-> 1. Chạy riêng ca này bằng debug_run_test (dùng --test-name-pattern).
-> 2. Nếu ca fail, đọc mã nguồn backend TrustBase ở C:\Users\NoNomt007\Documents\trustbase\trustbase-project\api\src\modules\disputes để tìm câu lệnh quyết định đơn có được mở khiếu nại hay không.
-> 3. Gọi debug_inspect_cdp (cổng 9229) với breakpoint theo đoạn mã tại câu lệnh đó, các biến cần đọc, và trigger là lệnh chạy lại ca này.
-> 4. Kết luận nguyên nhân gốc: file, dòng và giá trị biến đọc được trên RAM.
-> 5. Mở câu lệnh đó trong VS Code bằng node scripts/open-in-vscode.mjs <file> "<đoạn mã>".
+### 2.1. Mở đầu: ca kiểm thử từ đâu ra (~15 giây)
 
-Rồi quay liên tục khoảng 1–2 phút. Agent tự làm:
+Mở `C:\Users\NoNomt007\agentic-test-ops\testcases\trustbase_testcases.json` trong VS Code, tìm (`Ctrl+F`) `TC_TB_DSP_04`, chỉ vào 3 dòng:
+- `"technique"`: *State Transition (chuyển không hợp lệ)*
+- `"expected"`: *HTTP 4xx; không tạo khiếu nại*
+- `"source"`: *docs/admin-rules.md §2-3 (khiếu nại áp dụng sau khi giao hàng)*
+
+**Lời thoại:** "Ca này nằm trong bộ hồi quy 30 ca, được thiết kế từ đặc tả của TrustBase và chốt kết quả mong đợi trước khi chạy. Bộ hồi quy báo nó fail. Giờ tôi giao cho agent tìm nguyên nhân."
+
+### 2.2. Giao việc cho agent: dán prompt ngắn này vào Claude Code (T4)
+
+> Ca kiểm thử TC_TB_DSP_04 trong C:\Users\NoNomt007\agentic-test-ops\tests\trustbase\trustbase.test.mjs đang fail. Dùng các tool debug-controller tìm nguyên nhân gốc trong backend (API cổng 4201, debugger cổng 9229), có bằng chứng giá trị biến đọc trên RAM.
+
+Prompt chỉ nêu mục tiêu và 3 thông tin agent không tự đoán được: ca test ở đâu, hệ thống chạy ở cổng nào, và yêu cầu **có bằng chứng trên RAM** (thiếu câu này agent có thể chỉ đọc code rồi đoán). Cách dùng `breakpoints` theo đoạn mã và `trigger` thì agent tự đọc từ mô tả của tool.
+
+Rồi quay liên tục khoảng 1–3 phút. Agent tự làm (thứ tự và câu chữ mỗi lần một khác):
 1. gọi `debug_run_test` → ca **FAIL**: mở khiếu nại trên đơn chưa thanh toán vẫn trả **HTTP 201** (đặc tả yêu cầu từ chối 4xx);
 2. đọc `disputes.service.ts`, tìm ra câu `if (!ALLOWED_OPEN_STATUSES.includes(orderStatus))`;
 3. gọi `debug_inspect_cdp` với breakpoint và `trigger`: **một lời gọi** vừa chạy lại ca test vừa đọc trên RAM `order.status = "awaiting_payment"`, `orderStatus = "CHO_CK"`;
-4. kết luận: `awaiting_payment` bị ánh xạ thành `CHO_CK` trong `postgres-backbone.adapter.ts`, mà `CHO_CK` nằm trong danh sách được phép khiếu nại (lỗi F-02);
-5. bật VS Code đúng dòng 154 của `disputes.service.ts`.
+4. kết luận: `awaiting_payment` bị ánh xạ thành `CHO_CK` trong `postgres-backbone.adapter.ts`, mà `CHO_CK` nằm trong danh sách được phép khiếu nại (lỗi F-02).
 
-**Lời thoại gợi ý:** "Tôi chỉ đưa mục tiêu. Agent tự chọn công cụ, tự soạn tham số, tự đọc mã nguồn, tự đặt breakpoint và tự kết luận. Công cụ của nhóm là tay và mắt của agent: chạy test, gắn debugger, đọc biến trên RAM."
+**Nếu agent dừng ở mức đọc code mà chưa gọi CDP**, gõ thêm một câu nhắc ngắn (vẫn tự nhiên như người dùng thật):
+> Xác nhận bằng debug_inspect_cdp.
 
-Mỗi lần chạy, câu chữ của agent một khác: quay vài lần, giữ bản đẹp nhất. Giữa hai lần quay, chạy lại lệnh T3.
+**Muốn agent mở luôn dòng code trong VS Code**, sau khi nó kết luận gõ tiếp:
+> Mở dòng đó trong VS Code bằng node C:\Users\NoNomt007\agentic-test-ops\scripts\open-in-vscode.mjs <file> "<đoạn mã>".
+
+**Lời thoại gợi ý:** "Tôi chỉ đưa mục tiêu và chỗ hệ thống đang chạy. Chọn công cụ, đặt breakpoint ở đâu, đọc biến nào là agent tự quyết. Công cụ của nhóm là tay và mắt của agent: chạy test, gắn debugger, đọc biến trên RAM."
+
+Quay vài lần, giữ bản đẹp nhất. Giữa hai lần quay, chạy lại lệnh T3.
+
+### 2.3. Prompt dự phòng (khi prompt ngắn đi lệch nhiều lần)
+
+Prompt từng bước, chắc chắn hơn nhưng trông giống "chỉ đạo" agent hơn:
+
+> Dùng các tool của MCP server debug-controller để điều tra ca kiểm thử TC_TB_DSP_04 trong C:\Users\NoNomt007\agentic-test-ops\tests\trustbase\trustbase.test.mjs.
+> 1. Chạy riêng ca này bằng debug_run_test (dùng --test-name-pattern, cwd là C:\Users\NoNomt007\agentic-test-ops).
+> 2. Nếu ca fail, đọc mã nguồn trong api\src\modules\disputes để tìm câu lệnh quyết định đơn có được mở khiếu nại hay không.
+> 3. Gọi debug_inspect_cdp (cổng 9229) với breakpoint theo đoạn mã tại câu lệnh đó, các biến cần đọc, và trigger là lệnh chạy lại ca này.
+> 4. Kết luận nguyên nhân gốc: file, dòng và giá trị biến đọc được trên RAM.
+> 5. Mở câu lệnh đó trong VS Code bằng node C:\Users\NoNomt007\agentic-test-ops\scripts\open-in-vscode.mjs <file> "<đoạn mã>".
 
 ---
 
