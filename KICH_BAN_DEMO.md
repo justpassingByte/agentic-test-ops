@@ -51,6 +51,34 @@ Mỗi lần chạy, câu chữ của agent một khác: quay vài lần, giữ b
 
 ---
 
+## 2b. Lập trình viên xác minh bằng debugger của VS Code (quay sau cảnh agent, ~1 phút)
+
+**Ý nghĩa:** agent đã chỉ ra lỗi ở `disputes.service.ts` dòng 154; lập trình viên mở đúng chỗ đó và tự xác minh bằng debugger quen thuộc (chế độ human-in-the-loop).
+
+**Trước khi bấm attach:** đợi agent ở cảnh 2 trả lời xong (tool CDP của agent tự nhả cổng 9229 sau mỗi lần gọi). Kiểm tra cổng đã trống, lệnh phải in ra một dòng `ws://127.0.0.1:9229/...`:
+```powershell
+(Invoke-RestMethod http://127.0.0.1:9229/json/list).webSocketDebuggerUrl
+```
+
+**Các bước:**
+1. Mở thư mục `C:\Users\NoNomt007\Documents\trustbase\trustbase-project` trong VS Code (phải mở đúng thư mục TrustBase để VS Code đọc được source map của `tsx`).
+2. Mở `api/src/modules/disputes/disputes.service.ts`, bấm vào lề trái **dòng 154** `if (!ALLOWED_OPEN_STATUSES.includes(orderStatus))` để đặt chấm đỏ breakpoint.
+3. Gắn debugger vào API: `Ctrl+Shift+P` → gõ **Debug: Attach to Node Process** → chọn tiến trình có `src/main.ts` (API chạy ở T2). Thanh trạng thái chuyển màu cam là đã gắn.
+   - Không dùng cấu hình "🐛 API: Attach to Process" có sẵn trong TrustBase, vì nó trỏ cổng 9237, còn API đang mở debugger ở cổng 9229.
+4. Ở T3, chạy ca test để gửi request mở khiếu nại:
+   ```powershell
+   cd C:\Users\NoNomt007\agentic-test-ops; node --test --test-name-pattern=TC_TB_DSP_04 tests/trustbase/trustbase.test.mjs
+   ```
+5. VS Code **dừng tại dòng 154** (dòng tô vàng). Quay khung **Variables**: `orderStatus = "CHO_CK"`, `order.status = "awaiting_payment"`. Gõ `ALLOWED_OPEN_STATUSES` vào **Debug Console** để thấy `CHO_CK` nằm trong danh sách.
+6. Bấm **F5 (Continue)** → terminal T3 báo ca FAIL với `HTTP 201`.
+7. Bấm **Shift+F5** để ngắt debugger. **Bắt buộc** nếu còn quay lại cảnh agent: cổng 9229 chỉ nhận một debugger tại một thời điểm.
+
+**Lời thoại gợi ý:** "Agent đã chỉ ra đúng dòng 154. Lập trình viên chỉ cần đặt breakpoint ở đó, gắn debugger vào chính server đang chạy, không phải khởi động lại, và thấy cùng giá trị trên RAM: đơn chưa thanh toán nhưng mang trạng thái `CHO_CK`."
+
+Cảnh này chưa được chạy thử trên TrustBase: nên tập một lần. Chấm đỏ phải **đặc**; nếu là chấm rỗng, VS Code chưa bám được source map (xem Phụ lục B).
+
+---
+
 ## 3. Show kết quả
 
 Có **hai loại kết quả**, nói rõ trong lời thoại:
@@ -100,6 +128,9 @@ Trong PowerShell, tham số `'@testcases/...'` phải có nháy đơn (`@` đứ
 | API log báo `ECONNREFUSED ...:6379` / `5432`, hoặc lệnh treo không ra gì | WSL đã tự tắt: kiểm tra T1 còn chạy; nếu vẫn lỗi thì `wsl -e docker restart trustbase-postgres trustbase-redis`, rồi tắt và bật lại API ở T2 |
 | Tạo đơn bị `429 RATE_LIMIT_EXCEEDED` hoặc `LISTING_SOLD_OUT` | Chạy lại lệnh T3 (reset môi trường) |
 | `debug_inspect_cdp` báo không tìm thấy target 9229 | API phải chạy bằng lệnh `tsx --inspect=...` ở T2, không dùng `pnpm dev` |
+| Agent gọi `debug_inspect_cdp` báo "another debugger may already be attached" | VS Code vẫn đang gắn vào API: bấm Shift+F5 trong VS Code rồi chạy lại |
+| VS Code không dừng ở dòng 154, chấm đỏ là chấm rỗng | VS Code chưa bám được source map: kiểm tra đang mở đúng thư mục TrustBase (không phải agentic-test-ops), ngắt (Shift+F5) rồi gắn lại; vẫn không được thì dùng Phụ lục A |
+| Mọi request tới API đều treo sau khi debug | API đang bị dừng ở breakpoint: bấm F5 (Continue) trong VS Code, hoặc tắt và bật lại API ở T2 |
 | `/mcp` không thấy `debug-controller` | Mở Claude Code đúng thư mục `agentic-test-ops` (nơi có file `.mcp.json`) |
 | Agent không gọi đúng tool hoặc trả lời lệch | Gõ thêm một câu nhắc (ví dụ "gọi debug_inspect_cdp với trigger"), hoặc dùng Phụ lục A |
 | Không chạy được TrustBase | Show kết quả đã lưu: `testcases/results/run7-final.json`, `testcases/cdp-dsp04-breakpoint.json` |
