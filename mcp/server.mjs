@@ -141,7 +141,7 @@ async function killPid(pid) {
 const TOOLS = [
   {
     "name": "debug_inspect_cdp",
-    "description": "Autonomous Chrome DevTools Protocol (CDP) Client. Connects to a running Node.js --inspect session (Node >= 22 required for the MCP server), pauses on the first application exception (including errors that a web framework catches and turns into HTTP 500), captures the callstack and evaluates heap variables, then resumes. Start listening BEFORE triggering the failing request.",
+    "description": "Autonomous Chrome DevTools Protocol (CDP) Client. Connects to a running Node.js --inspect session (Node >= 22 required for the MCP server), pauses on the first application exception (including errors that a web framework catches and turns into HTTP 500) or on a breakpoint, captures the callstack and evaluates heap variables, then resumes. Pass `trigger` (the command that reproduces the failure, e.g. one test) so the tool attaches first and then runs it: one call reproduces the bug and returns both the command output and the runtime state. Without `trigger`, the failing request must be sent while the tool is listening.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -151,6 +151,16 @@ const TOOLS = [
         "includeLibraryExceptions": { "type": "boolean", "description": "Also report exceptions thrown inside node_modules or Node internals (default: false; they are auto-resumed)." },
         "exceptionFilter": { "type": "string", "description": "Optional case-insensitive regex on the exception text; non-matching exceptions (e.g. ones a library throws and catches itself) are auto-resumed. Example: 'does not exist|violates|TypeError: Cannot'." },
         "targetFilter": { "type": "string", "description": "Optional substring of the inspect target title/url to attach to when several targets exist." },
+        "trigger": {
+          "type": "object",
+          "description": "Command that reproduces the failure (e.g. a single test). Started only after the debugger is attached and breakpoints are set, so one call reproduces the bug and captures the runtime state. Its exit code and output are returned in `trigger`.",
+          "properties": {
+            "command": { "type": "string", "description": "Shell command, e.g. 'node --test --test-name-pattern=TC_TB_DSP_04 tests/trustbase/trustbase.test.mjs'" },
+            "cwd": { "type": "string", "description": "Working directory for the command." },
+            "timeoutMs": { "type": "number", "description": "Kill the command after this many ms (default: timeoutMs)." }
+          },
+          "required": ["command"]
+        },
         "expressions": {
           "type": "array",
           "items": { "type": "string" },

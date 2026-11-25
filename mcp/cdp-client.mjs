@@ -14,7 +14,14 @@
  * - Requires Node.js >= 22 (global WebSocket).
  */
 
+import { spawn } from 'node:child_process';
+
 const PACKAGE_MANAGER_TARGET = /(npm-cli|npx-cli|pnpm|yarn)(\.c?js)?/i;
+
+function truncate(text, max = 3000) {
+  const s = String(text || '').trim();
+  return s.length <= max ? s : `${s.slice(0, max / 2)}\n... [truncated ${s.length - max} chars] ...\n${s.slice(-max / 2)}`;
+}
 
 function isLibraryOrInternalUrl(url) {
   return !url || url.startsWith('node:') || /[\\/]node_modules[\\/]/.test(url);
@@ -40,7 +47,8 @@ export async function runCdpInspection({
   exceptionFilter,
   targetFilter,
   expressions = [],
-  breakpoints = []
+  breakpoints = [],
+  trigger
 } = {}) {
   if (typeof WebSocket === 'undefined') {
     throw new Error(`debug_inspect_cdp requires Node.js >= 22 (global WebSocket). Current runtime: ${process.version}`);
@@ -101,7 +109,30 @@ export async function runCdpInspection({
       try { ws.close(); } catch {}
     };
 
-    const finish = (result) => {
+    // Optional trigger: a command that reproduces the failure, started only AFTER the debugger is attached
+    // and breakpoints are set, so a single tool call both reproduces the bug and captures its runtime state.
+    let triggerResult = null;
+    let triggerDone = null;
+    const runTrigger = () => {
+      const t = typeof trigger === 'string' ? { command: trigger } : trigger;
+      const started = Date.now();
+      let output = '';
+      const child = spawn(t.command, { cwd: t.cwd || process.cwd(), shell: true, env: process.env });
+      child.stdout.on('data', (d) => { output += d; });
+      child.stderr.on('data', (d) => { output += d; });
+      triggerDone = new Promise((res) => {
+        const killTimer = setTimeout(() => { try { child.kill(); } catch {} }, t.timeoutMs || timeoutMs);
+        child.on('exit', (code) => {
+          clearTimeout(killTimer);
+          triggerResult = { command: t.command, exitCode: code, durationMs: Date.now() - started, output: truncate(output) };
+          res();
+          // Trigger finished without hitting any pause: no need to wait for the full timeout.
+          if (!capturedPause) setTimeout(() => finish({ status: 'CLEAN_NO_EXCEPTION', message: 'Trigger finished without pausing at a breakpoint or application exception.' }), 1000);
+        });
+      });
+    };
+
+    const finish = async (result) => {
       if (settled) return;
       settled = true;
       // Guarantee the Node runtime is unpaused before disconnecting.
@@ -111,8 +142,11 @@ export async function runCdpInspection({
           send('Debugger.disable');
         }
       } catch {}
+      // Let the trigger complete after resuming so its output (e.g. the HTTP status the test saw) is part of the result.
+      if (triggerDone) await Promise.race([triggerDone, new Promise((r) => setTimeout(r, timeoutMs))]);
       setTimeout(cleanup, 100);
-      resolve({ target: { title: target.title, url: target.url }, skippedLibraryExceptions, skippedFilteredExceptions, ...(breakpointsResolved.length ? { breakpointsResolved } : {}), ...result });
+      resolve({ target: { title: target.title, url: target.url }, skippedLibraryExceptions, skippedFilteredExceptions,
+        ...(breakpointsResolved.length ? { breakpointsResolved } : {}), ...result, ...(triggerResult ? { trigger: triggerResult } : {}) });
     };
 
     const pausedResult = () => ({
@@ -161,6 +195,7 @@ export async function runCdpInspection({
           breakpointsResolved.push({ file: bp.file, line: bp.line, resolved: (r.result?.locations || []).length > 0 });
         }
       }
+      if (trigger) runTrigger();
     };
 
     ws.onmessage = (event) => {

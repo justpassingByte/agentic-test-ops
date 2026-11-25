@@ -1,6 +1,10 @@
 # Kịch bản quay video demo — Agentic TestOps trên TrustBase (~4 phút)
 
-**Câu chuyện của video:** công cụ của nhóm (MCP server, 9 tool) → chạy 1 ca kiểm thử thật trên TrustBase → ca đó FAIL (lỗi F-02, mức High) → dùng CDP bắt tận tay nguyên nhân trên RAM → báo cáo được xuất tự động.
+**Câu chuyện của video:** công cụ của nhóm (MCP server, 9 tool) → **AI agent tự** chạy 1 ca kiểm thử thật trên TrustBase → ca đó FAIL (lỗi F-02, mức High) → agent tự dùng CDP bắt tận tay nguyên nhân trên RAM → báo cáo được xuất tự động.
+
+**Hai cách quay cảnh chính:**
+- **Cách A (nên dùng): agent tự chạy.** Gõ 1 prompt vào Claude Code; AI tự chọn tool, tự soạn tham số, tự đọc mã nguồn và kết luận (cảnh 2A).
+- **Cách B (dự phòng): lệnh dựng sẵn.** `testcases/demo/*.json` và `scripts/demo-f02-cdp.mjs` chứa đúng các tham số agent đã dùng khi chạy thật ngày 24/11, để quay ổn định khi agent trả lời lệch (cảnh 2B, 3B).
 
 Mọi lệnh gõ trong **PowerShell**. Cần 3 cửa sổ terminal:
 
@@ -33,7 +37,8 @@ Mỗi khối lệnh dưới đây đã kèm sẵn `cd` tới đúng thư mục, 
    ```powershell
    cd C:\Users\NoNomt007\agentic-test-ops; & "C:\Program Files\Git\bin\bash.exe" testcases/reset-local-env.sh
    ```
-4. Mở sẵn: VS Code (cảnh 3 sẽ tự mở file TrustBase trong đó); Obsidian mở thư mục `knowledge/` làm vault; T3 tăng cỡ chữ, gõ `cls`.
+4. Mở sẵn: VS Code (cảnh 3B sẽ tự mở file TrustBase trong đó); Obsidian mở thư mục `knowledge/` làm vault; T3 tăng cỡ chữ, gõ `cls`.
+5. Cho cách A: mở Claude Code tại thư mục `C:\Users\NoNomt007\agentic-test-ops` (**mở mới sau khi pull code**, để MCP server nạp bản có tham số `trigger`). Gõ `/mcp` để kiểm tra `debug-controller` báo connected. Tập dượt prompt một lần; khi Claude Code hỏi quyền dùng tool `debug-controller`, chọn cho phép luôn để lúc quay không bị hỏi lại.
 
 ---
 
@@ -49,7 +54,29 @@ cd C:\Users\NoNomt007\agentic-test-ops; cls; node scripts/mcp-call.mjs --list
 
 ---
 
-## Cảnh 2 — Chạy 1 ca kiểm thử thật qua tool `debug_run_test` (0:30 – 1:15)
+## Cảnh 2A — Agent tự điều tra lỗi (cách A, cảnh chính, 0:30 – 2:30)
+
+Trong Claude Code (thư mục `agentic-test-ops`), dán prompt:
+
+> Dùng các tool của MCP server debug-controller để điều tra ca kiểm thử TC_TB_DSP_04 trong tests/trustbase/trustbase.test.mjs.
+> 1. Chạy riêng ca này bằng debug_run_test (dùng --test-name-pattern).
+> 2. Nếu ca fail, đọc mã nguồn backend TrustBase ở C:\Users\NoNomt007\Documents\trustbase\trustbase-project\api\src\modules\disputes để tìm câu lệnh quyết định đơn có được mở khiếu nại hay không.
+> 3. Gọi debug_inspect_cdp (cổng 9229) với breakpoint theo đoạn mã tại câu lệnh đó, các biến cần đọc, và trigger là lệnh chạy lại ca này.
+> 4. Kết luận nguyên nhân gốc: file, dòng và giá trị biến đọc được trên RAM.
+
+**Màn hình (agent tự làm, quay liên tục):**
+1. Gọi `debug_run_test` → ca FAIL, request mở khiếu nại trả `HTTP 201`.
+2. Đọc `disputes.service.ts`, tìm ra câu `if (!ALLOWED_OPEN_STATUSES.includes(orderStatus))`.
+3. Gọi `debug_inspect_cdp` với `breakpoints: [{ match: ... }]` và `trigger`. **Một lời gọi:** tool gắn debugger, chạy lại ca test, dừng tại câu đó, đọc `order.status = "awaiting_payment"`, `orderStatus = "CHO_CK"`, rồi cho chạy tiếp.
+4. Kết luận: `awaiting_payment` bị ánh xạ thành `CHO_CK` trong `postgres-backbone.adapter.ts`, mà `CHO_CK` nằm trong danh sách được phép khiếu nại.
+
+**Lời thoại:** "Tôi chỉ đưa mục tiêu. Agent tự chọn công cụ, tự soạn tham số, tự đọc mã nguồn, tự đặt breakpoint và tự kết luận. Công cụ của nhóm là tay và mắt của agent: chạy test, gắn debugger, đọc biến trên RAM."
+
+Lưu ý: câu chữ agent trả lời mỗi lần mỗi khác; tập dượt vài lần và giữ bản đẹp nhất. Nếu agent đi lệch, quay cách B bên dưới.
+
+---
+
+## Cảnh 2B — Chạy 1 ca kiểm thử thật qua tool `debug_run_test` (cách B, 0:30 – 1:15)
 
 Chạy ở **T3**:
 ```powershell
@@ -65,7 +92,13 @@ Mở `testcases/results/latest.json` trong VS Code, chỉ vào trường `actual
 
 ---
 
-## Cảnh 3 — CDP bắt tận tay nguyên nhân trên RAM (1:15 – 2:30)
+## Cảnh 3B — CDP bắt tận tay nguyên nhân trên RAM (cách B, 1:15 – 2:30)
+
+Muốn quay bản gọn **một lệnh** (giống điều agent làm ở cảnh 2A: tool tự chạy lại ca test qua `trigger`), chạy ở T3:
+```powershell
+cd C:\Users\NoNomt007\agentic-test-ops; cls; node scripts/mcp-call.mjs debug_inspect_cdp '@testcases/demo/f02-trigger.json'
+```
+Kết quả là một JSON có `status: "PAUSED"`, `evaluatedVariables` (giá trị trên RAM) và `trigger.output` (ca test FAIL với HTTP 201). Hoặc dùng script dưới đây: in từng bước dễ đọc hơn và tự mở VS Code.
 
 Trước cảnh này (cắt khỏi video) chạy lại bước 0.3 để xóa bộ đếm rate limit đăng nhập. Script tự nạp thêm mã vào kho nếu cảnh 2 đã dùng hết.
 
@@ -112,22 +145,13 @@ Mở `README.md`, mục **8.0 Kết quả thực nghiệm thật**.
 
 ---
 
-## Cảnh phụ (tùy chọn) — AI tự gọi tool
-
-Trong Claude Code, mở tại repo (đã nạp `debug-controller` từ `.mcp.json`), gõ:
-
-> Dùng tool debug_run_test chạy ca TC_TB_CAT_01 trong tests/trustbase/trustbase.test.mjs (dùng --test-name-pattern) và giải thích vì sao ca này fail.
-
-Quay cảnh AI gọi tool `debug_run_test`, đọc kết quả và giải thích: tham số `sort` bị bỏ qua khi có từ khóa (lỗi F-01).
-
----
-
 ## Nếu có sự cố khi quay
 
 | Triệu chứng | Cách xử lý |
 |---|---|
 | API log báo `ECONNREFUSED ...:6379` / `5432`, hoặc lệnh treo không ra gì | WSL đã tự tắt nên mất cổng: kiểm tra Terminal 1 (bước 0.1) còn chạy; nếu vẫn `False` thì `wsl -e docker restart trustbase-postgres trustbase-redis`, sau đó tắt và bật lại API |
 | Tạo đơn bị `429 RATE_LIMIT_EXCEEDED` hoặc `LISTING_SOLD_OUT` | Chạy lại bước 0.3 (reset môi trường) |
+| Agent trả lời lệch hoặc không gọi đúng tool | Gõ thêm một câu nhắc ("gọi debug_inspect_cdp với trigger"), hoặc chuyển sang cách B |
 | `debug_inspect_cdp` báo không tìm thấy target 9229 | API phải chạy bằng lệnh `tsx --inspect=...` ở bước 0.2, không dùng `pnpm dev` |
 | Không quay được TrustBase | Dùng kết quả đã lưu: `testcases/results/run7-final.json`, `testcases/cdp-dsp04-breakpoint.json` |
 

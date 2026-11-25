@@ -1,0 +1,14 @@
+{
+  "inspectPort": 9229,
+  "timeoutMs": 60000,
+  "pauseOnExceptions": "none",
+  "breakpoints": [
+    { "file": "disputes/disputes.service.ts", "match": "ALLOWED_OPEN_STATUSES.includes(orderStatus)" }
+  ],
+  "expressions": ["order && order.status", "orderStatus", "ALLOWED_OPEN_STATUSES", "input.category"],
+  "trigger": {
+    "command": "node --test --test-name-pattern=TC_TB_DSP_04 tests/trustbase/trustbase.test.mjs",
+    "cwd": "C:/Users/NoNomt007/agentic-test-ops",
+    "timeoutMs": 60000
+  }
+}

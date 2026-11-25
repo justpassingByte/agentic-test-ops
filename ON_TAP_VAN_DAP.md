@@ -71,6 +71,7 @@ Playwright chỉ thấy `201 SUCCESS`. CDP dừng tại đúng câu lệnh `ALLO
 3. Chỉ dừng ở exception **đầu tiên**, dễ dính nhiễu (thư viện JWT tự ném rồi tự bắt) → thêm `exceptionFilter`.
 4. `tsx` biên dịch file thành 2 dòng nên breakpoint theo dòng TypeScript không gắn được → thêm **breakpoint theo đoạn mã** (`match`).
 5. URL frame rỗng với ES module → tra theo `scriptId`.
+6. Agent gọi tool lần lượt, nên không thể vừa nghe CDP vừa gửi request lỗi → thêm tham số **`trigger`**: tool gắn breakpoint xong mới tự chạy lệnh tái hiện (ví dụ 1 ca test). **Một lời gọi** trả về cả output của lệnh lẫn giá trị trên RAM, nên agent tự điều tra trọn vẹn được.
 
 Khi pause, toàn bộ event loop dừng vài chục ms; chỉ dùng ở môi trường test, bind `127.0.0.1`.
 
@@ -106,7 +107,6 @@ Verification = làm đúng theo đặc tả (review, unit, integration, system t
 **Q12. Hạn chế và hướng phát triển?**
 - Chưa đo coverage/mutation; chưa có vector RAG.
 - CDP chỉ dùng cho Node/V8; mở rộng bằng Debug Adapter Protocol (debugpy, delve...) cho ngôn ngữ khác.
-- Gộp "nghe CDP + phát lại request" thành một tool để việc tương quan diễn ra trong code thay vì phụ thuộc LLM.
 - CI chưa chạy được SUT TrustBase (cần hạ tầng riêng); CI hiện kiểm chính công cụ.
 
 ---

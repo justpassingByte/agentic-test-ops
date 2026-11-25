@@ -114,6 +114,25 @@ test('debug_inspect_cdp source-text breakpoint works without line numbers', asyn
   assert.deepEqual(r.evaluatedVariables.allowed.value, ['paid']);
 });
 
+test('debug_inspect_cdp trigger: attaches first, runs the reproduction command, returns its output and the RAM values', () => {
+  const r = mcp('debug_inspect_cdp', { inspectPort: 9461, timeoutMs: 15000, pauseOnExceptions: 'none',
+    breakpoints: [{ file: 'sut.mjs', match: 'allowed.includes(' }], expressions: ['allowed', 'order.isNegotiated'],
+    trigger: { command: `node -e "fetch('http://127.0.0.1:4961/').then(r => console.log('HTTP ' + r.status))"` } });
+  assert.equal(r.status, 'PAUSED');
+  assert.deepEqual(r.evaluatedVariables.allowed.value, ['paid']);
+  assert.equal(r.trigger.exitCode, 0);
+  assert.match(r.trigger.output, /HTTP 500/);
+});
+
+test('debug_inspect_cdp trigger that never reaches the breakpoint ends early as CLEAN', () => {
+  const t0 = Date.now();
+  const r = mcp('debug_inspect_cdp', { inspectPort: 9461, timeoutMs: 15000, pauseOnExceptions: 'none',
+    breakpoints: [{ file: 'sut.mjs', match: 'allowed.includes(' }], trigger: { command: 'node -e "process.exit(3)"' } });
+  assert.equal(r.status, 'CLEAN_NO_EXCEPTION');
+  assert.equal(r.trigger.exitCode, 3);
+  assert.ok(Date.now() - t0 < 10000, 'did not end early');
+});
+
 test('debug_inspect_cdp refuses a package-manager process holding the inspect port', async () => {
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   start(npm, ['run', 'dev'], { shell: process.platform === 'win32', env: { ...process.env, PORT: '4962', NODE_OPTIONS: '--inspect=127.0.0.1:9462' } });
