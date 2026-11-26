@@ -123,8 +123,25 @@ function pickTarget(targets, targetFilter) {
   return targets.find(t => !PACKAGE_MANAGER_TARGET.test(`${t.title} ${t.url}`)) || null;
 }
 
+/** Find the first Node inspector in 9229-9240 that belongs to an application (not npm/pnpm/yarn). */
+async function discoverInspectPort() {
+  const ports = Array.from({ length: 12 }, (_, i) => 9229 + i);
+  const found = await Promise.all(ports.map(async (port) => {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(800) });
+      const targets = await res.json();
+      const app = Array.isArray(targets) ? targets.find(t => !PACKAGE_MANAGER_TARGET.test(`${t.title} ${t.url}`)) : null;
+      return app ? { port, title: app.title || app.url } : null;
+    } catch { return null; }
+  }));
+  const hits = found.filter(Boolean);
+  if (hits.length === 0) throw new Error('No Node inspector found on ports 9229-9240. Start the backend with --inspect=127.0.0.1:<port> on the final node/tsx command, or pass inspectPort.');
+  if (hits.length > 1) throw new Error(`Several Node inspectors are running: ${hits.map(h => `${h.port} (${h.title})`).join(', ')}. Pass inspectPort for the backend to inspect (debug_status shows which app port each one serves).`);
+  return hits[0].port;
+}
+
 export async function runCdpInspection({
-  inspectPort = 9229,
+  inspectPort,
   timeoutMs = 15000,
   pauseOnExceptions = 'all',
   includeLibraryExceptions = false,
@@ -137,6 +154,9 @@ export async function runCdpInspection({
   if (typeof WebSocket === 'undefined') {
     throw new Error(`debug_inspect_cdp requires Node.js >= 22 (global WebSocket). Current runtime: ${process.version}`);
   }
+
+  // 0. No port given: discover the application's inspector instead of assuming 9229.
+  if (!inspectPort) inspectPort = await discoverInspectPort();
 
   // 1. Query Node inspect target list
   const listRes = await fetch(`http://127.0.0.1:${inspectPort}/json/list`);

@@ -145,7 +145,7 @@ const TOOLS = [
     "inputSchema": {
       "type": "object",
       "properties": {
-        "inspectPort": { "type": "number", "description": "Node inspect port (default: 9229)" },
+        "inspectPort": { "type": "number", "description": "Node inspect port. Omit to auto-detect the application's inspector on 9229-9240 (debug_status shows which app port it serves)." },
         "timeoutMs": { "type": "number", "description": "Inspection timeout in ms (default: 15000)" },
         "pauseOnExceptions": { "type": "string", "enum": ["all", "uncaught", "none"], "description": "Pause mode (default: 'all'). Use 'all' for HTTP 500s handled by Express/NestJS/Fastify; 'uncaught' only sees crashes and unhandled rejections." },
         "includeLibraryExceptions": { "type": "boolean", "description": "Also report exceptions thrown inside node_modules or Node internals (default: false; they are auto-resumed)." },
@@ -338,14 +338,14 @@ const TOOLS = [
   },
   {
     name: 'debug_status',
-    description: 'Scan active application and inspect ports, returning status and process IDs (PID).',
+    description: 'Scan app ports and Node inspector ports (9229-9240 by default). Inspectors are identified over HTTP (/json/list) and linked to the app port served by the same process, e.g. "API on 4201 -> inspector 9237": use that port for debug_inspect_cdp. Call this first to find where a running backend can be inspected instead of guessing or restarting it.',
     inputSchema: {
       type: 'object',
       properties: {
         ports: {
           type: 'array',
           items: { type: 'number' },
-          description: 'Optional list of ports to scan. Default scans: [3000, 4200, 4201, 4203, 5173, 8080, 9229, 9230, 9231]'
+          description: 'Optional list of ports to scan. Default: app ports [3000, 4200, 4201, 4203, 5173, 8080] and inspector ports 9229-9240.'
         }
       }
     }
@@ -404,7 +404,7 @@ const TOOLS = [
   },
   {
     name: 'debug_browser_run',
-    description: 'Execute an end-to-end browser scenario via Playwright to reproduce bugs, capture console errors, detect failed API network requests (4xx/5xx), and take failure screenshots. Supports Headless (fast) or Headed (visual demonstration).',
+    description: 'Execute an end-to-end browser scenario via Playwright to reproduce bugs: returns console errors, failed requests (4xx/5xx), every fetch/XHR API request the page sent with its status (apiRequests), and screenshots (open screenshotPath to see what the user sees). Supports Headless (fast) or Headed (visual demonstration).',
     inputSchema: {
       type: 'object',
       required: ['url'],
@@ -443,20 +443,54 @@ async function handleToolCall(name, args) {
     case 'debug_export_overnight_report': return exportOvernightSweepReport(args, import.meta.dirname);
     case 'debug_export_rag_report': return exportRagReport(args, import.meta.dirname);
     case 'debug_status': {
-      const portsToScan = args.ports?.length ? args.ports : [3000, 4200, 4201, 4203, 5173, 8080, 9229, 9230, 9231];
+      const isInspectRange = (p) => p >= 9220 && p <= 9240;
+      const portsToScan = args.ports?.length ? args.ports
+        : [3000, 4200, 4201, 4203, 5173, 8080, ...Array.from({ length: 12 }, (_, i) => 9229 + i)];
+      // Inspector ports answer GET /json/list; probe them over HTTP in parallel (fast, no netstat per port).
+      const probe = async (port) => {
+        try {
+          const res = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(800) });
+          const targets = await res.json();
+          return Array.isArray(targets) ? targets : null;
+        } catch { return null; }
+      };
+      // Explicitly requested ports are all probed (an inspector can use any port); defaults split by range.
+      const probed = (await Promise.all((args.ports?.length ? portsToScan : portsToScan.filter(isInspectRange))
+        .map(async (port) => ({ port, targets: await probe(port) })))).filter(x => x.targets || isInspectRange(x.port));
+      const inspectPorts = probed.map(x => x.port);
+      const appPorts = portsToScan.filter(p => !inspectPorts.includes(p));
       const results = [];
-      for (const p of portsToScan) {
+      for (const p of appPorts) {
         const pids = await findProcessOnPort(p);
-        results.push({
-          port: p,
-          type: p >= 9220 && p <= 9240 ? 'inspect-port' : 'app-port',
-          status: pids.length > 0 ? 'OCCUPIED' : 'FREE',
-          pids
+        results.push({ port: p, type: 'app-port', status: pids.length > 0 ? 'OCCUPIED' : 'FREE', pids });
+      }
+      const inspectors = [];
+      for (const { port, targets } of probed) {
+        if (!targets) { results.push({ port, type: 'inspect-port', status: 'FREE', pids: [] }); continue; }
+        const pids = await findProcessOnPort(port);
+        results.push({ port, type: 'inspect-port', status: 'OCCUPIED', pids });
+        const t = targets[0] || {};
+        const label = `${t.title || ''} ${t.url || ''}`;
+        const servesAppPorts = results.filter(r => r.type === 'app-port' && r.pids.some(pid => pids.includes(pid))).map(r => r.port);
+        inspectors.push({
+          inspectPort: port,
+          pid: pids[0] ?? null,
+          title: t.title || t.url || '',
+          attachable: Boolean(t.webSocketDebuggerUrl),
+          packageManager: /(npm-cli|npx-cli|pnpm|yarn)/i.test(label),
+          servesAppPorts
         });
       }
+      const hints = inspectors.map(i =>
+        i.packageManager ? `Inspector ${i.inspectPort} belongs to a package manager (${i.title}), not the app: not usable for debug_inspect_cdp.`
+        : !i.attachable ? `Inspector ${i.inspectPort} (${i.title}) already has a debugger attached (e.g. VS Code): detach it before debug_inspect_cdp.`
+        : i.servesAppPorts.length ? `App on port ${i.servesAppPorts.join(', ')} (${i.title}) -> debug_inspect_cdp inspectPort ${i.inspectPort}.`
+        : `Inspector ${i.inspectPort} (${i.title}) is available for debug_inspect_cdp.`);
       return {
-        summary: `Scanned ${results.length} ports. ${results.filter(r => r.status === 'OCCUPIED').length} ports occupied.`,
-        ports: results,
+        summary: `Scanned ${results.length} ports. ${results.filter(r => r.status === 'OCCUPIED').length} ports occupied, ${inspectors.length} Node inspector(s) found.`,
+        inspectors,
+        hints,
+        ports: results.filter(r => r.status === 'OCCUPIED' || r.type === 'app-port'),
         activeTrackedServers: Array.from(activeServers.entries()).map(([k, v]) => ({
           app: k,
           pid: v.pid,
@@ -614,6 +648,7 @@ async function handleToolCall(name, args) {
       const consoleErrors = [];
       const pageErrors = [];
       const failedRequests = [];
+      const apiRequests = [];   // every fetch/XHR the page sent, incl. 2xx: a wrong result with HTTP 200 is still a bug
       let screenshotPath = null;
       let finalUrl = args.url;
       let actionCount = 0;
@@ -661,6 +696,10 @@ async function handleToolCall(name, args) {
         // Listen for HTTP failures
         page.on('response', (resp) => {
           const status = resp.status();
+          const type = resp.request().resourceType();
+          if ((type === 'fetch' || type === 'xhr') && apiRequests.length < 40) {
+            apiRequests.push({ method: resp.request().method(), url: resp.url(), status });
+          }
           if (status >= 400) {
             failedRequests.push({
               url: resp.url(),
@@ -724,7 +763,8 @@ async function handleToolCall(name, args) {
           consoleErrors,
           pageErrors,
           failedRequests,
-          screenshotPath: screenshotPath ? path.relative(process.cwd(), screenshotPath) : null,
+          apiRequests,
+          screenshotPath: screenshotPath || null,   // absolute: the caller may run in another project folder
           summary: isFailure
             ? `Browser scenario encountered: ${consoleErrors.length} console warning/error(s), ${pageErrors.length} page exception(s), ${failedRequests.length} failed HTTP request(s).`
             : `Browser scenario completed successfully across ${actionCount} action(s). 0 console errors, 0 failed HTTP requests.`
@@ -750,7 +790,8 @@ async function handleToolCall(name, args) {
           consoleErrors,
           pageErrors,
           failedRequests,
-          screenshotPath: screenshotPath ? path.relative(process.cwd(), screenshotPath) : null,
+          apiRequests,
+          screenshotPath: screenshotPath || null,   // absolute: the caller may run in another project folder
           summary: `Browser execution crashed: ${runErr.message}`
         };
       } finally {

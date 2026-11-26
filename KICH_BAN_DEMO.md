@@ -6,7 +6,7 @@
 3. **Human-in-the-loop:** lập trình viên mở đúng dòng agent chỉ ra, tự gắn debugger VS Code vào server đang chạy để xác minh.
 4. Show báo cáo và kết quả tổng 30 ca.
 
-> **Đã chạy thử ngày 25/11:** cảnh 4 (VS Code dừng ở dòng 414) và lệnh CDP dựng sẵn `f01-cdp.json` (dừng ở dòng 414, đọc được `opts.q`, `opts.sort`). **Chưa tập:** agent tự chạy cả cảnh 2 + 3 từ prompt ngắn. Phải tập ít nhất một lượt trước khi quay. Những chỗ dễ trục trặc ghi ở Phụ lục B.
+> **Đã chạy thử ngày 25/11:** cảnh 4 (VS Code dừng ở dòng 414) và lệnh CDP dựng sẵn `f01-cdp.json` (dừng ở dòng 414, đọc được `opts.q`, `opts.sort`). **Chưa tập:** agent tự chạy cả cảnh 2 + 3 bằng `/debug-rca` (skill và tool đã sửa ngày 26/11, mới qua self-test, chưa chạy với TrustBase). Phải tập ít nhất một lượt trước khi quay. Những chỗ dễ trục trặc ghi ở Phụ lục B.
 
 Vì sao chọn F-01: đây là lỗi **người dùng nhìn thấy bằng mắt** nhưng **không có lỗi HTTP nào** (server trả 200), nên test API thông thường hay Postman sẽ bỏ sót. Phải có trình duyệt để thấy triệu chứng và CDP để thấy nguyên nhân, đúng tinh thần "Browser Trace + Source Trace" của đề tài.
 
@@ -49,7 +49,12 @@ cd C:\Users\NoNomt007\agentic-test-ops; & "C:\Program Files\Git\bin\bash.exe" te
 ```powershell
 cd C:\Users\NoNomt007\Documents\trustbase\trustbase-project; claude
 ```
-Gõ `/mcp` để thấy `debug-controller` báo connected. Khi được hỏi quyền dùng tool thì chọn cho phép luôn, để lúc quay không bị hỏi lại.
+Gõ `/mcp` để thấy `debug-controller` báo connected, gõ `/` để thấy skill `debug-rca`. Khi được hỏi quyền dùng tool thì chọn cho phép luôn, để lúc quay không bị hỏi lại.
+
+Nếu skill trong repo vừa sửa, chép lại bản global trước khi mở Claude Code:
+```powershell
+Copy-Item -Recurse -Force C:\Users\NoNomt007\agentic-test-ops\skills\debug-rca $env:USERPROFILE\.claude\skills\
+```
 
 Mở sẵn: **VS Code tại thư mục TrustBase** (`C:\Users\NoNomt007\Documents\trustbase\trustbase-project`) cho cảnh 4; Obsidian với thư mục `C:\Users\NoNomt007\agentic-test-ops\knowledge` làm vault cho cảnh 5. Gõ `cls` ở các terminal cho khung hình sạch.
 
@@ -89,14 +94,25 @@ Mở sẵn: **VS Code tại thư mục TrustBase** (`C:\Users\NoNomt007\Document
 
 Dán vào Claude Code (T4):
 
-> Bộ hồi quy báo ca TC_TB_CAT_01 fail: tìm "windows" trên marketplace và chọn sắp xếp giá tăng dần nhưng giá hiện lộn xộn. Dùng các tool debug-controller: mở trang http://localhost:4200/vi/marketplace?q=windows&sort=price_asc trên trình duyệt có hiện cửa sổ để xác nhận triệu chứng, rồi tìm nguyên nhân gốc trong backend (API cổng 4201, debugger cổng 9237), có bằng chứng giá trị biến đọc trên RAM. Chỉ điều tra: không sửa code, không khởi động lại server.
+> /debug-rca Ca TC_TB_CAT_01 fail: trang http://localhost:4200/vi/marketplace?q=windows&sort=price_asc chọn giá tăng dần nhưng giá hiện lộn xộn.
 
-Prompt chỉ nêu mục tiêu và những gì agent không tự đoán được (trang nào, cổng nào, yêu cầu có bằng chứng trên RAM). Câu cuối là bắt buộc: lần tập ngày 26/11 agent không đặt được breakpoint (lỗi tool, đã sửa) nên tự chèn code ném lỗi vào `listings.repo.ts` rồi khởi động lại API. Chọn tool, đặt breakpoint ở đâu, đọc biến nào là agent tự quyết; cách dùng `breakpoints` theo đoạn mã và `trigger` nó đọc từ mô tả của tool.
+Prompt chỉ là **báo lỗi như tester ghi trong bug report** (ca nào, trang nào, thấy gì). Cách điều tra nằm trong skill `/debug-rca` (đã cài global ở `~/.claude/skills/debug-rca`):
+
+| Bước trong skill | Agent tự làm |
+|---|---|
+| Check Services | `debug_status` → tự thấy "App on port 4201 → inspectPort 9237", dùng server đang chạy, không bật lại |
+| Browser Trace | `debug_browser_run` có hiện cửa sổ, chụp ảnh, liệt kê request API trang đã gửi kèm mã HTTP |
+| Source Trace | đọc code xử lý request đó, đặt breakpoint theo dòng trong editor, `trigger` gửi lại request, đọc biến trên RAM |
+| Quy tắc | chỉ điều tra: không sửa code, không khởi động lại server; báo cáo nguyên nhân + đề xuất sửa, **chỉ sửa khi được yêu cầu** |
+
+Không cần ghi cổng: 9229 và 9237 chỉ là số cổng debugger, chức năng như nhau. Demo dùng 9237 vì cấu hình VS Code có sẵn của TrustBase trỏ cổng đó; agent tự tìm ra qua `debug_status`.
+
+Trước khi quay: **thoát hẳn Claude Code ở T4 rồi mở lại** để nạp skill và tool mới. Gõ `/` phải thấy `debug-rca`.
 
 **Cảnh 2: Browser Trace (hộp đen).** Agent gọi `debug_browser_run` với `headless: false`:
 - **Chrome bật lên trên màn hình**, mở trang tìm "windows", sắp xếp giá tăng dần;
 - người xem **thấy giá lộn xộn** bằng mắt;
-- tool trả về ảnh chụp và request giao diện đã gửi `GET /catalog/listings?q=windows&sort=price_asc` → **200**. Không có lỗi HTTP nào.
+- tool trả về ảnh chụp và `apiRequests`: giao diện đã gửi `GET /catalog/listings?q=windows&sort=price_asc...` → **200**. Không có lỗi HTTP nào.
 
 → *Kết luận của tầng này:* giao diện gửi đúng tham số, server báo thành công, nhưng thứ tự sai, tức là lỗi nằm trong backend.
 
@@ -111,7 +127,7 @@ Prompt chỉ nêu mục tiêu và những gì agent không tự đoán được 
 - Agent đọc ra `opts.q` rỗng (dừng nhầm vào một danh sách khác trang tự tải): *"Dùng trigger gọi thẳng API /catalog/listings?q=windows&sort=price_asc."*
 - Muốn agent mở dòng code: *"Mở dòng đó trong VS Code bằng node C:\Users\NoNomt007\agentic-test-ops\scripts\open-in-vscode.mjs <file> \"<đoạn mã>\"."*
 
-**Lời thoại:** "Trình duyệt thấy triệu chứng: giao diện gửi đúng tham số sắp xếp, server trả 200, nhưng giá lộn xộn. Không có lỗi HTTP nào nên test API thông thường bỏ sót. CDP vào bên trong backend: server có nhận `sort = price_asc`, nhưng code hễ có từ khóa là bỏ qua tham số này. Trình duyệt trả lời *lỗi gì*, CDP trả lời *vì sao*: đó là Dual Trace. Tôi chỉ đưa mục tiêu; chọn công cụ, đặt breakpoint, đọc biến nào là agent tự quyết."
+**Lời thoại:** "Tôi chỉ dán bug report và gọi skill debug-rca. Agent tự tìm server đang chạy và cổng debugger, mở trình duyệt thấy triệu chứng: giao diện gửi đúng tham số sắp xếp, server trả 200, nhưng giá lộn xộn. Không có lỗi HTTP nào nên test API thông thường bỏ sót. CDP vào bên trong backend: server có nhận `sort = price_asc`, nhưng code hễ có từ khóa là bỏ qua tham số này. Trình duyệt trả lời *lỗi gì*, CDP trả lời *vì sao*: đó là Dual Trace."
 
 Quay vài lần, giữ bản đẹp nhất; giữa hai lần chạy lại lệnh reset ở T3. Nếu agent đi lệch nhiều lần, dùng prompt từng bước ở Phụ lục A.
 
@@ -243,5 +259,6 @@ Trong PowerShell, tham số `'@testcases/...'` phải có nháy đơn (`@` đứ
 | API log báo `ECONNREFUSED ...:6379` / `5432`, hoặc lệnh treo không ra gì | WSL đã tự tắt: kiểm tra T1 còn chạy; nếu vẫn lỗi thì `wsl -e docker restart trustbase-postgres trustbase-redis`, rồi tắt và bật lại API ở T2 |
 | Bị `429 RATE_LIMIT_EXCEEDED` | Chạy lại lệnh reset ở T3 |
 | `debug_inspect_cdp` báo không tìm thấy target 9237 | API phải chạy bằng lệnh `tsx --inspect=...` ở T2, không dùng `pnpm dev` |
+| Gõ `/` không thấy `debug-rca` | Skill chưa cài hoặc Claude Code chưa mở lại: chạy lệnh chép skill ở mục 1 (phần T4) rồi mở lại Claude Code |
 | `/mcp` không thấy `debug-controller` | Thoát hẳn Claude Code rồi mở lại; chạy `claude mcp list` để kiểm tra |
 | Không chạy được TrustBase | Show kết quả đã lưu: `testcases/results/run7-final.json` (ca `TC_TB_CAT_01`) và `knowledge/F-01-*.md` |

@@ -114,6 +114,15 @@ test('debug_inspect_cdp source-text breakpoint works without line numbers', asyn
   assert.deepEqual(r.evaluatedVariables.allowed.value, ['paid']);
 });
 
+test('debug_status finds the Node inspector and links it to the app port it serves', () => {
+  const r = mcp('debug_status', { ports: [4961, 9461] });
+  const insp = r.inspectors.find(i => i.inspectPort === 9461);
+  assert.ok(insp, 'inspector 9461 not detected');
+  assert.deepEqual(insp.servesAppPorts, [4961]);
+  assert.equal(insp.packageManager, false);
+  assert.ok(r.hints.some(h => /4961 .*inspectPort 9461/.test(h)), JSON.stringify(r.hints));
+});
+
 test('debug_inspect_cdp source-text breakpoint without "file" searches every application script', async () => {
   const pending = mcpAsync('debug_inspect_cdp', { inspectPort: 9461, timeoutMs: 8000, pauseOnExceptions: 'none',
     breakpoints: [{ match: 'allowed.includes(' }], expressions: ['allowed'] });
@@ -192,7 +201,8 @@ test('debug_browser_run reports HTTP failures and console errors with a screensh
   assert.equal(r.status, 'FAILED');
   assert.ok(r.failedRequests.some((f) => f.status === 500), 'HTTP 500 not captured');
   assert.ok(r.consoleErrors.some((c) => /boom/.test(c.text)), 'console.error not captured');
-  assert.ok(r.screenshotPath);
+  assert.ok(r.apiRequests.some((q) => q.url.endsWith('/api') && q.status === 500), 'fetch request not listed in apiRequests');
+  assert.ok(r.screenshotPath && path.isAbsolute(r.screenshotPath));
   fs.rmSync(path.resolve(r.screenshotPath), { force: true });
 });
 
