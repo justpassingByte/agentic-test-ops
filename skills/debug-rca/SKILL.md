@@ -1,4 +1,4 @@
-﻿---
+---
 name: debug-rca
 description: "Root Cause Analysis (RCA) & Full-Stack E2E Debugging Framework. Combines backend Node inspect debugging with Playwright browser automation to systematically isolate, reproduce, and verify frontend & API bugs."
 user-invocable: true
@@ -29,8 +29,8 @@ Do not jump straight into modifying code based on assumptions. Premature fixes i
 2. Determine blast radius: Which routes, components, or API endpoints are broken?
 
 ### Phase 2: Evidence Collection (Browser + Backend Correlation)
-1. **Launch Services**:
-   Call `debug_start_server` to spin up the API (e.g. port 4201, inspect 9230) and Frontend (e.g. port 4200, inspect 9229).
+1. **Check Services**:
+   Call `debug_status` first. If the API and frontend are already running (and the API exposes an inspect port), use them as they are. Only when nothing is running, call `debug_start_server` with a direct `node`/`tsx` command and `--inspect` on the API.
 2. **Reproduce via Playwright**:
    Call `debug_browser_run` with the target URL and simulated actions (click, fill form).
    - Set `"headless": false` if performing a live demonstration.
