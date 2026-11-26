@@ -38,8 +38,11 @@ Do not jump straight into modifying code based on assumptions. Premature fixes i
      - `consoleErrors`: JavaScript runtime errors, React lifecycle crashes.
      - `failedRequests`: HTTP 4xx/5xx status codes, request URLs, and response bodies.
      - `screenshotPath`: Visual evidence saved to `screenshots/`.
-3. **Cross-reference with Backend**:
-   Compare the failing HTTP request timestamp with backend logs.
+3. **Cross-reference with Backend (Source Trace)**:
+   Call `debug_inspect_cdp` on the backend's inspect port with a breakpoint at the suspected code and the variables to read in `expressions`; pass the reproducing request as `trigger` so one call reproduces the bug and returns the runtime values.
+   - Breakpoints: `{ "file": "listings/listings.repo.ts", "line": 414 }` uses the line shown in the editor (source maps handle tsx/ts-node). If `resolved` is false, read `reason` and `hint` and adjust.
+   - Use `pauseOnExceptions: "all"` for HTTP 500s (framework-handled errors are caught exceptions), `"none"` when only breakpoints matter.
+   - **Evidence collection is read-only**: do not edit application code or restart a server that is already running to obtain evidence. If the tool cannot bind, report what it returned.
 
 ### Phase 3: Hypothesis Formation & Isolation
 1. Form 2-3 competing hypotheses (e.g. Frontend missing required payload field vs Backend validation schema rejected enum vs DB constraint violated).
@@ -58,6 +61,7 @@ Do not jump straight into modifying code based on assumptions. Premature fixes i
 
 The plugin exposes the `debug-controller` MCP server:
 - `debug_browser_run`: Full-stack browser scenario runner (Playwright) capturing console, network, and screenshots.
+- `debug_inspect_cdp`: Attach to a running Node `--inspect` process, pause at a breakpoint or application exception, and read live variables from RAM.
 - `debug_status`: Check active dev & inspect ports (`3000, 4200, 4201, 9229, 9230`).
 - `debug_kill_ports`: Automatically resolve `EADDRINUSE` port collisions.
 - `debug_start_server`: Launch application with `--inspect` enabled.

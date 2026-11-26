@@ -6,7 +6,7 @@
 3. **Human-in-the-loop:** lập trình viên mở đúng dòng agent chỉ ra, tự gắn debugger VS Code vào server đang chạy để xác minh.
 4. Show báo cáo và kết quả tổng 30 ca.
 
-> ⚠️ **Toàn bộ flow F-01 (trình duyệt, CDP, debugger VS Code) CHƯA được chạy thử.** Phải tập ít nhất một lượt trước khi quay. Những chỗ dễ trục trặc ghi ở Phụ lục B.
+> **Đã chạy thử ngày 25/11:** cảnh 4 (VS Code dừng ở dòng 414) và lệnh CDP dựng sẵn `f01-cdp.json` (dừng ở dòng 414, đọc được `opts.q`, `opts.sort`). **Chưa tập:** agent tự chạy cả cảnh 2 + 3 từ prompt ngắn. Phải tập ít nhất một lượt trước khi quay. Những chỗ dễ trục trặc ghi ở Phụ lục B.
 
 Vì sao chọn F-01: đây là lỗi **người dùng nhìn thấy bằng mắt** nhưng **không có lỗi HTTP nào** (server trả 200), nên test API thông thường hay Postman sẽ bỏ sót. Phải có trình duyệt để thấy triệu chứng và CDP để thấy nguyên nhân, đúng tinh thần "Browser Trace + Source Trace" của đề tài.
 
@@ -28,15 +28,17 @@ Mở 4 cửa sổ PowerShell:
 wsl -e sh -c "docker start trustbase-postgres trustbase-redis; sleep infinity"
 ```
 
-**T2**: bật **sau** T1, đợi khoảng **90 giây** tới khi `http://localhost:4201/health` trả 200:
+**T2**: bật **sau** T1, đợi khoảng **90 giây** tới khi `http://localhost:4201/health` trả 200. Dán **cả dòng**: phần `cd ...\api;` là bắt buộc, chạy ở thư mục gốc sẽ báo `Cannot resolve tsconfig`:
 ```powershell
-cd C:\Users\NoNomt007\Documents\trustbase\trustbase-project\api; npx tsx --inspect=127.0.0.1:9229 --tsconfig tsconfig.json src/main.ts
+cd C:\Users\NoNomt007\Documents\trustbase\trustbase-project\api; npx tsx --inspect=127.0.0.1:9237 --tsconfig tsconfig.json src/main.ts
 ```
+Cổng debugger là **9237** để khớp cấu hình "🐛 API: Attach to Process" có sẵn trong `.vscode/launch.json` của TrustBase.
 
-**Customer web (cổng 4200)**: bật trong một cửa sổ nữa (hoặc như bạn vẫn bật):
+**Customer web (cổng 4200)**: bật bằng `pnpm dev` **thường** trong một cửa sổ nữa. Không bật bằng task debug của VS Code: task đó gắn `--inspect` làm pnpm chiếm cổng 9229/9230 và báo `address already in use`. Customer không cần debugger.
 ```powershell
 cd C:\Users\NoNomt007\Documents\trustbase\trustbase-project\customer; pnpm dev
 ```
+Nếu cửa sổ này vẫn in `Debugger listening on ...` thì mở cửa sổ mới, hoặc chạy `Remove-Item Env:NODE_OPTIONS` trước `pnpm dev`.
 
 **T3**: dọn môi trường (fixture, xóa bộ đếm rate limit). Chạy lại **trước mỗi lần tập hoặc quay**:
 ```powershell
@@ -50,6 +52,18 @@ cd C:\Users\NoNomt007\Documents\trustbase\trustbase-project; claude
 Gõ `/mcp` để thấy `debug-controller` báo connected. Khi được hỏi quyền dùng tool thì chọn cho phép luôn, để lúc quay không bị hỏi lại.
 
 Mở sẵn: **VS Code tại thư mục TrustBase** (`C:\Users\NoNomt007\Documents\trustbase\trustbase-project`) cho cảnh 4; Obsidian với thư mục `C:\Users\NoNomt007\agentic-test-ops\knowledge` làm vault cho cảnh 5. Gõ `cls` ở các terminal cho khung hình sạch.
+
+### Các URL dùng trong demo
+
+| Dùng ở đâu | URL | Thấy gì |
+|---|---|---|
+| Kiểm tra API sống (chuẩn bị) | `http://localhost:4201/health` | HTTP 200 |
+| Kiểm tra cổng debugger (chuẩn bị, cảnh 4) | `http://127.0.0.1:9237/json/list` | JSON có `webSocketDebuggerUrl: ws://127.0.0.1:9237/...` |
+| Trang người dùng (cảnh 2, cảnh 4) | `http://localhost:4200/vi/marketplace?q=windows&sort=price_asc` | Kết quả tìm "windows", chọn giá thấp → cao, nhưng giá lộn xộn |
+| Trang người dùng, **ép gửi request mới** (cảnh 4) | `http://localhost:4200/vi/marketplace?q=windows&sort=price_asc&x=1` (lần sau `x=2`, `x=3`…) | Như trên; `x` vô nghĩa với app nhưng làm trình duyệt bỏ bản cache 15 giây |
+| Gọi thẳng API (dự phòng cảnh 4, so sánh) | `http://localhost:4201/catalog/listings?q=windows&sort=price_asc&page=1&limit=8` | JSON; giá theo thứ tự `60000, 500000, 59000, 85000, 729000, 60000, 159000` |
+
+`q` là từ khóa tìm kiếm, `sort=price_asc` là sắp giá tăng dần. Hai tham số này tới API thành `opts.q` và `opts.sort` trong hàm `findMany`.
 
 ---
 
@@ -75,9 +89,9 @@ Mở sẵn: **VS Code tại thư mục TrustBase** (`C:\Users\NoNomt007\Document
 
 Dán vào Claude Code (T4):
 
-> Bộ hồi quy báo ca TC_TB_CAT_01 fail: tìm "windows" trên marketplace và chọn sắp xếp giá tăng dần nhưng giá hiện lộn xộn. Dùng các tool debug-controller: mở trang http://localhost:4200/vi/marketplace?q=windows&sort=price_asc trên trình duyệt có hiện cửa sổ để xác nhận triệu chứng, rồi tìm nguyên nhân gốc trong backend (API cổng 4201, debugger cổng 9229), có bằng chứng giá trị biến đọc trên RAM.
+> Bộ hồi quy báo ca TC_TB_CAT_01 fail: tìm "windows" trên marketplace và chọn sắp xếp giá tăng dần nhưng giá hiện lộn xộn. Dùng các tool debug-controller: mở trang http://localhost:4200/vi/marketplace?q=windows&sort=price_asc trên trình duyệt có hiện cửa sổ để xác nhận triệu chứng, rồi tìm nguyên nhân gốc trong backend (API cổng 4201, debugger cổng 9237), có bằng chứng giá trị biến đọc trên RAM. Chỉ điều tra: không sửa code, không khởi động lại server.
 
-Prompt chỉ nêu mục tiêu và những gì agent không tự đoán được (trang nào, cổng nào, yêu cầu có bằng chứng trên RAM). Chọn tool, đặt breakpoint ở đâu, đọc biến nào là agent tự quyết; cách dùng `breakpoints` theo đoạn mã và `trigger` nó đọc từ mô tả của tool.
+Prompt chỉ nêu mục tiêu và những gì agent không tự đoán được (trang nào, cổng nào, yêu cầu có bằng chứng trên RAM). Câu cuối là bắt buộc: lần tập ngày 26/11 agent không đặt được breakpoint (lỗi tool, đã sửa) nên tự chèn code ném lỗi vào `listings.repo.ts` rồi khởi động lại API. Chọn tool, đặt breakpoint ở đâu, đọc biến nào là agent tự quyết; cách dùng `breakpoints` theo đoạn mã và `trigger` nó đọc từ mô tả của tool.
 
 **Cảnh 2: Browser Trace (hộp đen).** Agent gọi `debug_browser_run` với `headless: false`:
 - **Chrome bật lên trên màn hình**, mở trang tìm "windows", sắp xếp giá tăng dần;
@@ -87,7 +101,7 @@ Prompt chỉ nêu mục tiêu và những gì agent không tự đoán được 
 → *Kết luận của tầng này:* giao diện gửi đúng tham số, server báo thành công, nhưng thứ tự sai, tức là lỗi nằm trong backend.
 
 **Cảnh 3: Source Trace (hộp xám).** Agent đọc `api/src/modules/listings/listings.repo.ts`, tìm chỗ dựng `ORDER BY`, rồi gọi `debug_inspect_cdp`:
-- breakpoint theo đoạn mã tại câu `.orderBy(` (dòng 412), `trigger` là một request tới `/catalog/listings?q=windows&sort=price_asc`;
+- breakpoint `{ file: "listings.repo.ts", line: 414 }` (tool tự dịch qua source map của tsx), `trigger` là một request tới `/catalog/listings?q=windows&sort=price_asc`;
 - **một lời gọi** vừa gửi request vừa dừng tại câu đó và đọc trên RAM: `opts.q = "windows"`, `opts.sort = "price_asc"`.
 
 → *Kết luận:* server **có nhận** yêu cầu sắp xếp, nhưng dòng 413–415 viết `opts.q ? ts_rank_cd(...) : ORDER_BY[opts.sort]`: **hễ có từ khóa là chỉ sắp theo độ liên quan và bỏ qua `sort`**.
@@ -105,48 +119,67 @@ Quay vài lần, giữ bản đẹp nhất; giữa hai lần chạy lại lệnh
 
 ## 4. Cảnh 4 — Lập trình viên xác minh bằng debugger VS Code (human-in-the-loop, ~1 phút)
 
-**Ý nghĩa:** agent đã chỉ ra dòng 412–415 của `listings.repo.ts`. Lập trình viên mở đúng chỗ đó và **tự xác minh bằng debugger quen thuộc**, gắn vào chính server đang chạy, không phải khởi động lại.
+**Ý nghĩa:** agent đã chỉ ra khối dòng 412–415 của `listings.repo.ts`. Lập trình viên mở đúng chỗ đó và **tự xác minh bằng debugger quen thuộc của mình** (cấu hình "🐛 API: Attach to Process" có sẵn của TrustBase), gắn vào chính server đang chạy, không phải khởi động lại.
 
-**Trước khi gắn:** agent ở cảnh 3 phải trả lời xong (tool CDP của agent tự nhả cổng 9229 sau mỗi lần gọi; cổng chỉ nhận một debugger tại một thời điểm). Kiểm tra ở T3, lệnh phải in ra một dòng `ws://127.0.0.1:9229/...`:
-```powershell
-(Invoke-RestMethod http://127.0.0.1:9229/json/list).webSocketDebuggerUrl
+**Đoạn code cần hiểu trước khi quay:**
+```ts
+.orderBy(                                                   // 412
+  opts.q                                                    // 413: có từ khóa tìm kiếm không?
+    ? sql`ts_rank_cd(... ${opts.q} ...) DESC, id DESC`      // 414: CÓ  → sắp theo độ liên quan
+    : (opts.sort && ORDER_BY[opts.sort]) ? ... : newest,    // 415: KHÔNG → mới dùng sort (price_asc)
+)
 ```
+**Code chạy qua dòng nào, giá trị ra sao** (request `?q=windows&sort=price_asc`):
 
-**Các bước:**
-1. Trong VS Code (đang mở thư mục TrustBase), mở `api/src/modules/listings/listings.repo.ts`, `Ctrl+G` → **412** (dòng `.orderBy(`).
-2. Bấm vào lề trái dòng 412 để đặt chấm đỏ. **Chuột phải vào chấm đỏ → Edit Breakpoint → Expression**, gõ:
+| Bước | Dòng | Giá trị | Kết quả |
+|---|---|---|---|
+| 1 | `listings.service.ts:228` gọi `findMany({ ..., sort, q })` | `q = "windows"`, `sort = "price_asc"` | cả hai tham số tới được repo → `opts.q`, `opts.sort` |
+| 2 | `listings.repo.ts:413` `opts.q ?` | `opts.q = "windows"` → đúng (true) | rẽ vào dòng 414 |
+| 3 | **414** ← VS Code dừng ở đây | `ORDER BY ts_rank_cd(...) DESC, id DESC` | sắp theo **độ liên quan** |
+| — | 415 | **không chạy** | `ORDER_BY.price_asc` (dòng 166: `price_vnd ASC`) không bao giờ được dùng |
+
+| | Thứ tự giá (VND) |
+|---|---|
+| **Đúng phải là** (đi dòng 415 → `price_asc`) | 59.000 · 60.000 · 60.000 · 85.000 · 159.000 · 500.000 · 729.000 |
+| **Thực tế** (đi dòng 414 → độ liên quan) | 60.000 · 500.000 · 59.000 · 85.000 · 729.000 · 60.000 · 159.000 |
+
+Lỗi F-01: có `q` thì `sort` bị bỏ qua. Sửa đúng: có `q` mà có `sort` thì dùng `ORDER_BY[opts.sort]`, chỉ khi không có `sort` mới sắp theo độ liên quan.
+
+**Trước khi gắn (không quay):**
+- API ở T2 đã khởi động xong: `http://localhost:4201/health` trả 200. Đừng gắn debugger khi API chưa lên, nếu tiến trình lỗi giữa chừng nó sẽ treo ở `Waiting for the debugger to disconnect...`.
+- Agent ở cảnh 3 đã trả lời xong (tool CDP của agent tự nhả cổng 9237 sau mỗi lần gọi; cổng chỉ nhận một debugger tại một thời điểm). Kiểm tra ở T3, lệnh phải in ra `ws://127.0.0.1:9237/...`:
+  ```powershell
+  (Invoke-RestMethod http://127.0.0.1:9237/json/list).webSocketDebuggerUrl
+  ```
+
+**Các bước (đã chạy thử ngày 25/11, VS Code dừng đúng dòng 414):**
+1. VS Code đang mở **thư mục gốc TrustBase** (không mở riêng `api`). `Ctrl+P` → gõ `listings.repo.ts` → Enter, rồi `Ctrl+G` → **414** (dòng `? sql` + `ts_rank_cd(...`).
+2. Bấm lề trái **dòng 414** để đặt chấm đỏ. **Chuột phải vào chấm đỏ → Edit Breakpoint → Expression**, gõ rồi Enter:
    ```
    opts.q === 'windows'
    ```
-   Nhấn Enter. Đây là **breakpoint có điều kiện**: trang marketplace tự gọi nhiều danh sách khác khi tải, điều kiện này bảo VS Code chỉ dừng ở đúng request tìm "windows".
-3. Gắn debugger **theo cổng 9229** (chắc chắn hơn chọn tiến trình trong danh sách, vì `npx tsx` tạo nhiều tiến trình node và rất dễ chọn nhầm):
-   - **Một lần duy nhất:** `Ctrl+Shift+P` → **Preferences: Open User Settings (JSON)**, thêm khối sau vào trong dấu `{ }` ngoài cùng (đây là cài đặt cá nhân của VS Code, không sửa repo TrustBase):
-     ```json
-     "launch": {
-       "version": "0.2.0",
-       "configurations": [
-         {
-           "name": "Attach TrustBase API (9229)",
-           "type": "node",
-           "request": "attach",
-           "address": "127.0.0.1",
-           "port": 9229,
-           "sourceMaps": true,
-           "skipFiles": ["<node_internals>/**"]
-         }
-       ]
-     }
-     ```
-   - Mở **Run and Debug** (`Ctrl+Shift+D`), chọn **Attach TrustBase API (9229)** trong ô chọn ở trên cùng, bấm **F5**. Thanh trạng thái chuyển màu cam là đã gắn.
-   - Không dùng cấu hình "🐛 API: Attach to Process" có sẵn của TrustBase: nó trỏ cổng 9237, còn API đang mở debugger ở 9229.
-4. Gửi request **như người dùng thật**: mở trình duyệt, vào `http://localhost:4200/vi/marketplace?q=windows&sort=price_asc` (hoặc tải lại trang).
-5. VS Code **dừng tại dòng 412** (dòng tô vàng). Trong lúc dừng, **toàn bộ API đứng chờ** (trang web quay vòng tải): đó là bình thường. Quay khung **Variables**: mở `opts` thấy `q: "windows"`, `sort: "price_asc"`. Rê chuột lên `opts.q` ở dòng 413 và `opts.sort` ở dòng 415 cho người xem thấy giá trị ngay trong code.
-   - Cách đọc: dòng 413 là điều kiện `opts.q ? ... : ...`. `opts.q` đang là `"windows"` (khác rỗng) nên **nhánh dòng 414 (`ts_rank_cd`, sắp theo độ liên quan) được chọn**, còn nhánh dòng 415 (`ORDER_BY[opts.sort]`, dùng `price_asc`) **bị bỏ qua**. Đây là lỗi.
-   - Nếu `opts.q` là `undefined` thì VS Code đang dừng ở một lời gọi danh sách khác (trang tự tải): kiểm tra lại điều kiện breakpoint ở bước 2, hoặc bấm F5 cho chạy tiếp tới lần dừng có `q = "windows"`.
-6. Bấm **F5 (Continue)** → API chạy tiếp, trang hiện danh sách giá lộn xộn.
-7. Bấm **Shift+F5** để ngắt debugger. **Bắt buộc** nếu còn cho agent chạy lại: cổng 9229 chỉ nhận một debugger.
+   Đây là **breakpoint có điều kiện**: trang marketplace tự gọi nhiều danh sách khác khi tải, điều kiện này chỉ cho dừng ở đúng request tìm "windows".
+3. Gắn debugger: `Ctrl+Shift+D` (Run and Debug) → ô chọn trên cùng chọn **🐛 API: Attach to Process** → bấm **▶** (hoặc F5).
+   - **Không** dùng `Ctrl+Shift+P` → "Debug: Attach to Node Process" (chọn tiến trình trong danh sách): `npx tsx` tạo nhiều tiến trình node, rất dễ gắn nhầm, và khi API khởi động lại thì phiên gắn đó mất.
+4. **Kiểm tra đã gắn thật** trước khi mở trang (cả ba):
+   - thanh trạng thái dưới cùng chuyển **màu cam**;
+   - khung **Call Stack** có một mục (`src/main.ts` hoặc "Running");
+   - chấm đỏ ở dòng 414 là **chấm đặc** (chấm rỗng/xám là chưa bám được, xem Phụ lục B).
+5. Gửi request **như người dùng thật**: trên trình duyệt mở
+   ```
+   http://localhost:4200/vi/marketplace?q=windows&sort=price_asc&x=1
+   ```
+   Lần thử sau đổi thành `x=2`, `x=3`… Route `/catalog/listings` cho trình duyệt cache 15 giây; đổi `x` để chắc chắn có request mới tới API (nếu không, trang hiện ngay mà VS Code không dừng).
+   - Dự phòng nếu trang không gửi request: mở thẳng `http://localhost:4201/catalog/listings?q=windows&sort=price_asc&page=1&limit=8`.
+6. VS Code **dừng tại dòng 414** (dòng tô vàng), cửa sổ VS Code thường tự nhảy lên trước. Trong lúc dừng, **toàn bộ API đứng chờ** (trang web quay vòng tải): bình thường.
+   - Khung **Variables** → mở `opts`: `q: "windows"`, `sort: "price_asc"`.
+   - Rê chuột lên `opts.q` ở dòng 413 rồi `opts.sort` ở dòng 415 cho người xem thấy giá trị ngay trong code.
+   - Nói: "`sort = price_asc` có tới server, nhưng vì `q` khác rỗng nên code chạy dòng 414; dòng 415 dùng `sort` bị bỏ qua."
+   - Nếu `opts.q` là `undefined`: đang dừng ở một lời gọi danh sách khác, kiểm tra lại điều kiện ở bước 2.
+7. Bấm **F5 (Continue)** → API chạy tiếp, trang hiện danh sách giá lộn xộn (60.000 → 500.000 → 59.000…), khớp với những gì vừa thấy trong code.
+8. Bấm **Shift+F5** để ngắt debugger. **Bắt buộc** nếu còn cho agent chạy lại: cổng 9237 chỉ nhận một debugger.
 
-**Lời thoại:** "Agent chỉ ra dòng 412. Lập trình viên đặt breakpoint có điều kiện ở đó, gắn debugger vào chính server đang chạy, rồi thao tác trên giao diện như người dùng. Debugger dừng đúng chỗ và cho thấy cùng giá trị agent đã đọc: `sort = price_asc` có tới server nhưng bị nhánh `opts.q` bỏ qua. AI khoanh vùng, con người xác minh."
+**Lời thoại:** "Agent chỉ ra khối dòng 412 đến 415. Tôi đặt breakpoint có điều kiện ở dòng 414, nhánh chỉ chạy khi có từ khóa, gắn debugger quen thuộc vào chính server đang chạy, rồi thao tác trên trang như người dùng. Debugger dừng đúng ở dòng 414: `sort = price_asc` có tới server nhưng nhánh có từ khóa bỏ qua nó. Cùng giá trị agent đã đọc qua CDP. AI khoanh vùng, con người xác minh."
 
 ---
 
@@ -172,7 +205,7 @@ Quay vài lần, giữ bản đẹp nhất; giữa hai lần chạy lại lệnh
 > Dùng các tool của MCP server debug-controller để điều tra ca TC_TB_CAT_01.
 > 1. Gọi debug_browser_run mở http://localhost:4200/vi/marketplace?q=windows&sort=price_asc với headless false, chờ 5 giây, chụp ảnh; báo lại request /catalog/listings và mã HTTP.
 > 2. Đọc api/src/modules/listings/listings.repo.ts, tìm chỗ dựng ORDER BY trong hàm findMany.
-> 3. Gọi debug_inspect_cdp (cổng 9229, pauseOnExceptions none) với breakpoint theo đoạn mã ".orderBy(" trong listings/listings.repo.ts, đọc opts.q và opts.sort, trigger là lệnh node gọi http://localhost:4201/catalog/listings?q=windows&sort=price_asc.
+> 3. Gọi debug_inspect_cdp (cổng 9237, pauseOnExceptions none) với breakpoint file listings.repo.ts dòng 414, đọc opts.q và opts.sort, trigger là lệnh node gọi http://localhost:4201/catalog/listings?q=windows&sort=price_asc. Không sửa code, không khởi động lại server.
 > 4. Kết luận nguyên nhân gốc: file, dòng và giá trị biến đọc được trên RAM.
 
 **Lệnh dựng sẵn** (chạy ở T3; chứa đúng các tham số agent cần dùng):
@@ -200,10 +233,15 @@ Trong PowerShell, tham số `'@testcases/...'` phải có nháy đơn (`@` đứ
 | Trang marketplace không hiện kết quả theo `q`/`sort` trên URL | Gõ "windows" vào ô tìm kiếm và chọn "Giá thấp → cao" bằng tay (hoặc để agent tự thao tác) |
 | Agent hoặc VS Code dừng ở một lời gọi danh sách khác (`opts.q` rỗng) | Với agent: nhắc dùng `trigger` gọi thẳng API. Với VS Code: kiểm tra breakpoint có điều kiện `opts.q === 'windows'` |
 | Chấm đỏ breakpoint trong VS Code là chấm rỗng, không dừng | VS Code chưa bám được source map của `tsx`: kiểm tra đang mở đúng thư mục TrustBase, ngắt (Shift+F5) rồi gắn lại; vẫn không được thì dùng lệnh `f01-cdp.json` ở Phụ lục A |
+| VS Code báo `connect ECONNREFUSED` cổng 9237 khi bấm F5 | API ở T2 chưa bật với `--inspect=127.0.0.1:9237` (còn chạy bản cũ cổng 9229): tắt và bật lại API bằng lệnh ở T2 |
+| Trang tải xong bình thường, VS Code **không dừng** | (1) VS Code chưa gắn: thanh trạng thái không cam, Call Stack trống → gắn lại bằng "🐛 API: Attach to Process" (bước 3–4 cảnh 4). (2) Trình duyệt dùng bản cache 15 giây → đổi `x=` trên URL. (3) Thử mở thẳng URL API ở bước 5 |
+| Terminal API báo `Waiting for the debugger to disconnect...` | VS Code còn gắn vào tiến trình API đã chết: Shift+F5 trong VS Code, Ctrl+C ở T2, bật lại API, **chờ API lên xong** rồi mới gắn |
+| T2 báo `Cannot resolve tsconfig at path: ...\trustbase-project\tsconfig.json` | Lệnh chạy ở thư mục gốc thay vì `api`: dán lại **cả dòng** lệnh T2 (có `cd ...\api;`) |
+| Customer báo `Starting inspector on 0.0.0.0:9229 failed: address already in use` | Customer bị bật bằng task debug: tắt hẳn (hoặc kill tiến trình giữ cổng 4200/9229/9230) rồi bật lại bằng `pnpm dev` thường |
 | Agent gọi `debug_inspect_cdp` báo "another debugger may already be attached" | VS Code vẫn đang gắn vào API: bấm Shift+F5 rồi chạy lại |
 | Mọi request tới API đều treo | API đang dừng ở breakpoint: bấm F5 (Continue) trong VS Code, hoặc tắt và bật lại API ở T2 |
 | API log báo `ECONNREFUSED ...:6379` / `5432`, hoặc lệnh treo không ra gì | WSL đã tự tắt: kiểm tra T1 còn chạy; nếu vẫn lỗi thì `wsl -e docker restart trustbase-postgres trustbase-redis`, rồi tắt và bật lại API ở T2 |
 | Bị `429 RATE_LIMIT_EXCEEDED` | Chạy lại lệnh reset ở T3 |
-| `debug_inspect_cdp` báo không tìm thấy target 9229 | API phải chạy bằng lệnh `tsx --inspect=...` ở T2, không dùng `pnpm dev` |
+| `debug_inspect_cdp` báo không tìm thấy target 9237 | API phải chạy bằng lệnh `tsx --inspect=...` ở T2, không dùng `pnpm dev` |
 | `/mcp` không thấy `debug-controller` | Thoát hẳn Claude Code rồi mở lại; chạy `claude mcp list` để kiểm tra |
 | Không chạy được TrustBase | Show kết quả đã lưu: `testcases/results/run7-final.json` (ca `TC_TB_CAT_01`) và `knowledge/F-01-*.md` |

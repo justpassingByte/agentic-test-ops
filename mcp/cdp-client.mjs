@@ -31,6 +31,90 @@ function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// ---- Source maps (tsx / ts-node / bundlers) ----------------------------------------------
+// tsx compiles each .ts file to a few long lines and attaches an inline source map, so a
+// breakpoint on a TypeScript line only binds if it is translated through that map.
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const B64_INDEX = Object.fromEntries([...B64].map((c, i) => [c, i]));
+
+function decodeVlqSegment(segment) {
+  const values = [];
+  let value = 0, shift = 0;
+  for (const ch of segment) {
+    const digit = B64_INDEX[ch];
+    if (digit === undefined) return null;
+    value += (digit & 31) << shift;
+    if (digit & 32) { shift += 5; continue; }
+    values.push(value & 1 ? -(value >>> 1) : value >>> 1);
+    value = 0; shift = 0;
+  }
+  return values;
+}
+
+/** Returns [{genLine, genCol, srcIdx, srcLine, srcCol}] (all 0-based). */
+export function decodeSourceMapMappings(mappings) {
+  const out = [];
+  let srcIdx = 0, srcLine = 0, srcCol = 0;
+  String(mappings || '').split(';').forEach((lineStr, genLine) => {
+    let genCol = 0;
+    for (const seg of lineStr.split(',')) {
+      if (!seg) continue;
+      const v = decodeVlqSegment(seg);
+      if (!v || v.length === 0) continue;
+      genCol += v[0];
+      if (v.length >= 4) {
+        srcIdx += v[1]; srcLine += v[2]; srcCol += v[3];
+        out.push({ genLine, genCol, srcIdx, srcLine, srcCol });
+      }
+    }
+  });
+  return out;
+}
+
+async function loadSourceMap(sourceMapURL, scriptUrl) {
+  if (!sourceMapURL) return null;
+  try {
+    if (sourceMapURL.startsWith('data:')) {
+      const comma = sourceMapURL.indexOf(',');
+      const meta = sourceMapURL.slice(5, comma);
+      const body = sourceMapURL.slice(comma + 1);
+      const text = meta.includes('base64') ? Buffer.from(body, 'base64').toString('utf8') : decodeURIComponent(body);
+      return JSON.parse(text);
+    }
+    const { readFile } = await import('node:fs/promises');
+    const { fileURLToPath } = await import('node:url');
+    const mapUrl = new URL(sourceMapURL, scriptUrl);
+    if (mapUrl.protocol !== 'file:') return null;
+    return JSON.parse(await readFile(fileURLToPath(mapUrl), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/** First generated position whose original line is `line` (1-based) in the source ending with `file`. */
+export function generatedPositionFor(map, file, line) {
+  const sources = (map?.sources || []).map(s => String(s).replace(/\\/g, '/'));
+  const base = String(file || '').replace(/\\/g, '/').split('/').pop();
+  let srcIdx = sources.findIndex(s => s.endsWith(String(file).replace(/\\/g, '/')));
+  if (srcIdx < 0) srcIdx = sources.findIndex(s => s.endsWith(base));
+  if (srcIdx < 0 && sources.length === 1) srcIdx = 0;
+  if (srcIdx < 0) return null;
+  const hits = decodeSourceMapMappings(map.mappings)
+    .filter(m => m.srcIdx === srcIdx && m.srcLine === line - 1)
+    .sort((a, b) => a.genLine - b.genLine || a.genCol - b.genCol);
+  return hits[0] || null;
+}
+
+/** Original position (1-based line) for a generated position (0-based), or null. */
+export function originalPositionFor(map, genLine, genCol) {
+  let best = null;
+  for (const m of decodeSourceMapMappings(map?.mappings)) {
+    if (m.genLine !== genLine || m.genCol > genCol) continue;
+    if (!best || m.genCol >= best.genCol) best = m;
+  }
+  return best ? { source: map.sources?.[best.srcIdx], line: best.srcLine + 1, column: best.srcCol + 1 } : null;
+}
+
 function pickTarget(targets, targetFilter) {
   if (targetFilter) {
     const needle = String(targetFilter).toLowerCase();
@@ -89,6 +173,7 @@ export async function runCdpInspection({
     const evaluatedVars = {};
     // CallFrame.url is deprecated and empty for ES modules: resolve file URLs through scriptId.
     const scriptUrls = new Map();
+    const scriptSourceMaps = new Map();
     const frameUrl = (f) => f?.url || scriptUrls.get(f?.location?.scriptId) || '';
     let capturedPause = null;
 
@@ -144,6 +229,14 @@ export async function runCdpInspection({
       } catch {}
       // Let the trigger complete after resuming so its output (e.g. the HTTP status the test saw) is part of the result.
       if (triggerDone) await Promise.race([triggerDone, new Promise((r) => setTimeout(r, timeoutMs))]);
+      // Translate paused frames back to the original (TypeScript) lines through source maps.
+      for (const f of [result?.topFrame, ...(result?.callStack || [])]) {
+        if (!f || f._scriptId === undefined) continue;
+        const map = await loadSourceMap(scriptSourceMaps.get(f._scriptId), f.url);
+        const orig = map ? originalPositionFor(map, f.line - 1, f.column - 1) : null;
+        if (orig) f.sourceLine = orig.line;
+        delete f._scriptId;
+      }
       setTimeout(cleanup, 100);
       resolve({ target: { title: target.title, url: target.url }, skippedLibraryExceptions, skippedFilteredExceptions,
         ...(breakpointsResolved.length ? { breakpointsResolved } : {}), ...result, ...(triggerResult ? { trigger: triggerResult } : {}) });
@@ -171,28 +264,79 @@ export async function runCdpInspection({
       if (pauseOnExceptions && pauseOnExceptions !== 'none') {
         send('Debugger.setPauseOnExceptions', { state: pauseOnExceptions });
       }
+      // Application scripts only (no node_modules / node: internals), matched by path fragment.
+      const appScripts = (file) => {
+        const frag = String(file || '').replace(/\\/g, '/');
+        return [...scriptUrls.entries()]
+          .filter(([, url]) => !isLibraryOrInternalUrl(url))
+          .filter(([, url]) => !frag || decodeURIComponent(url).replace(/\\/g, '/').includes(frag));
+      };
+      const notLoadedHint = (file) => {
+        const base = String(file || '').replace(/\\/g, '/').split('/').pop();
+        const near = [...scriptUrls.values()].filter(u => base && u.includes(base)).slice(0, 5);
+        return near.length ? `Loaded scripts with a similar name: ${near.join(', ')}` :
+          'No loaded application script has this path; check the fragment (e.g. "listings/listings.repo.ts").';
+      };
+
       for (const bp of Array.isArray(breakpoints) ? breakpoints : []) {
         if (bp.match) {
-          // Source-text breakpoint: works on transpiled/minified code (tsx, ts-node, bundlers) where the
-          // original line numbers do not exist in the script V8 actually runs.
-          const file = String(bp.file || '').replace(/\\/g, '/');
-          const entry = [...scriptUrls.entries()].find(([, url]) => url.includes(file));
-          if (!entry) { breakpointsResolved.push({ file, match: bp.match, resolved: false, reason: 'script not loaded' }); continue; }
-          const src = (await call('Debugger.getScriptSource', { scriptId: entry[0] })).result?.scriptSource || '';
-          const idx = src.indexOf(bp.match);
-          if (idx < 0) { breakpointsResolved.push({ file, match: bp.match, resolved: false, reason: 'text not found in loaded script' }); continue; }
-          const before = src.slice(0, idx);
-          const lineNumber = before.split('\n').length - 1;
-          const columnNumber = idx - (before.lastIndexOf('\n') + 1);
-          const r = await call('Debugger.setBreakpoint', { location: { scriptId: entry[0], lineNumber, columnNumber } });
-          breakpointsResolved.push({ file, match: bp.match, resolved: Boolean(r.result?.breakpointId), url: entry[1], generatedLine: lineNumber + 1, generatedColumn: columnNumber + 1 });
-        } else {
-          const r = await call('Debugger.setBreakpointByUrl', {
-            urlRegex: bp.urlRegex || escapeRegex(bp.file || ''),
-            lineNumber: (bp.line || 1) - 1,
-            ...(bp.column ? { columnNumber: bp.column - 1 } : {})
+          // Source-text breakpoint: pause at the first occurrence of the text in the code V8 runs.
+          // Without `file`, every loaded application script is searched.
+          const candidates = appScripts(bp.file);
+          if (candidates.length === 0) {
+            breakpointsResolved.push({ file: bp.file || '', match: bp.match, resolved: false, reason: 'script not loaded', hint: notLoadedHint(bp.file) });
+            continue;
+          }
+          let placed = null;
+          let matchedScripts = 0;
+          for (const [scriptId, url] of candidates) {
+            const src = (await call('Debugger.getScriptSource', { scriptId })).result?.scriptSource || '';
+            const idx = src.indexOf(bp.match);
+            if (idx < 0) continue;
+            matchedScripts++;
+            if (placed) continue;
+            const before = src.slice(0, idx);
+            const lineNumber = before.split('\n').length - 1;
+            const columnNumber = idx - (before.lastIndexOf('\n') + 1);
+            const r = await call('Debugger.setBreakpoint', { location: { scriptId, lineNumber, columnNumber } });
+            placed = { resolved: Boolean(r.result?.breakpointId), url, generatedLine: lineNumber + 1, generatedColumn: columnNumber + 1 };
+          }
+          if (!placed) {
+            breakpointsResolved.push({
+              file: bp.file || '', match: bp.match, resolved: false,
+              reason: `text not found in ${candidates.length} loaded script(s)`,
+              hint: 'The transpiler may have reformatted this text (spacing, quotes, template literals). Use a shorter fragment such as an identifier or function call, or use {file, line} with the TypeScript line number.'
+            });
+            continue;
+          }
+          breakpointsResolved.push({
+            file: bp.file || '', match: bp.match, ...placed,
+            ...(matchedScripts > 1 ? { warning: `text occurs in ${matchedScripts} scripts; breakpoint placed in the first. Add "file" to choose.` } : {})
           });
-          breakpointsResolved.push({ file: bp.file, line: bp.line, resolved: (r.result?.locations || []).length > 0 });
+        } else {
+          // Line breakpoint on the ORIGINAL source line. When the script carries a source map
+          // (tsx, ts-node, bundlers) the line is translated through it; otherwise it is used as-is.
+          const candidates = appScripts(bp.file);
+          if (candidates.length === 0) {
+            breakpointsResolved.push({ file: bp.file, line: bp.line, resolved: false, reason: 'script not loaded', hint: notLoadedHint(bp.file) });
+            continue;
+          }
+          const [scriptId, url] = candidates[0];
+          const map = await loadSourceMap(scriptSourceMaps.get(scriptId), url);
+          if (map) {
+            const pos = generatedPositionFor(map, bp.file || url, bp.line || 1);
+            if (!pos) {
+              breakpointsResolved.push({ file: bp.file, line: bp.line, resolved: false, url, reason: 'no executable code on this line in the source map', hint: 'Pick a line that contains an expression or statement (not a blank line, comment or a lone bracket).' });
+              continue;
+            }
+            const r = await call('Debugger.setBreakpoint', { location: { scriptId, lineNumber: pos.genLine, columnNumber: pos.genCol } });
+            breakpointsResolved.push({ file: bp.file, line: bp.line, resolved: Boolean(r.result?.breakpointId), url, via: 'source map', generatedLine: pos.genLine + 1, generatedColumn: pos.genCol + 1 });
+          } else {
+            const r = await call('Debugger.setBreakpoint', {
+              location: { scriptId, lineNumber: (bp.line || 1) - 1, ...(bp.column ? { columnNumber: bp.column - 1 } : {}) }
+            });
+            breakpointsResolved.push({ file: bp.file, line: bp.line, resolved: Boolean(r.result?.breakpointId), url, via: 'direct (no source map)' });
+          }
         }
       }
       if (trigger) runTrigger();
@@ -210,6 +354,7 @@ export async function runCdpInspection({
 
       if (msg.method === 'Debugger.scriptParsed') {
         if (msg.params?.url) scriptUrls.set(msg.params.scriptId, msg.params.url);
+        if (msg.params?.sourceMapURL) scriptSourceMaps.set(msg.params.scriptId, msg.params.sourceMapURL);
         return;
       }
 
@@ -248,13 +393,15 @@ export async function runCdpInspection({
             functionName: topFrame.functionName || '(anonymous)',
             url: frameUrl(topFrame),
             line: (topFrame.location?.lineNumber || 0) + 1,
-            column: (topFrame.location?.columnNumber || 0) + 1
+            column: (topFrame.location?.columnNumber || 0) + 1,
+            _scriptId: topFrame.location?.scriptId
           },
           callStack: callFrames.slice(0, 8).map(f => ({
             functionName: f.functionName || '(anonymous)',
             url: frameUrl(f),
             line: (f.location?.lineNumber || 0) + 1,
-            column: (f.location?.columnNumber || 0) + 1
+            column: (f.location?.columnNumber || 0) + 1,
+            _scriptId: f.location?.scriptId
           }))
         };
 

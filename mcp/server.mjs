@@ -141,7 +141,7 @@ async function killPid(pid) {
 const TOOLS = [
   {
     "name": "debug_inspect_cdp",
-    "description": "Autonomous Chrome DevTools Protocol (CDP) Client. Connects to a running Node.js --inspect session (Node >= 22 required for the MCP server), pauses on the first application exception (including errors that a web framework catches and turns into HTTP 500) or on a breakpoint, captures the callstack and evaluates heap variables, then resumes. Pass `trigger` (the command that reproduces the failure, e.g. one test) so the tool attaches first and then runs it: one call reproduces the bug and returns both the command output and the runtime state. Without `trigger`, the failing request must be sent while the tool is listening.",
+    "description": "Autonomous Chrome DevTools Protocol (CDP) Client. Connects to a running Node.js --inspect session (Node >= 22 required for the MCP server), pauses on the first application exception (including errors that a web framework catches and turns into HTTP 500) or on a breakpoint, captures the callstack and evaluates heap variables, then resumes. Pass `trigger` (the command that reproduces the failure, e.g. one test) so the tool attaches first and then runs it: one call reproduces the bug and returns both the command output and the runtime state. Without `trigger`, the failing request must be sent while the tool is listening. To read variables at a specific place, set a breakpoint with {file, line} using the TypeScript/source line as shown in the editor (translated through source maps for tsx/ts-node/bundlers), then list the variables in `expressions`. If a breakpoint comes back resolved:false, read its `reason` and `hint` and adjust the breakpoint. This tool is read-only investigation: do NOT edit application source code or restart the server to obtain evidence.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -155,7 +155,7 @@ const TOOLS = [
           "type": "object",
           "description": "Command that reproduces the failure (e.g. a single test). Started only after the debugger is attached and breakpoints are set, so one call reproduces the bug and captures the runtime state. Its exit code and output are returned in `trigger`.",
           "properties": {
-            "command": { "type": "string", "description": "Shell command, e.g. 'node --test --test-name-pattern=TC_TB_DSP_04 tests/trustbase/trustbase.test.mjs'" },
+            "command": { "type": "string", "description": "Shell command, e.g. 'node --test --test-name-pattern=TC_TB_DSP_04 tests/trustbase/trustbase.test.mjs'. Runs in the platform shell (cmd.exe on Windows: no 'sleep', no '/dev/null'); a plain 'curl -s <url>' or a node script is portable." },
             "cwd": { "type": "string", "description": "Working directory for the command." },
             "timeoutMs": { "type": "number", "description": "Kill the command after this many ms (default: timeoutMs)." }
           },
@@ -172,9 +172,9 @@ const TOOLS = [
             "type": "object",
             "properties": {
               "file": { "type": "string", "description": "Path fragment of the script (e.g. 'disputes/disputes.service.ts')." },
-              "line": { "type": "number", "description": "1-based line in the code V8 runs (not the TypeScript source when transpiled)." },
+              "line": { "type": "number", "description": "1-based line in the ORIGINAL source file as seen in the editor (e.g. the .ts line). Translated through the script's source map when it has one (tsx, ts-node, bundlers)." },
               "column": { "type": "number" },
-              "match": { "type": "string", "description": "Source-text breakpoint: pause at the first occurrence of this text in the loaded script. Use for tsx/ts-node/bundled code where TS line numbers do not exist at runtime." }
+              "match": { "type": "string", "description": "Alternative to line: pause at the first occurrence of this text in the code V8 runs. Searches the script matching 'file', or every loaded application script when 'file' is omitted. The transpiler may reformat code, so prefer short fragments (an identifier or call such as 'ts_rank_cd(')." }
             }
           }
         }

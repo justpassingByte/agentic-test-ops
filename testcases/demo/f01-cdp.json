@@ -1,11 +1,11 @@
 {
-  "inspectPort": 9229,
+  "inspectPort": 9237,
   "timeoutMs": 30000,
   "pauseOnExceptions": "none",
   "breakpoints": [
     {
       "file": "listings/listings.repo.ts",
-      "match": ".orderBy("
+      "line": 414
     }
   ],
   "expressions": [

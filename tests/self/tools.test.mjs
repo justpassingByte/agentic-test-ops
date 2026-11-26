@@ -114,6 +114,52 @@ test('debug_inspect_cdp source-text breakpoint works without line numbers', asyn
   assert.deepEqual(r.evaluatedVariables.allowed.value, ['paid']);
 });
 
+test('debug_inspect_cdp source-text breakpoint without "file" searches every application script', async () => {
+  const pending = mcpAsync('debug_inspect_cdp', { inspectPort: 9461, timeoutMs: 8000, pauseOnExceptions: 'none',
+    breakpoints: [{ match: 'allowed.includes(' }], expressions: ['allowed'] });
+  await sleep(1500);
+  await fetch('http://127.0.0.1:4961/');
+  const r = await pending;
+  assert.equal(r.status, 'PAUSED');
+  assert.equal(r.breakpointsResolved[0].resolved, true);
+  assert.match(r.breakpointsResolved[0].url, /sut\.mjs$/);
+  assert.deepEqual(r.evaluatedVariables.allowed.value, ['paid']);
+});
+
+// Transpiled-code SUT (what tsx produces): the original 7-line file is squeezed onto 2 generated lines,
+// with an inline source map. A breakpoint on ORIGINAL line 5 must bind through the map.
+function vlq(n) {
+  const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let v = n < 0 ? (-n << 1) | 1 : n << 1, out = '';
+  do { let d = v & 31; v >>>= 5; if (v) d |= 32; out += B64[d]; } while (v);
+  return out;
+}
+{
+  const gen0 = `import http from 'node:http'; const port = Number(process.env.PORT);`;
+  const parts = [`http.createServer((req, res) => { `, `const price = 42; `, `const label = 'x' + price; `, `res.end(label); `, `}).listen(port, '127.0.0.1');`];
+  // generated line 1: each part maps to original lines 3..7 (0-based 2..6), column 0
+  let col = 0, prevCol = 0, prevSrcLine = 0;
+  const segs = parts.map((p, i) => { const s = vlq(col - prevCol) + vlq(0) + vlq((2 + i) - prevSrcLine) + vlq(0); prevCol = col; prevSrcLine = 2 + i; col += p.length; return s; });
+  const map = { version: 3, sources: ['sm.mjs'], names: [], mappings: `${vlq(0)}${vlq(0)}${vlq(0)}${vlq(0)};${segs.join(',')}` };
+  // line-0 segment maps to original line 0; line-1 deltas are relative to it (srcLine 0 -> 2 ...).
+  fs.writeFileSync(path.join(WORK, 'sm.mjs'), `${gen0}\n${parts.join('')}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString('base64')}\n`);
+}
+
+test('debug_inspect_cdp {file, line} uses the ORIGINAL line through the source map (tsx-style code)', async () => {
+  start(process.execPath, ['--inspect=127.0.0.1:9463', 'sm.mjs'], { env: { ...process.env, PORT: '4963' } });
+  await sleep(1500);
+  const r = mcp('debug_inspect_cdp', { inspectPort: 9463, timeoutMs: 15000, pauseOnExceptions: 'none',
+    breakpoints: [{ file: 'sm.mjs', line: 5 }], expressions: ['price'],
+    trigger: { command: `node -e "fetch('http://127.0.0.1:4963/').then(r => r.text()).then(t => console.log('BODY ' + t))"` } });
+  assert.equal(r.status, 'PAUSED');
+  assert.equal(r.breakpointsResolved[0].resolved, true);
+  assert.equal(r.breakpointsResolved[0].via, 'source map');
+  assert.equal(r.breakpointsResolved[0].generatedLine, 2);
+  assert.equal(r.topFrame.sourceLine, 5);
+  assert.equal(r.evaluatedVariables.price.value, 42);
+  assert.match(r.trigger.output, /BODY x42/);
+});
+
 test('debug_inspect_cdp trigger: attaches first, runs the reproduction command, returns its output and the RAM values', () => {
   const r = mcp('debug_inspect_cdp', { inspectPort: 9461, timeoutMs: 15000, pauseOnExceptions: 'none',
     breakpoints: [{ file: 'sut.mjs', match: 'allowed.includes(' }], expressions: ['allowed', 'order.isNegotiated'],
