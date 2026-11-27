@@ -170,17 +170,26 @@ Lỗi F-01: có `q` thì `sort` bị bỏ qua. Sửa đúng: có `q` mà có `so
 
 **Các bước (đã chạy thử ngày 25/11, VS Code dừng đúng dòng 414):**
 1. VS Code đang mở **thư mục gốc TrustBase** (không mở riêng `api`). `Ctrl+P` → gõ `listings.repo.ts` → Enter, rồi `Ctrl+G` → **414** (dòng `? sql` + `ts_rank_cd(...`).
-2. Bấm lề trái **dòng 414** để đặt chấm đỏ. **Chuột phải vào chấm đỏ → Edit Breakpoint → Expression**, gõ rồi Enter:
+2. Xóa các breakpoint cũ (khung Breakpoints → Remove All), rồi bấm lề trái **dòng 414** để đặt chấm đỏ. **Chuột phải vào chấm đỏ → Edit Breakpoint → Expression**, gõ rồi Enter:
    ```
-   opts.q === 'windows'
+   opts.sort === 'price_asc'
    ```
-   Đây là **breakpoint có điều kiện**: trang marketplace tự gọi nhiều danh sách khác khi tải, điều kiện này chỉ cho dừng ở đúng request tìm "windows".
+   Đây là **breakpoint có điều kiện**. Khi tìm "windows", trang gửi **hai** request đều có `q=windows`: một danh sách xem trước không có `sort` (server tự gán `sort: 'newest'`) và một danh sách chính có `sort=price_asc`. Điều kiện theo `q` sẽ dừng nhầm ở request xem trước; điều kiện theo `sort` chỉ dừng ở đúng request của lỗi.
+   - Đặt thêm, **cùng điều kiện** `opts.sort === 'price_asc'`:
+     - **dòng 415** (`: (opts.sort && ORDER_BY[opts.sort]) ...`): nhánh dùng `sort`. Breakpoint này **không được dừng** khi có từ khóa;
+     - **dòng 420** (`if (rows.length === 0) {`): sau khi truy vấn chạy, đọc giá DB trả về.
+
+   | Breakpoint | Có `q=windows` (lỗi) | Không có `q` (đối chứng, bước 9) |
+   |---|---|---|
+   | 414 nhánh độ liên quan | **dừng** | không dừng |
+   | 415 nhánh `sort` | **không dừng** | **dừng** |
+   | 420 giá trả về | dừng, giá lộn xộn | dừng, giá tăng dần |
 3. Gắn debugger: `Ctrl+Shift+D` (Run and Debug) → ô chọn trên cùng chọn **🐛 API: Attach to Process** → bấm **▶** (hoặc F5).
    - **Không** dùng `Ctrl+Shift+P` → "Debug: Attach to Node Process" (chọn tiến trình trong danh sách): `npx tsx` tạo nhiều tiến trình node, rất dễ gắn nhầm, và khi API khởi động lại thì phiên gắn đó mất.
 4. **Kiểm tra đã gắn thật** trước khi mở trang (cả ba):
    - thanh trạng thái dưới cùng chuyển **màu cam**;
    - khung **Call Stack** có một mục (`src/main.ts` hoặc "Running");
-   - chấm đỏ ở dòng 414 là **chấm đặc** (chấm rỗng/xám là chưa bám được, xem Phụ lục B).
+   - chấm đỏ ở dòng 414, 415, 420 đều là **chấm đặc** (chấm rỗng/xám là chưa bám được, xem Phụ lục B).
 5. Gửi request **như người dùng thật**: trên trình duyệt mở
    ```
    http://localhost:4200/vi/marketplace?q=windows&sort=price_asc&x=1
@@ -188,14 +197,28 @@ Lỗi F-01: có `q` thì `sort` bị bỏ qua. Sửa đúng: có `q` mà có `so
    Lần thử sau đổi thành `x=2`, `x=3`… Route `/catalog/listings` cho trình duyệt cache 15 giây; đổi `x` để chắc chắn có request mới tới API (nếu không, trang hiện ngay mà VS Code không dừng).
    - Dự phòng nếu trang không gửi request: mở thẳng `http://localhost:4201/catalog/listings?q=windows&sort=price_asc&page=1&limit=8`.
 6. VS Code **dừng tại dòng 414** (dòng tô vàng), cửa sổ VS Code thường tự nhảy lên trước. Trong lúc dừng, **toàn bộ API đứng chờ** (trang web quay vòng tải): bình thường.
-   - Khung **Variables** → mở `opts`: `q: "windows"`, `sort: "price_asc"`.
-   - Rê chuột lên `opts.q` ở dòng 413 rồi `opts.sort` ở dòng 415 cho người xem thấy giá trị ngay trong code.
+   - Khung **Variables** → **Local: findMany** → bấm mũi tên **▸ cạnh `opts`** để mở ra (dòng thu gọn chỉ hiện vài trường đầu): thấy `q: "windows"`, `sort: "price_asc"`, `limit`, `page`, `where`.
+   - Cách nhanh hơn cho video: rê chuột lên `opts.q` ở dòng 413 rồi `opts.sort` ở dòng 415, hoặc gõ `opts.sort` trong tab **Debug Console**.
    - Nói: "`sort = price_asc` có tới server, nhưng vì `q` khác rỗng nên code chạy dòng 414; dòng 415 dùng `sort` bị bỏ qua."
-   - Nếu `opts.q` là `undefined`: đang dừng ở một lời gọi danh sách khác, kiểm tra lại điều kiện ở bước 2.
-7. Bấm **F5 (Continue)** → API chạy tiếp, trang hiện danh sách giá lộn xộn (60.000 → 500.000 → 59.000…), khớp với những gì vừa thấy trong code.
-8. Bấm **Shift+F5** để ngắt debugger. **Bắt buộc** nếu còn cho agent chạy lại: cổng 9237 chỉ nhận một debugger.
+   - Nếu thấy `sort: 'newest'`: đang dừng ở request xem trước (chưa đặt điều kiện ở bước 2). Bấm **F5** một lần, VS Code sẽ dừng lại ở request `price_asc`.
+   - Ở dòng 414 **chưa có giá**: `opts` chỉ là tham số đầu vào (`q`, `sort`, `limit`, `page`, `where`); câu truy vấn đang được dựng, chưa chạy, nên `rows` còn trống.
+7. Bấm **F5 (Continue)** → VS Code **bỏ qua dòng 415** (chấm đỏ ở đó không dừng) và dừng ở **dòng 420**: nhánh dùng `sort` không hề chạy. Truy vấn đã chạy xong, giờ `rows` có dữ liệu:
+   - Variables → mở `rows` → mở từng phần tử → `priceVnd`; hoặc gõ trong **Debug Console**:
+     ```
+     rows.map(r => r.priceVnd)
+     ```
+     → `[60000, 500000, 59000, 85000, 729000, 60000, 159000]` (có thể hiện dạng chuỗi `'60000'`, tùy kiểu cột): thứ tự DB trả về, không tăng dần.
+   - Nói: "Đây là giá ngay trong RAM của server, trước khi trả về trình duyệt. Thứ tự đã sai từ câu truy vấn, không phải do giao diện."
+8. Bấm **F5** lần nữa → API trả kết quả, trang hiện danh sách giá lộn xộn đúng như mảng vừa đọc.
+9. **Đối chứng (chứng minh breakpoint 415 hoạt động):** "415 không dừng" chỉ có nghĩa khi chắc breakpoint 415 dừng được. Mở thẳng API **không có từ khóa** (đổi `x` mỗi lần):
+   ```
+   http://localhost:4201/catalog/listings?sort=price_asc&page=1&limit=8&x=1
+   ```
+   → VS Code **bỏ qua 414, dừng ở 415** (vì `opts.q` rỗng). F5 → dừng ở 420, `rows.map(r => r.priceVnd)` ra giá **tăng dần**. F5 để trả kết quả.
+   - Nói: "Cùng `sort=price_asc`: không có từ khóa thì code đi dòng 415 và giá đúng; có từ khóa thì đi dòng 414 và giá sai. Lỗi nằm đúng ở điều kiện dòng 413."
+10. Bấm **Shift+F5** để ngắt debugger. **Bắt buộc** nếu còn cho agent chạy lại: cổng 9237 chỉ nhận một debugger.
 
-**Lời thoại:** "Agent chỉ ra khối dòng 412 đến 415. Tôi đặt breakpoint có điều kiện ở dòng 414, nhánh chỉ chạy khi có từ khóa, gắn debugger quen thuộc vào chính server đang chạy, rồi thao tác trên trang như người dùng. Debugger dừng đúng ở dòng 414: `sort = price_asc` có tới server nhưng nhánh có từ khóa bỏ qua nó. Cùng giá trị agent đã đọc qua CDP. AI khoanh vùng, con người xác minh."
+**Lời thoại:** "Agent chỉ ra khối dòng 412 đến 415. Tôi đặt breakpoint có điều kiện ở dòng 414, nhánh chỉ chạy khi có từ khóa, gắn debugger quen thuộc vào chính server đang chạy, rồi thao tác trên trang như người dùng. Debugger dừng ở dòng 414, bỏ qua dòng 415: `sort = price_asc` có tới server nhưng nhánh có từ khóa bỏ qua nó, và giá ra từ DB đã lộn xộn. Bỏ từ khóa đi thì code chạy dòng 415 và giá tăng dần. Cùng kết luận agent đã đọc qua CDP. AI khoanh vùng, con người xác minh."
 
 ---
 
@@ -247,7 +270,7 @@ Trong PowerShell, tham số `'@testcases/...'` phải có nháy đơn (`@` đứ
 | Triệu chứng | Cách xử lý |
 |---|---|
 | Trang marketplace không hiện kết quả theo `q`/`sort` trên URL | Gõ "windows" vào ô tìm kiếm và chọn "Giá thấp → cao" bằng tay (hoặc để agent tự thao tác) |
-| Agent hoặc VS Code dừng ở một lời gọi danh sách khác (`opts.q` rỗng) | Với agent: nhắc dùng `trigger` gọi thẳng API. Với VS Code: kiểm tra breakpoint có điều kiện `opts.q === 'windows'` |
+| Agent hoặc VS Code dừng ở một lời gọi danh sách khác (`opts.q` rỗng) | Với agent: nhắc dùng `trigger` gọi thẳng API. Với VS Code: điều kiện breakpoint phải là `opts.sort === 'price_asc'`, hoặc bấm F5 để qua request xem trước (`sort: 'newest'`) |
 | Chấm đỏ breakpoint trong VS Code là chấm rỗng, không dừng | VS Code chưa bám được source map của `tsx`: kiểm tra đang mở đúng thư mục TrustBase, ngắt (Shift+F5) rồi gắn lại; vẫn không được thì dùng lệnh `f01-cdp.json` ở Phụ lục A |
 | VS Code báo `connect ECONNREFUSED` cổng 9237 khi bấm F5 | API ở T2 chưa bật với `--inspect=127.0.0.1:9237` (còn chạy bản cũ cổng 9229): tắt và bật lại API bằng lệnh ở T2 |
 | Trang tải xong bình thường, VS Code **không dừng** | (1) VS Code chưa gắn: thanh trạng thái không cam, Call Stack trống → gắn lại bằng "🐛 API: Attach to Process" (bước 3–4 cảnh 4). (2) Trình duyệt dùng bản cache 15 giây → đổi `x=` trên URL. (3) Thử mở thẳng URL API ở bước 5 |
