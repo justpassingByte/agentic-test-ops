@@ -315,7 +315,7 @@ agentic-test-ops/
 ├── demo_trustbase_real.mjs                # Script demo UI thực tế trên TrustBase
 ├── record_multi_role_detailed_demo.mjs    # Script E2E Buyer -> Seller -> Admin (hỗ trợ --record-video)
 ├── HANDBOOK.md                            # Sổ tay cài đặt vào src bất kỳ, kỹ thuật kiểm thử & Prompt mẫu
-├── Nhom5_AgenticTestOps.pdf               # Báo cáo đồ án môn học (Nhóm 05, 18 trang)
+├── Nhom5_AgenticTestOps.docx              # Báo cáo đồ án môn học (Nhóm 05, 19 trang, kèm 5 sơ đồ kiến trúc)
 ├── Nhom05_AgenticTestOps_ThuyetTrinh.pdf  # Slide thuyết trình bảo vệ (10 slides 16:9, Notion-Clean)
 ├── Nhom05_TestCase_TrustBase.xlsx         # Bảng đặc tả 30 ca kiểm thử, Defect Log & Dashboard
 └── README.md
